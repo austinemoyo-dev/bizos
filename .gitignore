@@ -1,0 +1,15 @@
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+bizos-backend/venv/
+bizos-backend/__pycache__/
+bizos-backend/.env
+bizos-frontend/node_modules/
+bizos-frontend/.next/
+bizos-frontend/.env*.local

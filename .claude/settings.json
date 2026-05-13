@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"augustineakinmoyo@gmail.com\",\"password\":\"BizOS@2025\"}')",
+      "Bash(python -c ' *)",
+      "Bash(pkill -f uvicorn)",
+      "Bash(pkill -f \"python -m uvicorn\")",
+      "Bash(netstat -ano)",
+      "Bash(venv/Scripts/python -m alembic revision --autogenerate -m \"cancel_status_device_types_selling_price\")",
+      "Bash(venv/Scripts/python -m alembic upgrade head)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\CEMEX\\Videos\\biz\\bizos-frontend\\src\\app\\(app)\\business\\inventory"
+    ]
+  }
+}
