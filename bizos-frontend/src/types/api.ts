@@ -72,6 +72,7 @@ export interface RepairJob {
   notes?: string;
   cancel_reason?: string;
   received_at: string;
+  completed_at?: string;
   delivered_at?: string;
   created_at: string;
   updated_at: string;
@@ -99,6 +100,7 @@ export interface RepairJobCreate {
   amount_paid?: number;
   notes?: string;
   parts?: AddPartPayload[];
+  received_at?: string; // YYYY-MM-DD — accounting period date for this job
 }
 
 export interface AddPartPayload {

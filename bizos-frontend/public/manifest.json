@@ -5,7 +5,7 @@
   "start_url": "/business/dashboard",
   "display": "standalone",
   "background_color": "#0A0C10",
-  "theme_color": "#0A0C10",
+  "theme_color": "#6366F1",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },

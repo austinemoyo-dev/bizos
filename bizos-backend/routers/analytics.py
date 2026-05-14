@@ -114,7 +114,7 @@ def revenue_trend(
             db.query(func.coalesce(func.sum(RepairJob.total_charge), 0))
             .filter(
                 RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
-                func.date(RepairJob.received_at) == current,
+                func.date(func.coalesce(RepairJob.completed_at, RepairJob.received_at)) == current,
             )
             .scalar()
         )

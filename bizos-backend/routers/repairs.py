@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
@@ -81,8 +82,10 @@ def create_job(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(*NON_VIEWER)),
 ):
-    payload_dict = payload.model_dump(exclude={"parts"})
+    payload_dict = payload.model_dump(exclude={"parts", "received_at"})
     job = RepairJob(**payload_dict, created_by=current_user.id)
+    if payload.received_at:
+        job.received_at = datetime.combine(payload.received_at, datetime.min.time()).replace(tzinfo=timezone.utc)
     db.add(job)
     db.flush()  # To get the job id
     

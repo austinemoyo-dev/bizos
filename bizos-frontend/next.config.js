@@ -13,7 +13,9 @@ const withPWA = require('next-pwa')({
       },
     },
     {
-      urlPattern: /^\/api\//,
+      // Match the full cross-origin API URL (e.g. https://bizos-api-6csi.onrender.com/api/v1/*)
+      // /^\/api\// only matches same-origin paths and won't work for Render/Fly deployments
+      urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
       handler: 'NetworkFirst',
       options: { cacheName: 'api-cache', networkTimeoutSeconds: 5 },
     },

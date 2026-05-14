@@ -25,12 +25,16 @@ from schemas.analytics import (
 def get_business_summary(
     db: Session, period_start: date, period_end: date
 ) -> BusinessSummary:
+    # Revenue recognised on the date the repair was completed (service obligation discharged),
+    # falling back to received_at for jobs that predate the completed_at column.
+    _rev_date = func.date(func.coalesce(RepairJob.completed_at, RepairJob.received_at))
+
     repair_revenue = (
         db.query(func.sum(RepairJob.total_charge))
         .filter(
             RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
-            func.date(RepairJob.received_at) >= period_start,
-            func.date(RepairJob.received_at) <= period_end,
+            _rev_date >= period_start,
+            _rev_date <= period_end,
         )
         .scalar()
         or Decimal("0")
@@ -62,8 +66,8 @@ def get_business_summary(
         .join(RepairJob, JobPart.job_id == RepairJob.id)
         .filter(
             RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
-            func.date(RepairJob.received_at) >= period_start,
-            func.date(RepairJob.received_at) <= period_end,
+            _rev_date >= period_start,
+            _rev_date <= period_end,
         )
         .scalar()
         or Decimal("0")
@@ -166,7 +170,7 @@ def get_business_summary(
     repair_count = (
         db.query(func.count(RepairJob.id))
         .filter(
-            func.date(RepairJob.received_at) >= period_start,
+            func.date(RepairJob.received_at) >= period_start,  # intake KPI — not revenue recognition
             func.date(RepairJob.received_at) <= period_end,
         )
         .scalar()

@@ -126,6 +126,7 @@ def update_job_status(db: Session, job_id: UUID, new_status: RepairStatus) -> Re
         )
 
     if new_status == RepairStatus.completed:
+        job.completed_at = datetime.utcnow()
         profit_data = compute_job_profit(job)
         if profit_data.profit > 0:
             create_business_tithe(db, profit_data.profit, reference_id=job.id)

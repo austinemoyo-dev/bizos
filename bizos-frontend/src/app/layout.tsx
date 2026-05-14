@@ -34,8 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${dmSans.variable} ${spaceMono.variable} ${syne.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <meta name="theme-color" content="#0C0D0F" />
+        <meta name="theme-color" content="#0A0C10" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BizOS" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body>

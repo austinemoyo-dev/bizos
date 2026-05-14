@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
 
@@ -48,6 +48,7 @@ class RepairJobCreate(BaseModel):
     amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0"))
     notes: Optional[str] = Field(None, max_length=1000)
     parts: Optional[List[JobPartCreate]] = []
+    received_at: Optional[date] = None  # date the device was physically received; defaults to today if omitted
 
 
 class RepairJobUpdate(BaseModel):
@@ -78,6 +79,7 @@ class RepairJobOut(BaseModel):
     amount_paid: Decimal
     status: RepairStatus
     received_at: datetime
+    completed_at: Optional[datetime] = None
     delivered_at: Optional[datetime]
     notes: Optional[str]
     cancel_reason: Optional[str] = None

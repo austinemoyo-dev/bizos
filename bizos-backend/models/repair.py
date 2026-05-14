@@ -53,6 +53,7 @@ class RepairJob(Base):
     amount_paid = Column(Numeric(12, 2), nullable=False, default=0)
     status = Column(SAEnum(RepairStatus), default=RepairStatus.received, nullable=False)
     received_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     delivered_at = Column(DateTime(timezone=True), nullable=True)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)

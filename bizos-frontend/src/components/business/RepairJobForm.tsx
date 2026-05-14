@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { RepairJobCreate, DeviceType, AddPartPayload, Item } from '@/types/api';
 import { inventoryApi } from '@/lib/api/inventory';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 
 const DEVICE_OPTIONS: { value: DeviceType; label: string; hasModel: boolean }[] = [
   { value: 'phone',          label: 'Phone',           hasModel: true  },
@@ -38,6 +39,7 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
     total_charge:     initialValues?.total_charge ?? 0,
     notes:            initialValues?.notes ?? '',
     parts:            initialValues?.parts ?? [],
+    received_at:      initialValues?.received_at ?? format(new Date(), 'yyyy-MM-dd'),
   });
   
   const [loading, setLoading] = useState(false);
@@ -143,7 +145,22 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
         <input className="input" type="tel" value={form.customer_phone ?? ''}
           onChange={(e) => set('customer_phone', e.target.value)} placeholder="08012345678" />
       </div>
-      
+
+      <div className="form-group">
+        <label className="form-label">Date Received *</label>
+        <input
+          className="input"
+          type="date"
+          value={form.received_at ?? ''}
+          max={format(new Date(), 'yyyy-MM-dd')}
+          onChange={(e) => set('received_at', e.target.value)}
+          required
+        />
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+          Determines which accounting period this job belongs to.
+        </p>
+      </div>
+
       <div className="form-group">
         <label className="form-label">Device Type *</label>
         <select className="input" value={form.device_type}
