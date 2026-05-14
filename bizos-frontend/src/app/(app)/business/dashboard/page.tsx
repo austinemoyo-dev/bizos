@@ -11,9 +11,15 @@ import { RevenueAreaChart } from '@/components/charts/RevenueAreaChart';
 import { ExpensePieChart } from '@/components/charts/ExpensePieChart';
 import { formatNaira } from '@/lib/format';
 import { stagger, fadeUp, scrollFadeUp } from '@/lib/motion-variants';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, subMonths } from 'date-fns';
+import {
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  startOfYear, endOfYear, subMonths,
+} from 'date-fns';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { ChevronRight, Wrench, Target, AlertTriangle, HandCoins, Package, TrendingDown } from 'lucide-react';
+import {
+  ChevronRight, Wrench, Target, AlertTriangle,
+  HandCoins, Package, TrendingDown, LineChart, Wallet,
+} from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import Link from 'next/link';
@@ -25,27 +31,32 @@ type Period = 'week' | 'month' | 'last_month' | 'year';
 
 function getPeriodDates(period: Period) {
   const now = new Date();
-  if (period === 'week') return { start: format(startOfWeek(now), 'yyyy-MM-dd'), end: format(endOfWeek(now), 'yyyy-MM-dd') };
-  if (period === 'year') return { start: format(startOfYear(now), 'yyyy-MM-dd'), end: format(endOfYear(now), 'yyyy-MM-dd') };
+  if (period === 'week')
+    return { start: format(startOfWeek(now), 'yyyy-MM-dd'), end: format(endOfWeek(now), 'yyyy-MM-dd') };
+  if (period === 'year')
+    return { start: format(startOfYear(now), 'yyyy-MM-dd'), end: format(endOfYear(now), 'yyyy-MM-dd') };
   if (period === 'last_month') {
-    const lastMonth = subMonths(now, 1);
-    return { start: format(startOfMonth(lastMonth), 'yyyy-MM-dd'), end: format(endOfMonth(lastMonth), 'yyyy-MM-dd') };
+    const lm = subMonths(now, 1);
+    return { start: format(startOfMonth(lm), 'yyyy-MM-dd'), end: format(endOfMonth(lm), 'yyyy-MM-dd') };
   }
   return { start: format(startOfMonth(now), 'yyyy-MM-dd'), end: format(endOfMonth(now), 'yyyy-MM-dd') };
 }
 
 const PERIODS: { key: Period; label: string }[] = [
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
+  { key: 'week',       label: 'Week'       },
+  { key: 'month',      label: 'Month'      },
   { key: 'last_month', label: 'Last Month' },
-  { key: 'year', label: 'Year' },
+  { key: 'year',       label: 'Year'       },
 ];
 
 function SectionTitle({ children, accent = '#C8102E' }: { children: React.ReactNode; accent?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
       <div style={{ width: 3, height: 14, borderRadius: 2, background: accent, flexShrink: 0 }} />
-      <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+      <p style={{
+        fontSize: 'var(--text-xs)', fontWeight: 700,
+        color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em',
+      }}>
         {children}
       </p>
     </div>
@@ -54,7 +65,7 @@ function SectionTitle({ children, accent = '#C8102E' }: { children: React.ReactN
 
 export default function BusinessDashboard() {
   const { user } = useAuthStore();
-  const router = useRouter();
+  const router   = useRouter();
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getPeriodDates(period);
 
@@ -77,7 +88,7 @@ export default function BusinessDashboard() {
   });
 
   const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
+  const currentYear  = new Date().getFullYear();
   const { data: monthlyGoal } = useQuery({
     queryKey: ['monthlyGoal', currentMonth, currentYear],
     queryFn: () => analyticsApi.getMonthlyGoal({ month: currentMonth, year: currentYear }),
@@ -103,22 +114,22 @@ export default function BusinessDashboard() {
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const isLoss = summary ? summary.net_profit < 0 : false;
+  const isLoss    = summary ? summary.net_profit < 0 : false;
   const recentJobs = recentJobsData?.items ?? [];
 
-  // Live clock for ATM card display
+  // Live clock for ATM card
   const [clock, setClock] = useState<Date>(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const clockTime = clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const clockDate = format(clock, 'dd MMM').toUpperCase();
+  const clockTime  = clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const clockDate  = format(clock, 'dd MMM').toUpperCase();
   const cardExpiry = format(clock, 'MM/yy');
 
   return (
     <div>
-      {/* ── Greeting ────────────────────────────────────────────── */}
+      {/* ── Greeting ─────────────────────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
         style={{ marginBottom: 'var(--space-5)' }}>
         <p style={{
@@ -128,15 +139,14 @@ export default function BusinessDashboard() {
           {greeting}
         </p>
         <h2 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'var(--text-xl)', fontWeight: 800,
-          color: 'var(--text-primary)', letterSpacing: '-0.01em',
+          fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)',
+          fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em',
         }}>
           {user?.name?.split(' ')[0] ?? 'Welcome'}
         </h2>
       </motion.div>
 
-      {/* ── Low-stock alert ─────────────────────────────────────── */}
+      {/* ── Low-stock alert ──────────────────────────────────────── */}
       {lowStockCount > 0 && (
         <motion.div variants={fadeUp} initial="initial" animate="animate"
           style={{
@@ -155,7 +165,8 @@ export default function BusinessDashboard() {
                 {lowStockCount} item{lowStockCount !== 1 ? 's' : ''} running low
               </p>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 1 }}>
-                {lowStockItems.slice(0, 3).map(i => i.name).join(', ')}{lowStockCount > 3 ? ` +${lowStockCount - 3} more` : ''}
+                {lowStockItems.slice(0, 3).map(i => i.name).join(', ')}
+                {lowStockCount > 3 ? ` +${lowStockCount - 3} more` : ''}
               </p>
             </div>
           </div>
@@ -171,33 +182,51 @@ export default function BusinessDashboard() {
         </motion.div>
       )}
 
-      {/* ── Period selector ─────────────────────────────────────── */}
+      {/* ── Period + Analytics link ───────────────────────────────── */}
       <div style={{
-        display: 'flex', gap: 5, marginBottom: 'var(--space-5)',
-        overflowX: 'auto', scrollbarWidth: 'none',
-        paddingBottom: 2,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 8, marginBottom: 'var(--space-5)',
       }}>
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            onClick={() => setPeriod(p.key)}
-            style={{
-              padding: '6px 16px', borderRadius: 20,
-              border: period === p.key ? 'none' : '1px solid var(--border-subtle)',
-              cursor: 'pointer',
-              fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
-              background: period === p.key ? '#C8102E' : 'transparent',
-              color: period === p.key ? '#fff' : 'var(--text-muted)',
-              boxShadow: period === p.key ? '0 2px 10px rgba(200,16,46,0.38)' : 'none',
-              transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', flexShrink: 0,
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
+        <div style={{
+          display: 'flex', gap: 5,
+          overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2, flex: 1,
+        }}>
+          {PERIODS.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setPeriod(p.key)}
+              style={{
+                padding: '6px 14px', borderRadius: 20,
+                border: period === p.key ? 'none' : '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+                fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
+                background: period === p.key ? '#C8102E' : 'transparent',
+                color: period === p.key ? '#fff' : 'var(--text-muted)',
+                boxShadow: period === p.key ? '0 2px 10px rgba(200,16,46,0.38)' : 'none',
+                transition: 'all 0.2s', flexShrink: 0,
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Analytics quick link */}
+        <Link href="/business/analytics" style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: 'var(--text-xs)', fontWeight: 700, color: '#C8102E',
+          textDecoration: 'none', flexShrink: 0,
+          padding: '6px 12px', borderRadius: 20,
+          border: '1px solid rgba(200,16,46,0.25)',
+          background: 'rgba(200,16,46,0.07)',
+          whiteSpace: 'nowrap',
+        }}>
+          <LineChart size={12} />
+          Analytics
+        </Link>
       </div>
 
-      {/* ── ATM Card Hero ────────────────────────────────────────── */}
+      {/* ── ATM Card — Revenue as primary ────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
         style={{ marginBottom: 'var(--space-5)', perspective: '1000px' }}>
 
@@ -212,7 +241,7 @@ export default function BusinessDashboard() {
           <div className="atm-card-shimmer" />
           <div className="atm-card-texture" />
 
-          {/* Corner radial light */}
+          {/* Corner radial lights */}
           <div style={{
             position: 'absolute', top: '-35%', right: '-15%',
             width: '55%', height: '100%',
@@ -227,15 +256,13 @@ export default function BusinessDashboard() {
           }} />
 
           <div className="atm-card-inner">
-
             {/* Row 1: Chip + Brand */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div className="atm-chip" />
               <div style={{ textAlign: 'right' }}>
                 <p style={{
                   fontFamily: 'var(--font-display)', fontSize: '0.72rem',
-                  fontWeight: 800, color: 'rgba(255,255,255,0.75)',
-                  letterSpacing: '0.05em',
+                  fontWeight: 800, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.05em',
                 }}>
                   Dash & Co.
                 </p>
@@ -248,9 +275,9 @@ export default function BusinessDashboard() {
               </div>
             </div>
 
-            {/* Row 2: Balance */}
+            {/* Row 2: Total Revenue (primary) */}
             <div>
-              <p className="atm-balance-label">Available Balance</p>
+              <p className="atm-balance-label">Total Revenue</p>
               {isLoading ? (
                 <div className="skeleton" style={{
                   height: '2.6rem', width: '62%',
@@ -258,14 +285,13 @@ export default function BusinessDashboard() {
                 }} />
               ) : (
                 <p className="atm-balance-amount">
-                  {summary ? formatNaira(summary.available_balance) : '—'}
+                  {summary ? formatNaira(summary.total_revenue) : '—'}
                 </p>
               )}
             </div>
 
-            {/* Row 3: Expiry + Live clock  */}
+            {/* Row 3: Expiry + Live clock */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              {/* Left — card-style expiry date */}
               <div>
                 <p style={{
                   fontSize: '0.47rem', color: 'rgba(255,255,255,0.38)',
@@ -279,7 +305,6 @@ export default function BusinessDashboard() {
                 </p>
               </div>
 
-              {/* Right — live date + time */}
               <div style={{ textAlign: 'right' }}>
                 <p style={{
                   fontSize: '0.47rem', color: 'rgba(255,255,255,0.38)',
@@ -312,16 +337,12 @@ export default function BusinessDashboard() {
           </div>
         </div>
 
-        {/* Stats tray */}
+        {/* Stats tray: Expenses | Net Profit | Available Balance */}
         <div className="atm-stats-tray">
           {[
-            { label: 'Revenue', value: summary?.total_revenue, color: 'var(--text-primary)' },
-            { label: 'Expenses', value: summary?.total_expenses, color: 'var(--accent-red)' },
-            {
-              label: isLoss ? 'Loss' : 'Net Profit',
-              value: summary ? Math.abs(summary.net_profit) : undefined,
-              color: isLoss ? 'var(--accent-red)' : 'var(--accent-green)',
-            },
+            { label: 'Expenses',   value: summary?.total_expenses,    color: 'var(--accent-red)'   },
+            { label: isLoss ? 'Loss' : 'Net Profit', value: summary ? Math.abs(summary.net_profit) : undefined, color: isLoss ? 'var(--accent-red)' : 'var(--accent-green)' },
+            { label: 'Balance',    value: summary?.available_balance,  color: 'var(--text-primary)' },
           ].map(({ label, value, color }) => (
             <div key={label} className="atm-stat-cell">
               <p style={{
@@ -341,6 +362,21 @@ export default function BusinessDashboard() {
             </div>
           ))}
         </div>
+
+        {/* View full analytics CTA */}
+        <Link href="/business/analytics" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 10, padding: '10px',
+          background: 'var(--bg-surface)', borderRadius: 14,
+          border: '1px solid var(--border-subtle)',
+          textDecoration: 'none', fontSize: 'var(--text-xs)',
+          fontWeight: 700, color: '#C8102E',
+          transition: 'background 0.15s',
+        }}>
+          <LineChart size={13} />
+          View Full Analytics Report
+          <ChevronRight size={13} />
+        </Link>
       </motion.div>
 
       {/* ── AI Insights ─────────────────────────────────────────── */}
@@ -349,7 +385,7 @@ export default function BusinessDashboard() {
         period={period === 'week' ? 'This Week' : period === 'year' ? 'This Year' : 'This Month'}
       />
 
-      {/* ── Quick stat grid ──────────────────────────────────────── */}
+      {/* ── Clickable stat grid ───────────────────────────────────── */}
       <motion.div variants={stagger} initial="initial" animate="animate"
         className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
         <StatWidget
@@ -360,6 +396,7 @@ export default function BusinessDashboard() {
           accent="warning"
           icon={<HandCoins size={14} />}
           loading={isLoading}
+          onClick={() => router.push('/business/tithe')}
         />
         <StatWidget
           label="Pending Jobs"
@@ -369,6 +406,7 @@ export default function BusinessDashboard() {
           accent="neutral"
           icon={<Wrench size={14} />}
           loading={isLoading}
+          onClick={() => router.push('/business/repairs')}
         />
         <StatWidget
           label="Inventory Value"
@@ -378,6 +416,7 @@ export default function BusinessDashboard() {
           accent="investment"
           icon={<Package size={14} />}
           loading={isLoading}
+          onClick={() => router.push('/business/inventory')}
         />
         <StatWidget
           label="Low Stock"
@@ -387,6 +426,7 @@ export default function BusinessDashboard() {
           accent={summary && summary.low_stock_count > 5 ? 'loss' : 'warning'}
           icon={<AlertTriangle size={14} />}
           loading={isLoading}
+          onClick={() => router.push('/business/inventory')}
         />
       </motion.div>
 
@@ -394,64 +434,66 @@ export default function BusinessDashboard() {
       {period === 'month' && monthlyGoal && (monthlyGoal.revenue_target > 0 || monthlyGoal.profit_target > 0) && (
         <motion.div variants={fadeUp} initial="initial" animate="animate"
           style={{
-            background: 'var(--bg-surface)',
-            borderRadius: 20, padding: 'var(--space-5)',
-            marginBottom: 'var(--space-4)',
+            background: 'var(--bg-surface)', borderRadius: 20,
+            padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
             border: '1px solid var(--border-subtle)',
           }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
             <SectionTitle>Monthly Goals — {format(new Date(), 'MMMM')}</SectionTitle>
-            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 12px' }} onClick={() => {
-              setGoalForm({ revenue_target: Number(monthlyGoal.revenue_target), profit_target: Number(monthlyGoal.profit_target) });
-              setEditGoalOpen(true);
-            }}>
+            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 12px' }}
+              onClick={() => {
+                setGoalForm({ revenue_target: Number(monthlyGoal.revenue_target), profit_target: Number(monthlyGoal.profit_target) });
+                setEditGoalOpen(true);
+              }}>
               Edit
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            {monthlyGoal.revenue_target > 0 && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>Revenue</p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {summary ? formatNaira(summary.total_revenue) : '₦0'} / {formatNaira(monthlyGoal.revenue_target)}
+            {monthlyGoal.revenue_target > 0 && (() => {
+              const pct = Math.min(100, (Number(summary?.total_revenue || 0) / Number(monthlyGoal.revenue_target)) * 100);
+              return (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>Revenue</p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {summary ? formatNaira(summary.total_revenue) : '₦0'} / {formatNaira(monthlyGoal.revenue_target)}
+                    </p>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #C8102E, #E8183A)', width: `${pct}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                  </div>
+                  <p style={{ fontSize: '0.57rem', color: pct >= 100 ? 'var(--accent-green)' : 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
+                    {pct >= 100 ? '✓ Target reached!' : `${pct.toFixed(0)}% of target`}
                   </p>
                 </div>
-                <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #C8102E, #E8183A)',
-                    width: `${Math.min(100, (Number(summary?.total_revenue || 0) / Number(monthlyGoal.revenue_target)) * 100)}%`,
-                    borderRadius: 3, transition: 'width 0.6s ease',
-                  }} />
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
-            {monthlyGoal.profit_target > 0 && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>Profit</p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {summary ? formatNaira(Math.abs(summary.net_profit)) : '₦0'} / {formatNaira(monthlyGoal.profit_target)}
+            {monthlyGoal.profit_target > 0 && (() => {
+              const pct = Math.min(100, (Number(summary?.net_profit || 0) / Number(monthlyGoal.profit_target)) * 100);
+              return (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>Profit</p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {summary ? formatNaira(Math.abs(summary.net_profit)) : '₦0'} / {formatNaira(monthlyGoal.profit_target)}
+                    </p>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #10B981, #34D399)', width: `${Math.max(pct, 0)}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                  </div>
+                  <p style={{ fontSize: '0.57rem', color: pct >= 100 ? 'var(--accent-green)' : 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
+                    {pct >= 100 ? '✓ Target reached!' : isLoss ? 'Net loss this period' : `${pct.toFixed(0)}% of target`}
                   </p>
                 </div>
-                <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #10B981, #34D399)',
-                    width: `${Math.min(100, (Number(summary?.net_profit || 0) / Number(monthlyGoal.profit_target)) * 100)}%`,
-                    borderRadius: 3, transition: 'width 0.6s ease',
-                  }} />
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </motion.div>
       )}
 
-      {/* ── Edit Goals Modal ─────────────────────────────────────── */}
+      {/* Edit Goals Modal */}
       <Modal
         isOpen={editGoalOpen}
         onClose={() => setEditGoalOpen(false)}
@@ -475,15 +517,13 @@ export default function BusinessDashboard() {
         </div>
       </Modal>
 
-      {/* ── Set Goals Prompt ─────────────────────────────────────── */}
+      {/* Set Goals Prompt */}
       {period === 'month' && monthlyGoal && monthlyGoal.revenue_target == 0 && monthlyGoal.profit_target == 0 && (
         <motion.div variants={fadeUp} initial="initial" animate="animate"
           style={{
-            background: 'var(--bg-surface)',
-            borderRadius: 20, padding: 'var(--space-5)',
-            marginBottom: 'var(--space-4)',
-            border: '1px dashed var(--border-subtle)',
-            textAlign: 'center',
+            background: 'var(--bg-surface)', borderRadius: 20,
+            padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
+            border: '1px dashed var(--border-subtle)', textAlign: 'center',
           }}>
           <Target size={24} style={{ color: 'var(--text-muted)', margin: '0 auto var(--space-3)' }} />
           <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>Set a Monthly Goal</p>
@@ -496,7 +536,7 @@ export default function BusinessDashboard() {
         </motion.div>
       )}
 
-      {/* ── Revenue chart ────────────────────────────────────────── */}
+      {/* ── Revenue chart ─────────────────────────────────────────── */}
       {trendData && trendData.length > 0 && (
         <motion.div {...scrollFadeUp}
           style={{
@@ -504,12 +544,20 @@ export default function BusinessDashboard() {
             padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
             border: '1px solid var(--border-subtle)',
           }}>
-          <SectionTitle>Revenue vs Expenses</SectionTitle>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+            <SectionTitle>Revenue vs Expenses</SectionTitle>
+            <Link href="/business/analytics" style={{
+              fontSize: 'var(--text-xs)', fontWeight: 700, color: '#C8102E',
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
+            }}>
+              Full view <ChevronRight size={12} />
+            </Link>
+          </div>
           <RevenueAreaChart data={trendData} />
         </motion.div>
       )}
 
-      {/* ── Recent repairs ───────────────────────────────────────── */}
+      {/* ── Recent repairs ─────────────────────────────────────────── */}
       <motion.div {...scrollFadeUp}
         style={{
           background: 'var(--bg-surface)', borderRadius: 20,
@@ -547,15 +595,20 @@ export default function BusinessDashboard() {
         )}
       </motion.div>
 
-      {/* ── Expense breakdown ────────────────────────────────────── */}
+      {/* ── Expense breakdown ─────────────────────────────────────── */}
       {expenseBreakdown && expenseBreakdown.length > 0 && (
         <motion.div {...scrollFadeUp}
           style={{
             background: 'var(--bg-surface)', borderRadius: 20,
-            padding: 'var(--space-5)',
-            border: '1px solid var(--border-subtle)',
+            padding: 'var(--space-5)', border: '1px solid var(--border-subtle)',
+            marginBottom: 'var(--space-4)',
           }}>
-          <SectionTitle>Expense Breakdown</SectionTitle>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+            <SectionTitle accent="#EF4444">Expense Breakdown</SectionTitle>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+              Includes tithe paid, damage & inventory costs
+            </p>
+          </div>
           <ExpensePieChart data={expenseBreakdown} />
         </motion.div>
       )}

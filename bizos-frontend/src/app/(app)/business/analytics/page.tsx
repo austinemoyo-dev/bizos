@@ -12,7 +12,7 @@ import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   subWeeks, subMonths, subDays, eachDayOfInterval, parseISO, differenceInDays,
 } from 'date-fns';
-import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Wrench, Flame } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Wrench, Flame, BarChart2 } from 'lucide-react';
 import { fadeUp, stagger } from '@/lib/motion-variants';
 
 // ── Period definitions ──────────────────────────────────────────────────────
@@ -268,50 +268,100 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      {/* Performance verdict */}
+      {/* ── Hero: Revenue as primary ─────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
         className={`glass-panel-hero ${isBetter ? '' : 'loss'}`}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-2)' }}>
-              <div className="section-icon" style={{ background: isBetter ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' }}>
-                {isBetter ? <TrendingUp size={16} style={{ color: '#10B981' }} /> : <TrendingDown size={16} style={{ color: '#EF4444' }} />}
-              </div>
-              <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {isBetter ? 'Profitable' : 'Under Pressure'} · {current.label}
-              </p>
+
+        {/* Revenue — primary metric */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-2)' }}>
+            <div className="section-icon" style={{ background: 'rgba(200,16,46,0.25)' }}>
+              <DollarSign size={15} style={{ color: '#fff' }} />
             </div>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.4rem,5vw,2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-              {curProfit >= 0 ? '+' : ''}{formatNaira(curProfit)}
+            <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Total Revenue · {current.label}
             </p>
-            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>Net profit · {current.label.toLowerCase()}</p>
           </div>
-          {profitChange !== null && (
-            <div className="glass-inner" style={{ textAlign: 'center', flexShrink: 0 }}>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800, color: '#fff' }}>
-                {isBetter ? '+' : ''}{profitChange.toFixed(1)}%
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.6rem,6vw,2.4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+            {formatNaira(curSummary?.total_revenue ?? 0)}
+          </p>
+          {(() => {
+            const c = pct(curSummary?.total_revenue ?? 0, prevSummary?.total_revenue ?? 0);
+            const up = (curSummary?.total_revenue ?? 0) >= (prevSummary?.total_revenue ?? 0);
+            return c !== null ? (
+              <p style={{ fontSize: '0.62rem', color: up ? 'rgba(52,211,153,0.9)' : 'rgba(248,113,113,0.9)', marginTop: 4, fontWeight: 700 }}>
+                {up ? '↑' : '↓'} {Math.abs(c).toFixed(1)}% vs {previous.label.toLowerCase()}
               </p>
-              <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>vs {previous.label.toLowerCase()}</p>
-            </div>
-          )}
+            ) : null;
+          })()}
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--space-5)', marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-          {([['Revenue', curSummary?.total_revenue ?? 0, prevSummary?.total_revenue ?? 0],
-             ['Expenses', curSummary?.total_expenses ?? 0, prevSummary?.total_expenses ?? 0]] as [string, number, number][]).map(([lbl, cur, prev]) => {
-            const c = pct(cur, prev);
-            const up = cur >= prev;
-            const expColor = lbl === 'Expenses' ? (up ? 'rgba(239,68,68,0.8)' : 'rgba(16,185,129,0.8)') : (up ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)');
+        {/* Secondary metrics row */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
+          gap: 1, marginTop: 'var(--space-4)',
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: 14, overflow: 'hidden',
+          position: 'relative', zIndex: 1,
+        }}>
+          {([
+            ['Expenses',   curSummary?.total_expenses ?? 0, prevSummary?.total_expenses ?? 0, false],
+            ['Net Profit', curSummary?.net_profit     ?? 0, prevSummary?.net_profit     ?? 0, true ],
+            ['Balance',    curSummary?.available_balance ?? 0, prevSummary?.available_balance ?? 0, true],
+          ] as [string, number, number, boolean][]).map(([lbl, cur, prev, positiveIsGood]) => {
+            const c   = pct(cur, prev);
+            const up  = cur >= prev;
+            const col = positiveIsGood
+              ? (up ? 'rgba(52,211,153,0.85)' : 'rgba(248,113,113,0.85)')
+              : (up ? 'rgba(248,113,113,0.85)' : 'rgba(52,211,153,0.85)');
             return (
-              <div key={lbl}>
-                <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.45)' }}>{lbl}</p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: '#fff', fontWeight: 700 }}>{formatCompact(cur)}</p>
-                {c !== null && <p style={{ fontSize: '0.6rem', fontWeight: 700, color: expColor }}>{up ? '↑' : '↓'} {Math.abs(c).toFixed(1)}%</p>}
+              <div key={lbl} style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.15)' }}>
+                <p style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+                  {lbl}
+                </p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {formatCompact(Math.abs(cur))}
+                </p>
+                {c !== null && (
+                  <p style={{ fontSize: '0.52rem', fontWeight: 700, color: col, marginTop: 2 }}>
+                    {up ? '↑' : '↓'}{Math.abs(c).toFixed(1)}%
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* Profit verdict badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          marginTop: 'var(--space-3)', position: 'relative', zIndex: 1,
+          background: isBetter ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+          border: `1px solid ${isBetter ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          borderRadius: 20, padding: '4px 12px',
+          fontSize: '0.6rem', fontWeight: 700, color: '#fff',
+        }}>
+          {isBetter ? <TrendingUp size={11} style={{ color: '#10B981' }} /> : <TrendingDown size={11} style={{ color: '#EF4444' }} />}
+          {isBetter ? 'Profitable' : 'Under Pressure'} — Net {formatCompact(Math.abs(curProfit))}
+          {profitChange !== null && ` (${isBetter ? '+' : ''}${profitChange.toFixed(1)}%)`}
+        </div>
       </motion.div>
+
+      {/* Expenses explanation note */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        background: 'rgba(245,158,11,0.07)',
+        border: '1px solid rgba(245,158,11,0.2)',
+        borderLeft: '3px solid var(--accent-amber)',
+        borderRadius: 12, padding: '10px 14px',
+        marginBottom: 'var(--space-3)',
+      }}>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          <strong style={{ color: 'var(--accent-amber)' }}>About Expenses: </strong>
+          Total expenses include inventory restocks, damage losses, and <em>paid tithe</em> (tithe is recorded as an expense only when marked paid).
+          Net profit = Revenue − expenses (excluding unpaid tithe). Available balance = Profit − paid tithe.
+        </p>
+      </div>
 
       {/* Metric selector + chart */}
       <motion.div variants={fadeUp} initial="initial" animate="animate" className="glass-panel">

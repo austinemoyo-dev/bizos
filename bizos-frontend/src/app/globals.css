@@ -1489,99 +1489,145 @@ input[type=number]::-webkit-inner-spin-button {
 @media (max-width: 767px) {
   .mobile-bottom-nav {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     position: fixed;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    left: 16px;
-    right: 16px;
-    height: 62px;
-    border-radius: 28px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 14px;
+    right: 14px;
+    height: 64px;
+    border-radius: 24px;
     z-index: 1000;
+    padding: 6px 6px;
+    gap: 2px;
 
-    /* Liquid glass pill */
-    background: rgba(14, 16, 20, 0.82);
-    backdrop-filter: blur(40px) saturate(1.8);
-    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    background: rgba(12, 14, 18, 0.88);
+    backdrop-filter: blur(48px) saturate(2);
+    -webkit-backdrop-filter: blur(48px) saturate(2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 8px 32px rgba(0, 0, 0, 0.5),
-      0 2px 8px rgba(0, 0, 0, 0.3);
-
-    /* Inner top shine */
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 12px 40px rgba(0, 0, 0, 0.55),
+      0 4px 12px rgba(0, 0, 0, 0.35);
     overflow: hidden;
   }
 
   [data-theme="light"] .mobile-bottom-nav {
-    background: rgba(255, 253, 250, 0.88);
-    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 252, 248, 0.92);
+    border-color: rgba(0, 0, 0, 0.09);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 4px 20px rgba(0, 0, 0, 0.1);
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
-  /* Nav items */
+  /* Each nav item fills height, uses flexbox column */
   .mobile-nav-item {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 0 4px;
+    gap: 4px;
+    padding: 0 3px;
     color: var(--text-muted);
-    font-size: 0.58rem;
+    font-size: 0.55rem;
     font-weight: 600;
     text-decoration: none;
-    letter-spacing: 0.02em;
-    transition: color 0.18s;
+    letter-spacing: 0.03em;
+    transition: color 0.2s;
     background: none;
     border: none;
     cursor: pointer;
     font-family: var(--font-ui);
+    border-radius: 18px;
+    position: relative;
   }
 
-  /* Active item — accent colour + subtle icon bubble */
+  /* Active item text + icon color */
   .mobile-nav-item.active {
     color: var(--accent-primary);
   }
 
+  /* Icon pill container */
   .mobile-nav-icon {
-    width: 40px;
-    height: 36px;
-    border-radius: 50px;
+    width: 44px;
+    height: 32px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition:
-      background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.22s;
+      background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s;
+    position: relative;
   }
 
+  /* Active icon pill — crimson tinted with shadow glow */
   .mobile-nav-item.active .mobile-nav-icon {
-    background: linear-gradient(135deg, rgba(200,16,46,0.22), rgba(200,16,46,0.08));
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(200,16,46,0.28);
+    background: linear-gradient(
+      145deg,
+      rgba(200, 16, 46, 0.28) 0%,
+      rgba(200, 16, 46, 0.12) 100%
+    );
+    transform: translateY(-3px);
+    box-shadow:
+      0 6px 18px rgba(200, 16, 46, 0.32),
+      0 2px 6px rgba(200, 16, 46, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
-  /* Active glowing dot under icon */
-  .mobile-nav-item.active::after {
+  /* Active indicator dot ABOVE icon (floating pill indicator) */
+  .mobile-nav-item.active .mobile-nav-icon::after {
     content: '';
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
     background: var(--accent-primary);
-    margin: -2px auto 0;
-    box-shadow: 0 0 8px rgba(200,16,46,0.8), 0 0 16px rgba(200,16,46,0.4);
-    animation: glowPulse 2.5s ease infinite;
+    box-shadow: 0 0 8px rgba(200, 16, 46, 0.8);
   }
 
+  /* Tap press effect */
   .mobile-nav-item:active .mobile-nav-icon {
-    transform: scale(0.88);
-    opacity: 0.75;
-    transition: transform 0.08s, opacity 0.08s;
+    transform: scale(0.86) translateY(0);
+    opacity: 0.8;
+    transition: transform 0.07s, opacity 0.07s;
+  }
+
+  /* "More" active uses same as regular active */
+  .mobile-nav-item.more-active {
+    color: var(--accent-primary);
+  }
+
+  .mobile-nav-item.more-active .mobile-nav-icon {
+    background: linear-gradient(
+      145deg,
+      rgba(200, 16, 46, 0.28) 0%,
+      rgba(200, 16, 46, 0.12) 100%
+    );
+    transform: translateY(-3px);
+    box-shadow:
+      0 6px 18px rgba(200, 16, 46, 0.32),
+      0 2px 6px rgba(200, 16, 46, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .mobile-nav-item.more-active .mobile-nav-icon::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent-primary);
+    box-shadow: 0 0 8px rgba(200, 16, 46, 0.8);
   }
 }
 

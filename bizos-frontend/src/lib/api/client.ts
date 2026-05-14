@@ -27,19 +27,33 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   }
 
   let response: Response;
+  // Abort writes after 20 s so the spinner never hangs forever
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  const controller  = isMutation ? new AbortController() : undefined;
+  const timeoutId   = controller
+    ? setTimeout(() => controller.abort(), 20_000)
+    : undefined;
+
   try {
     response = await fetch(`${API_BASE}${endpoint}`, {
       ...fetchOptions,
       headers,
+      signal: controller?.signal,
       // credentials: 'include' sends the HttpOnly refresh_token cookie on every request,
       // which is required for the /auth/refresh endpoint to work from the browser
       credentials: 'include',
     });
   } catch (err) {
+    clearTimeout(timeoutId);
+    // Remap AbortError (our own timeout) to a friendly message
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('Request timed out — please check your connection and try again.');
+    }
     const queued = await queueOfflineMutation<T>(endpoint, method, options.body, err);
     if (queued) return queued;
     throw err;
   }
+  clearTimeout(timeoutId);
 
   if (response.status === 401) {
     if (skipAuth || endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || options._retry) {
