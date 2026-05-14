@@ -1,3 +1,6 @@
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+const apiOrigin = (() => { try { return new URL(apiUrl).origin; } catch { return apiUrl; } })();
+
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -13,19 +16,12 @@ const withPWA = require('next-pwa')({
       },
     },
     {
-      // Match the full cross-origin API URL (e.g. https://bizos-api-6csi.onrender.com/api/v1/*)
-      // /^\/api\// only matches same-origin paths and won't work for Render/Fly deployments
       urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
       handler: 'NetworkFirst',
       options: { cacheName: 'api-cache', networkTimeoutSeconds: 5 },
     },
   ],
 });
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
-// CSP connect-src needs just the origin (no path) — a path without trailing slash
-// only matches that exact path, blocking /api/v1/auth/login, /api/v1/repairs, etc.
-const apiOrigin = (() => { try { return new URL(apiUrl).origin; } catch { return apiUrl; } })();
 
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control',  value: 'on' },
@@ -38,7 +34,6 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Next.js needs unsafe-eval in dev; unsafe-inline for hydration chunks
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
