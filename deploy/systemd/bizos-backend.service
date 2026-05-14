@@ -1,0 +1,28 @@
+[Unit]
+Description=BizOS FastAPI Backend
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/bizos/backend
+EnvironmentFile=/var/www/bizos/backend/.env
+ExecStart=/var/www/bizos/backend/venv/bin/gunicorn main:app -c gunicorn.conf.py
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+# Security hardening
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/www/bizos/backend /var/log/bizos
+
+[Install]
+WantedBy=multi-user.target

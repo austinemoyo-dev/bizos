@@ -2,16 +2,16 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 
 from models.personal import PersonalTxType
 
 
 class PersonalTransactionCreate(BaseModel):
     type: PersonalTxType
-    category: str
-    amount: Decimal
-    description: Optional[str] = None
+    category: str = Field(min_length=1, max_length=100)
+    amount: Decimal = Field(gt=Decimal("0"))
+    description: Optional[str] = Field(None, max_length=500)
     transaction_date: Optional[date] = None
 
 
@@ -37,14 +37,14 @@ class PersonalSummary(BaseModel):
 
 
 class SavingsGoalCreate(BaseModel):
-    name: str
-    target_amount: Decimal
+    name: str = Field(min_length=1, max_length=200)
+    target_amount: Decimal = Field(gt=Decimal("0"))
     target_date: Optional[date] = None
 
 
 class SavingsGoalUpdate(BaseModel):
-    current_amount: Optional[Decimal] = None
-    target_amount: Optional[Decimal] = None
+    current_amount: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    target_amount: Optional[Decimal] = Field(None, gt=Decimal("0"))
     target_date: Optional[date] = None
 
 

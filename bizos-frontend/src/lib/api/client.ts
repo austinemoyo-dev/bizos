@@ -21,29 +21,32 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...fetchOptions,
     headers,
+    // credentials: 'include' sends the HttpOnly refresh_token cookie on every request,
+    // which is required for the /auth/refresh endpoint to work from the browser
+    credentials: 'include',
   });
 
   if (response.status === 401) {
     if (skipAuth || endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || options._retry) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('bizos_user');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
       throw new Error('Unauthorized');
     }
-    
+
     const refreshed = await attemptRefresh();
     if (refreshed) {
       options._retry = true;
       return request<T>(endpoint, options);
     }
-    
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('bizos_user');
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');
@@ -70,18 +73,21 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
 async function attemptRefresh(): Promise<boolean> {
   try {
-    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-    if (!refreshToken) return false;
+    // No body needed — the refresh_token is sent automatically via HttpOnly cookie.
+    // credentials: 'include' ensures the cookie is attached to this cross-origin request.
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: 'include',
+      body: JSON.stringify({}),
     });
     if (!res.ok) return false;
     const data = await res.json();
     localStorage.setItem('access_token', data.access_token);
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 /** Backend returns plain arrays — normalise to the PaginatedResponse shape the frontend expects. */
@@ -93,13 +99,13 @@ export function toPage<T>(data: T[] | { items: T[]; total: number; page: number;
 }
 
 export const api = {
-  get: <T>(url: string, opts?: RequestOptions) =>
+  get:    <T>(url: string, opts?: RequestOptions) =>
     request<T>(url, { method: 'GET', ...opts }),
-  post: <T>(url: string, body?: unknown, opts?: RequestOptions) =>
+  post:   <T>(url: string, body?: unknown, opts?: RequestOptions) =>
     request<T>(url, { method: 'POST', body: JSON.stringify(body), ...opts }),
-  put: <T>(url: string, body?: unknown, opts?: RequestOptions) =>
+  put:    <T>(url: string, body?: unknown, opts?: RequestOptions) =>
     request<T>(url, { method: 'PUT', body: JSON.stringify(body), ...opts }),
-  patch: <T>(url: string, body?: unknown, opts?: RequestOptions) =>
+  patch:  <T>(url: string, body?: unknown, opts?: RequestOptions) =>
     request<T>(url, { method: 'PATCH', body: JSON.stringify(body), ...opts }),
   delete: <T>(url: string, opts?: RequestOptions) =>
     request<T>(url, { method: 'DELETE', ...opts }),

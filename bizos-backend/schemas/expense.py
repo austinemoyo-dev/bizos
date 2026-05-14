@@ -2,23 +2,23 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 
 from models.expense import ExpenseCategory
 
 
 class ExpenseCreate(BaseModel):
     category: ExpenseCategory
-    amount: Decimal
-    description: Optional[str] = None
+    amount: Decimal = Field(gt=Decimal("0"))
+    description: Optional[str] = Field(None, max_length=500)
     reference_id: Optional[UUID4] = None
     expense_date: Optional[date] = None
 
 
 class ExpenseUpdate(BaseModel):
     category: Optional[ExpenseCategory] = None
-    amount: Optional[Decimal] = None
-    description: Optional[str] = None
+    amount: Optional[Decimal] = Field(None, gt=Decimal("0"))
+    description: Optional[str] = Field(None, max_length=500)
     expense_date: Optional[date] = None
 
 

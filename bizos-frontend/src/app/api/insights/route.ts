@@ -4,8 +4,14 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export async function POST(req: NextRequest) {
+  // Require a valid Bearer token — prevents unauthenticated API cost burn
+  const auth = req.headers.get('authorization');
+  if (!auth?.startsWith('Bearer ') || auth.length < 20) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   if (!GROQ_API_KEY) {
-    return NextResponse.json({ error: 'GROQ_API_KEY not set in .env.local' }, { status: 500 });
+    return NextResponse.json({ error: 'AI insights not configured on this server' }, { status: 503 });
   }
 
   const body = await req.json();

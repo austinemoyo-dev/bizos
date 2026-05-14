@@ -11,8 +11,7 @@ import { StatWidget } from '@/components/shared/StatWidget';
 import { formatNaira, formatDate } from '@/lib/format';
 import { Investment, InvestmentCreate } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Loader2, TrendingUp } from 'lucide-react';
 
 const columns: Column<Investment>[] = [
   { key: 'party_name', label: 'Investor' },
@@ -61,8 +60,8 @@ export default function InvestmentsPage() {
     queryFn: () => investmentsApi.list('investment'),
   });
 
-  const totalReceived   = items.reduce((s, i) => s + i.amount, 0);
-  const totalActive     = items.filter((i) => !i.is_settled).reduce((s, i) => s + i.balance_outstanding, 0);
+  const totalReceived = items.reduce((s, i) => s + Number(i.amount), 0);
+  const totalActive   = items.filter((i) => !i.is_settled).reduce((s, i) => s + Number(i.balance_outstanding), 0);
   const activeCount     = items.filter((i) => !i.is_settled).length;
 
   const handleSubmit = async (e: React.FormEvent) => {

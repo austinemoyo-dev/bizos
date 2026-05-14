@@ -258,9 +258,10 @@ export interface FoodCreditCreate {
 
 export interface FoodVendorPayment {
   id: string;
-  credit_ids: string[];
-  total_amount: number;
+  vendor_name: string;
+  amount_paid: number;
   paid_at: string;
+  note?: string;
 }
 
 // Savings

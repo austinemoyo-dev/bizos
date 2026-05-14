@@ -44,13 +44,16 @@ def list_jobs(
     device_type: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    q: Optional[str] = None,
+    q: Optional[str] = Query(None, max_length=100),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
     query = db.query(RepairJob).options(joinedload(RepairJob.parts))
     if status:
-        statuses = [s.strip() for s in status.split(",")]
+        try:
+            statuses = [RepairStatus(s.strip()) for s in status.split(",")]
+        except ValueError:
+            raise HTTPException(400, "Invalid status value")
         query = query.filter(RepairJob.status.in_(statuses))
     if device_type:
         query = query.filter(RepairJob.device_type == device_type)

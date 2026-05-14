@@ -18,13 +18,13 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', padding: 'var(--space-16)',
+        justifyContent: 'center', padding: 'var(--space-10) var(--space-6)',
         gap: 'var(--space-4)', textAlign: 'center',
       }}
     >
       {/* Icon container */}
       <div style={{
-        width: 72, height: 72, borderRadius: 24,
+        width: 64, height: 64, borderRadius: 20,
         background: 'var(--glass-bg-light)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
@@ -33,19 +33,20 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         color: 'var(--text-muted)',
         boxShadow: 'var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.06)',
         position: 'relative', overflow: 'hidden',
+        flexShrink: 0,
       }}>
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)',
           pointerEvents: 'none',
         }} />
-        {icon ?? <PackageOpen size={32} strokeWidth={1.5} />}
+        {icon ?? <PackageOpen size={28} strokeWidth={1.5} />}
       </div>
 
-      <div>
+      <div style={{ maxWidth: 300 }}>
         <p style={{
           color: 'var(--text-primary)',
-          fontSize: 'var(--text-md)',
+          fontSize: 'var(--text-sm)',
           fontWeight: 600,
           letterSpacing: '-0.01em',
         }}>
@@ -54,10 +55,9 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         {description && (
           <p style={{
             color: 'var(--text-secondary)',
-            fontSize: 'var(--text-sm)',
+            fontSize: 'var(--text-xs)',
             marginTop: 'var(--space-2)',
             lineHeight: 1.6,
-            maxWidth: 280,
           }}>
             {description}
           </p>

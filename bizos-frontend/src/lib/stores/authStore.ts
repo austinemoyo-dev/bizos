@@ -10,7 +10,7 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, token: string, refreshToken: string) => void;
+  setAuth: (user: User, token: string, refreshToken?: string) => void;
   clearAuth: () => void;
   loadFromStorage: () => boolean;
 }
@@ -18,24 +18,28 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  setAuth: (user, token, refreshToken) => {
+
+  setAuth: (user, token, _refreshToken?) => {
+    // Access token: short-lived (15 min), kept in localStorage for page-refresh survival
     localStorage.setItem('access_token', token);
-    localStorage.setItem('refresh_token', refreshToken);
+    // Refresh token: long-lived, stored ONLY in HttpOnly cookie set by the server —
+    // never stored in localStorage where JavaScript can read it
     localStorage.setItem('bizos_user', JSON.stringify(user));
     set({ user, isAuthenticated: true });
   },
+
   clearAuth: () => {
     localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('refresh_token'); // clean up any legacy value
     localStorage.removeItem('bizos_user');
     set({ user: null, isAuthenticated: false });
   },
+
   loadFromStorage: () => {
     try {
-      const token = localStorage.getItem('access_token');
       const userJson = localStorage.getItem('bizos_user');
-      if (token && userJson) {
-        const user = JSON.parse(userJson);
+      if (userJson) {
+        const user = JSON.parse(userJson) as User;
         set({ user, isAuthenticated: true });
         return true;
       }

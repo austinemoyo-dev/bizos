@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Package, Wrench, ShoppingCart,
   Receipt, TrendingUp, HandCoins, ShoppingBag,
-  Wallet, Utensils, PiggyBank, BarChart3,
-  Settings, LogOut, ChevronLeft, ChevronRight, LineChart, Users, Banknote, ScrollText, Printer, Calculator
+  Wallet, Utensils, PiggyBank,
+  Settings, LogOut, ChevronLeft, ChevronRight,
+  LineChart, Users, Banknote, ScrollText, Printer, Calculator,
 } from 'lucide-react';
 import { SyncIndicator } from '../shared/SyncIndicator';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -17,30 +18,32 @@ import { LogoWordmark, LogoMark } from './LogoMark';
 import { useLowStock } from '@/lib/hooks/useLowStock';
 
 const BUSINESS_NAV = [
-  { label: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-  { label: 'Analytics', href: '/business/analytics', icon: LineChart },
-  { label: 'Repairs', href: '/business/repairs', icon: Wrench },
-  { label: 'Customers', href: '/business/customers', icon: Users },
-  { label: 'Inventory', href: '/business/inventory', icon: Package },
-  { label: 'Sales', href: '/business/sales', icon: ShoppingCart },
-  { label: 'Debtors', href: '/business/debtors', icon: ScrollText },
-  { label: 'Calculator', href: '/business/calculator', icon: Calculator },
-  { label: 'Expenses', href: '/business/expenses', icon: Receipt },
-  { label: 'Investor Funding', href: '/business/investments', icon: TrendingUp },
-  { label: 'Loans', href: '/business/loans', icon: Banknote },
-  { label: 'Tithe', href: '/business/tithe', icon: HandCoins },
-  { label: 'Market List', href: '/business/market-list', icon: ShoppingBag },
-  { label: 'Daily Report', href: '/business/reports/daily', icon: Printer },
+  { label: 'Dashboard',       href: '/business/dashboard',      icon: LayoutDashboard },
+  { label: 'Analytics',       href: '/business/analytics',      icon: LineChart       },
+  { label: 'Repairs',         href: '/business/repairs',        icon: Wrench          },
+  { label: 'Customers',       href: '/business/customers',      icon: Users           },
+  { label: 'Inventory',       href: '/business/inventory',      icon: Package         },
+  { label: 'Sales',           href: '/business/sales',          icon: ShoppingCart    },
+  { label: 'Debtors',         href: '/business/debtors',        icon: ScrollText      },
+  { label: 'Calculator',      href: '/business/calculator',     icon: Calculator      },
+  { label: 'Expenses',        href: '/business/expenses',       icon: Receipt         },
+  { label: 'Investments',     href: '/business/investments',    icon: TrendingUp      },
+  { label: 'Loans',           href: '/business/loans',          icon: Banknote        },
+  { label: 'Tithe',           href: '/business/tithe',          icon: HandCoins       },
+  { label: 'Market List',     href: '/business/market-list',    icon: ShoppingBag     },
+  { label: 'Daily Report',    href: '/business/reports/daily',  icon: Printer         },
 ];
 
 const PERSONAL_NAV = [
-  { label: 'Dashboard', href: '/personal/dashboard', icon: LayoutDashboard },
-  { label: 'Analytics', href: '/personal/analytics', icon: LineChart },
-  { label: 'Transactions', href: '/personal/transactions', icon: Wallet },
-  { label: 'Food Vendor', href: '/personal/food-vendor', icon: Utensils },
-  { label: 'Savings', href: '/personal/savings', icon: PiggyBank },
-  { label: 'Tithe', href: '/personal/tithe', icon: HandCoins },
+  { label: 'Dashboard',    href: '/personal/dashboard',    icon: LayoutDashboard },
+  { label: 'Analytics',   href: '/personal/analytics',    icon: LineChart       },
+  { label: 'Transactions', href: '/personal/transactions', icon: Wallet          },
+  { label: 'Food Vendor',  href: '/personal/food-vendor',  icon: Utensils        },
+  { label: 'Savings',      href: '/personal/savings',      icon: PiggyBank       },
+  { label: 'Tithe',        href: '/personal/tithe',        icon: HandCoins       },
 ];
+
+// ── Nav item ──────────────────────────────────────────────────────
 
 interface NavItemProps {
   href: string;
@@ -58,82 +61,58 @@ function NavItem({ href, icon: Icon, label, active, collapsed, color, glow, badg
     <Link
       href={href}
       title={collapsed ? label : undefined}
+      className={`sidebar-nav-item${active ? ' active' : ''}`}
       style={{
-        display: 'flex', alignItems: 'center',
-        gap: collapsed ? 0 : 'var(--space-3)',
-        padding: collapsed ? '10px' : '9px var(--space-3)',
-        borderRadius: 12,
-        fontSize: 'var(--text-sm)', fontWeight: active ? 600 : 400,
-        color: active ? color : 'var(--text-secondary)',
-        background: active ? glow : 'transparent',
-        transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
-        textDecoration: 'none',
-        position: 'relative',
+        '--nav-color': color,
+        '--nav-glow': glow,
         justifyContent: collapsed ? 'center' : 'flex-start',
-        overflow: 'hidden',
-        boxShadow: active ? `0 2px 12px ${glow}` : 'none',
-      }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-          e.currentTarget.style.color = 'var(--text-primary)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = 'var(--text-secondary)';
-        }
-      }}
+        padding: collapsed ? '8px' : '7px 10px',
+        gap: collapsed ? 0 : 10,
+      } as React.CSSProperties}
     >
-      {/* Active left accent bar */}
+      {/* Active accent bar */}
       {active && (
         <span style={{
-          position: 'absolute', left: 0, top: '15%', bottom: '15%',
-          width: 3, borderRadius: '0 3px 3px 0',
-          background: `linear-gradient(180deg, ${color}, ${color}99)`,
-          boxShadow: `0 0 8px ${color}`,
+          position: 'absolute', left: 0, top: '18%', bottom: '18%',
+          width: 2.5, borderRadius: '0 2px 2px 0',
+          background: color,
+          boxShadow: `0 0 6px ${color}99`,
         }} />
       )}
 
-      {/* Active shine overlay */}
-      {active && (
-        <span style={{
-          position: 'absolute', inset: 0, borderRadius: 'inherit',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }} />
-      )}
-
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <Icon size={17} strokeWidth={active ? 2.2 : 1.7} />
+      {/* Icon wrapper */}
+      <span style={{ position: 'relative', flexShrink: 0, lineHeight: 0 }}>
+        <Icon size={15} strokeWidth={active ? 2.3 : 1.8} />
         {badge != null && badge > 0 && collapsed && (
           <span style={{
-            position: 'absolute', top: -5, right: -5,
+            position: 'absolute', top: -4, right: -4,
             background: 'var(--accent-amber)', color: '#000',
-            fontSize: '0.55rem', fontWeight: 800, lineHeight: 1,
-            width: 14, height: 14, borderRadius: '50%',
+            fontSize: '0.5rem', fontWeight: 800, lineHeight: 1,
+            width: 13, height: 13, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 6px rgba(245,158,11,0.5)',
           }}>
             {badge > 9 ? '9+' : badge}
           </span>
         )}
-      </div>
+      </span>
+
+      {/* Label */}
       <AnimatePresence initial={false}>
         {!collapsed && (
           <motion.span
-            initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }}
-            exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.18 }}
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ duration: 0.18 }}
             style={{ whiteSpace: 'nowrap', overflow: 'hidden', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
             {label}
             {badge != null && badge > 0 && (
               <span style={{
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#000',
-                fontSize: '0.6rem', fontWeight: 800, lineHeight: 1,
-                padding: '2px 6px', borderRadius: 20, marginLeft: 'auto',
-                boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+                background: 'var(--accent-amber)', color: '#000',
+                fontSize: '0.55rem', fontWeight: 800,
+                padding: '1px 5px', borderRadius: 20,
+                marginLeft: 'auto',
               }}>
                 {badge}
               </span>
@@ -145,110 +124,147 @@ function NavItem({ href, icon: Icon, label, active, collapsed, color, glow, badg
   );
 }
 
+// ── Section label ─────────────────────────────────────────────────
+
+function SectionHeading({ children, collapsed }: { children: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <div style={{ height: 1, background: 'var(--glass-border)', margin: '6px 8px' }} />;
+  }
+  return (
+    <p style={{
+      fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase',
+      letterSpacing: '0.14em', color: 'var(--text-muted)',
+      padding: '10px 10px 4px',
+    }}>
+      {children}
+    </p>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────
+
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname   = usePathname();
   const { user, clearAuth } = useAuthStore();
-  const router = useRouter();
+  const router     = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const isPersonal = pathname.startsWith('/personal');
   const { count: lowStockCount } = useLowStock();
 
-  const bizColor = '#C8102E';
-  const bizGlow = 'rgba(200,16,46,0.15)';
+  const bizColor      = '#C8102E';
+  const bizGlow       = 'rgba(200,16,46,0.12)';
   const personalColor = '#D4A535';
-  const personalGlow = 'rgba(212,165,53,0.15)';
+  const personalGlow  = 'rgba(212,165,53,0.12)';
+  const accentColor   = isPersonal ? personalColor : bizColor;
 
-  const handleLogout = () => { clearAuth(); router.push('/login'); };
+  const handleLogout = async () => {
+    try { await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
+    clearAuth();
+    router.push('/login');
+  };
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 64 : 240 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        background: 'var(--glass-bg-strong)',
-        backdropFilter: 'blur(24px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
-        borderRight: '1px solid var(--glass-border)',
-        display: 'flex', flexDirection: 'column',
-        height: '100vh', position: 'sticky', top: 0,
-        overflow: 'hidden', flexShrink: 0, zIndex: 100,
-        boxShadow: '4px 0 24px rgba(0,0,0,0.2), inset -1px 0 0 rgba(255,255,255,0.04)',
-      }}
+      className="sidebar"
+      animate={{ width: collapsed ? 52 : 216 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      style={{ flexShrink: 0, borderRadius: 20 }}
     >
-      {/* Top gradient accent */}
+      {/* Accent colour glow along the top edge */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, transparent, ${isPersonal ? personalColor : bizColor}40, transparent)`,
+        position: 'absolute', top: 0, left: 12, right: 12, height: 1,
+        background: `linear-gradient(90deg, transparent, ${accentColor}60, transparent)`,
+        pointerEvents: 'none', zIndex: 1,
+        borderRadius: '0 0 4px 4px',
       }} />
 
-      {/* Logo header */}
+      {/* ── Logo header ─────────────────────────────────────── */}
       <div style={{
         height: 'var(--header-height)',
         display: 'flex', alignItems: 'center',
-        padding: '0 var(--space-4)',
-        borderBottom: '1px solid var(--glass-border)',
-        flexShrink: 0, gap: 'var(--space-3)',
+        padding: '0 12px',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
         justifyContent: collapsed ? 'center' : 'space-between',
-        background: 'rgba(255,255,255,0.02)',
+        gap: 8,
+        position: 'relative', zIndex: 1,
       }}>
         <AnimatePresence initial={false} mode="wait">
           {collapsed ? (
-            <motion.div key="mark" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}>
-              <LogoMark size={26} color={isPersonal ? personalColor : bizColor} />
+            <motion.div key="mark"
+              initial={{ opacity: 0, scale: 0.75 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.75 }}
+              transition={{ duration: 0.15 }}
+            >
+              <LogoMark size={22} color={accentColor} />
             </motion.div>
           ) : (
-            <motion.div key="wordmark" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="wordmark"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
               <LogoWordmark scope={isPersonal ? 'personal' : 'business'} />
             </motion.div>
           )}
         </AnimatePresence>
 
         {!collapsed && (
-          <button onClick={() => setCollapsed(true)} className="btn-icon"
-            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 8 }} aria-label="Collapse">
-            <ChevronLeft size={14} />
+          <button
+            className="btn-icon"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse sidebar"
+            style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0 }}
+          >
+            <ChevronLeft size={13} />
           </button>
         )}
       </div>
 
-      {/* Expand button */}
+      {/* ── Expand button (collapsed state) ─────────────────── */}
       {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
+          aria-label="Expand sidebar"
           style={{
-            margin: 'var(--space-2)', padding: 'var(--space-2)', borderRadius: 8,
-            background: 'transparent', border: 'none', color: 'var(--text-muted)',
-            cursor: 'pointer', display: 'flex', justifyContent: 'center',
-            alignItems: 'center', transition: 'color 0.15s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, margin: '8px auto 4px',
+            background: 'transparent', border: 'none',
+            color: 'var(--text-muted)', cursor: 'pointer',
+            borderRadius: 8, transition: 'color 0.15s, background 0.15s',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-          aria-label="Expand"
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)';    e.currentTarget.style.background = 'transparent'; }}
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={13} />
         </button>
       )}
 
-      {/* Scope switcher */}
+      {/* ── Scope switcher ───────────────────────────────────── */}
       {!collapsed && (
-        <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-1)' }}>
+        <div style={{ padding: '8px 10px 2px', flexShrink: 0, position: 'relative', zIndex: 1 }}>
           <div style={{
-            display: 'flex', background: 'var(--bg-base)',
-            borderRadius: 12, padding: 3, gap: 2,
-            border: '1px solid var(--glass-border)',
-            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)',
+            display: 'flex',
+            background: 'rgba(0,0,0,0.3)',
+            borderRadius: 10, padding: 3, gap: 2,
+            border: '1px solid rgba(255,255,255,0.07)',
           }}>
-            {[
-              { label: 'Business', href: '/business/dashboard', isActive: !isPersonal, color: bizColor },
-              { label: 'Personal', href: '/personal/dashboard', isActive: isPersonal, color: personalColor },
-            ].map((s) => (
+            {([
+              { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: bizColor },
+              { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: personalColor },
+            ] as const).map(s => (
               <Link key={s.label} href={s.href} style={{
-                flex: 1, textAlign: 'center', padding: '7px 0',
-                borderRadius: 10, fontSize: 'var(--text-xs)', fontWeight: 700,
-                color: s.isActive ? s.color : 'var(--text-muted)',
-                background: s.isActive ? 'var(--bg-elevated)' : 'transparent',
-                textDecoration: 'none', transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
-                boxShadow: s.isActive ? `0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)` : 'none',
+                flex: 1, textAlign: 'center',
+                padding: '5px 0',
+                borderRadius: 8,
+                fontSize: '0.62rem', fontWeight: 700,
+                color: s.active ? s.color : 'var(--text-muted)',
+                background: s.active ? 'var(--bg-elevated)' : 'transparent',
+                textDecoration: 'none',
+                transition: 'all 0.18s',
+                boxShadow: s.active ? '0 1px 4px rgba(0,0,0,0.2)' : 'none',
                 letterSpacing: '0.02em',
               }}>
                 {s.label}
@@ -258,83 +274,110 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 'var(--space-2)', scrollbarWidth: 'thin' }}>
-        {!collapsed && (
-          <p style={{ fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-muted)', padding: 'var(--space-3) var(--space-3) var(--space-1)' }}>
-            Business
-          </p>
-        )}
-        {collapsed && <div style={{ height: 1, background: 'var(--glass-border)', margin: 'var(--space-2) var(--space-1)' }} />}
+      {/* ── Navigation ──────────────────────────────────────── */}
+      <nav style={{
+        flex: 1, overflowY: 'auto', overflowX: 'hidden',
+        padding: '4px 6px',
+        scrollbarWidth: 'none',
+        position: 'relative', zIndex: 1,
+      }}>
+        <SectionHeading collapsed={collapsed}>Business</SectionHeading>
 
-        {BUSINESS_NAV.map((item) => (
+        {BUSINESS_NAV.map(item => (
           <NavItem
-            key={item.href} {...item}
+            key={item.href}
+            {...item}
             active={pathname === item.href || pathname.startsWith(item.href + '/')}
-            collapsed={collapsed} color={bizColor} glow={bizGlow}
+            collapsed={collapsed}
+            color={bizColor}
+            glow={bizGlow}
             badge={item.href === '/business/inventory' ? lowStockCount : undefined}
           />
         ))}
 
-        {!collapsed && (
-          <p style={{ fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-muted)', padding: 'var(--space-4) var(--space-3) var(--space-1)' }}>
-            Personal
-          </p>
-        )}
-        {collapsed && <div style={{ height: 1, background: 'var(--glass-border)', margin: 'var(--space-2) var(--space-1)' }} />}
+        <SectionHeading collapsed={collapsed}>Personal</SectionHeading>
 
-        {PERSONAL_NAV.map((item) => (
+        {PERSONAL_NAV.map(item => (
           <NavItem
-            key={item.href} {...item}
+            key={item.href}
+            {...item}
             active={pathname === item.href || pathname.startsWith(item.href + '/')}
-            collapsed={collapsed} color={personalColor} glow={personalGlow}
+            collapsed={collapsed}
+            color={personalColor}
+            glow={personalGlow}
           />
         ))}
 
-        <div style={{ height: 1, background: 'var(--glass-border)', margin: 'var(--space-3) var(--space-1)' }} />
+        <div style={{ height: 1, background: 'var(--glass-border)', margin: '8px 4px' }} />
 
-        <NavItem href="/reports" icon={BarChart3} label="Reports"
-          active={pathname === '/reports'} collapsed={collapsed} color={bizColor} glow={bizGlow} />
         <NavItem href="/settings" icon={Settings} label="Settings"
-          active={pathname === '/settings'} collapsed={collapsed} color={bizColor} glow={bizGlow} />
+          active={pathname === '/settings'}
+          collapsed={collapsed} color={bizColor} glow={bizGlow}
+        />
       </nav>
 
-      {/* Footer */}
+      {/* ── Footer ──────────────────────────────────────────── */}
       <div style={{
-        padding: 'var(--space-3)', borderTop: '1px solid var(--glass-border)', flexShrink: 0,
-        background: 'rgba(0,0,0,0.1)',
+        padding: '8px 8px',
+        borderTop: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+        position: 'relative', zIndex: 1,
       }}>
-        {!collapsed && <div style={{ marginBottom: 'var(--space-3)' }}><SyncIndicator /></div>}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: collapsed ? 'center' : 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
+        {!collapsed && (
+          <div style={{ marginBottom: 8 }}>
+            <SyncIndicator />
+          </div>
+        )}
+
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          justifyContent: collapsed ? 'center' : 'space-between',
+        }}>
+          {/* Avatar + name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-              background: `linear-gradient(135deg, ${isPersonal ? personalColor : bizColor}, ${isPersonal ? '#A07820' : '#7B0018'})`,
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#7B0018'})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: 'var(--text-xs)', fontWeight: 800,
-              boxShadow: `0 2px 10px ${isPersonal ? 'rgba(212,165,53,0.4)' : 'rgba(200,16,46,0.4)'}`,
-              border: '2px solid rgba(255,255,255,0.12)',
+              color: '#fff', fontSize: '0.6rem', fontWeight: 800,
+              border: '1.5px solid rgba(255,255,255,0.12)',
             }}>
-              {user?.name?.charAt(0) ?? 'U'}
+              {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
             </div>
+
             <AnimatePresence initial={false}>
               {!collapsed && (
                 <motion.div
-                  initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.15 }}
                   style={{ minWidth: 0, overflow: 'hidden' }}
                 >
-                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <p style={{
+                    fontSize: 'var(--text-xs)', fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
                     {user?.name}
                   </p>
-                  <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role}</p>
+                  <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                    {user?.role}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
+          {/* Logout */}
           {!collapsed && (
-            <button className="btn-icon" onClick={handleLogout} aria-label="Logout" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 8 }}>
-              <LogOut size={13} />
+            <button
+              className="btn-icon"
+              onClick={handleLogout}
+              aria-label="Logout"
+              style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 8 }}
+            >
+              <LogOut size={12} />
             </button>
           )}
         </div>

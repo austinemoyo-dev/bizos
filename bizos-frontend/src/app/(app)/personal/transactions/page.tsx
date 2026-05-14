@@ -76,9 +76,9 @@ export default function TransactionsPage() {
     );
   }, [allItems, debouncedSearch]);
 
-  const totalIncome = items.filter((i) => i.type === 'income').reduce((s, i) => s + i.amount, 0);
-  const totalExpenses = items.filter((i) => i.type === 'expense').reduce((s, i) => s + i.amount, 0);
-  const totalSavings = items.filter((i) => i.type === 'savings').reduce((s, i) => s + i.amount, 0);
+  const totalIncome   = items.filter((i) => i.type === 'income').reduce((s, i)  => s + Number(i.amount), 0);
+  const totalExpenses = items.filter((i) => i.type === 'expense').reduce((s, i) => s + Number(i.amount), 0);
+  const totalSavings  = items.filter((i) => i.type === 'savings').reduce((s, i) => s + Number(i.amount), 0);
 
   const handleExport = () => {
     if (items.length === 0) return;

@@ -2,69 +2,93 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { foodVendorApi } from '@/lib/api/food-vendor';
+import { motion, AnimatePresence } from 'framer-motion';
+import { foodVendorApi, FoodVendorAnalytics } from '@/lib/api/food-vendor';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Modal } from '@/components/shared/Modal';
 import { FoodVendorForm } from '@/components/personal/FoodVendorForm';
-import { StatWidget } from '@/components/shared/StatWidget';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { formatNaira, formatDate } from '@/lib/format';
-import { FoodCredit, FoodCreditCreate, FoodVendorPayment } from '@/types/api';
+import { FoodVendorOverview } from '@/components/personal/FoodVendorOverview';
+import { FoodVendorAnalyticsTab } from '@/components/personal/FoodVendorAnalyticsTab';
+import { FoodVendorInsights } from '@/components/personal/FoodVendorInsights';
+import { FoodCreditCreate } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Check, Utensils, Loader2 } from 'lucide-react';
-import { format, startOfWeek, differenceInDays } from 'date-fns';
+import { Plus, Utensils, Loader2, LayoutGrid, BarChart3, Lightbulb } from 'lucide-react';
 
-function groupByDate(credits: FoodCredit[]): Record<string, FoodCredit[]> {
-  return credits.reduce((acc, c) => {
-    const key = c.purchase_date.slice(0, 10);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(c);
-    return acc;
-  }, {} as Record<string, FoodCredit[]>);
-}
+// ── Tab definitions ────────────────────────────────────────────────
+type Tab = 'overview' | 'analytics' | 'insights';
+
+const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: 'overview',  label: 'Overview',  icon: LayoutGrid  },
+  { key: 'analytics', label: 'Analytics', icon: BarChart3   },
+  { key: 'insights',  label: 'Insights',  icon: Lightbulb   },
+];
+
+const TAB_ORDER: Tab[] = ['overview', 'analytics', 'insights'];
 
 export default function FoodVendorPage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
-  const [showAdd, setShowAdd] = useState(false);
+
+  const [tab, setTab]       = useState<Tab>('overview');
+  const [dir, setDir]       = useState(0);          // slide direction: +1 right, -1 left
+  const [showAdd, setShowAdd]         = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [paying, setPaying] = useState(false);
+  const [paying, setPaying]           = useState(false);
 
-  const { data: unpaid } = useQuery({
+  // ── Data fetching ──────────────────────────────────────────────
+  const { data: unpaid = [] } = useQuery({
     queryKey: ['food-credits', 'unpaid'],
-    queryFn: () => foodVendorApi.credits.list({ paid: false }),
+    queryFn:  () => foodVendorApi.credits.list({ paid: false }),
   });
 
-  const { data: payments } = useQuery({
+  const { data: payments = [] } = useQuery({
     queryKey: ['food-payments'],
-    queryFn: () => foodVendorApi.payments(),
+    queryFn:  () => foodVendorApi.payments(),
   });
 
-  const weekStart = startOfWeek(new Date());
-  const thisWeekCredits = (unpaid ?? []).filter(
-    (c) => new Date(c.purchase_date) >= weekStart,
-  );
-  const weeklyTotal = thisWeekCredits.reduce((s, c) => s + c.amount, 0);
-  const daysSinceWeekStart = Math.max(differenceInDays(new Date(), weekStart), 1);
-  const dailyAvg = weeklyTotal / daysSinceWeekStart;
-  const totalDebt = (unpaid ?? []).reduce((s, c) => s + c.amount, 0);
+  const { data: analytics } = useQuery<FoodVendorAnalytics>({
+    queryKey: ['food-analytics'],
+    queryFn:  () => foodVendorApi.analytics(),
+  });
 
-  const recentVendors = Array.from(new Set((unpaid ?? []).map((c) => c.vendor_name)));
+  const { data: trend = [], isLoading: loadingTrend } = useQuery({
+    queryKey: ['food-trend'],
+    queryFn:  () => foodVendorApi.trend(30),
+  });
+
+  const { data: vendors = [] } = useQuery({
+    queryKey: ['food-vendors'],
+    queryFn:  () => foodVendorApi.vendorBreakdown(),
+  });
+
+  // ── Handlers ──────────────────────────────────────────────────
+  const handleTabChange = (next: Tab) => {
+    const oldIdx = TAB_ORDER.indexOf(tab);
+    const newIdx = TAB_ORDER.indexOf(next);
+    setDir(newIdx > oldIdx ? 1 : -1);
+    setTab(next);
+  };
 
   const handleCreate = async (data: FoodCreditCreate) => {
     await foodVendorApi.credits.create(data);
     qc.invalidateQueries({ queryKey: ['food-credits'] });
+    qc.invalidateQueries({ queryKey: ['food-analytics'] });
+    qc.invalidateQueries({ queryKey: ['food-vendors'] });
     addToast({ type: 'success', title: 'Meal recorded' });
     setShowAdd(false);
   };
 
   const handlePayAll = async () => {
-    if (!unpaid?.length) return;
+    if (!unpaid.length) return;
     setPaying(true);
     try {
-      await foodVendorApi.pay(unpaid.map((c) => c.id));
+      const vendorNames = Array.from(new Set(unpaid.map(c => c.vendor_name)));
+      const label = vendorNames.length === 1 ? vendorNames[0] : vendorNames.join(', ');
+      await foodVendorApi.pay(unpaid.map(c => c.id), label);
       qc.invalidateQueries({ queryKey: ['food-credits'] });
       qc.invalidateQueries({ queryKey: ['food-payments'] });
+      qc.invalidateQueries({ queryKey: ['food-analytics'] });
+      qc.invalidateQueries({ queryKey: ['food-vendors'] });
       addToast({ type: 'success', title: 'All credits paid', message: 'Personal expense recorded.' });
       setShowConfirm(false);
     } catch (err) {
@@ -74,13 +98,16 @@ export default function FoodVendorPage() {
     }
   };
 
-  const grouped = groupByDate(unpaid ?? []);
-  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  const recentVendors = Array.from(new Set(unpaid.map(c => c.vendor_name)));
 
   return (
     <div>
       <PageHeader
         title="Food Vendor"
+        subtitle="Track meals on credit"
+        icon={Utensils}
+        accentColor="#F59E0B"
+        accentGlow="rgba(245,158,11,0.12)"
         actions={
           <button className="btn-primary" onClick={() => setShowAdd(true)}>
             <Plus size={16} /> Record Meal
@@ -88,93 +115,96 @@ export default function FoodVendorPage() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }} className="stat-grid">
-        <StatWidget label="Outstanding Debt" value={formatNaira(totalDebt)} accent="warning" />
-        <StatWidget label="This Week Total" value={formatNaira(weeklyTotal)} accent="neutral" />
-        <StatWidget label="Daily Average" value={formatNaira(dailyAvg)} accent="neutral" />
-      </div>
-
-      {/* Unpaid credits */}
-      <div className="liquid-card" style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', position: 'relative', zIndex: 1 }}>
-          <p className="section-label" style={{ marginBottom: 0 }}>This Week</p>
-          {(unpaid?.length ?? 0) > 0 && (
-            <button className="btn-primary" style={{ fontSize: 'var(--text-xs)' }} onClick={() => setShowConfirm(true)}>
-              <Check size={12} /> Mark All Paid
+      {/* ── Tab bar ───────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', gap: 4, marginBottom: 'var(--space-5)',
+        background: 'var(--glass-bg-light)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1px solid var(--glass-border)',
+        borderRadius: 50,
+        padding: 4,
+      }}>
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => handleTabChange(t.key)}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 6, padding: '8px 12px',
+                borderRadius: 50, border: 'none', cursor: 'pointer',
+                fontSize: 'var(--text-xs)', fontWeight: active ? 700 : 500,
+                background: active ? '#F59E0B' : 'transparent',
+                color: active ? '#000' : 'var(--text-secondary)',
+                boxShadow: active ? '0 2px 10px rgba(245,158,11,0.4)' : 'none',
+                transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Icon size={13} strokeWidth={active ? 2.5 : 2} />
+              {t.label}
             </button>
-          )}
-        </div>
-
-        {sortedDates.length === 0 ? (
-          <EmptyState icon={<Utensils size={36} />} title="No unpaid credits" description="Record your food vendor meals." />
-        ) : (
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {sortedDates.map((date) => (
-              <div key={date} style={{ marginBottom: 'var(--space-4)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>
-                  {format(new Date(date), 'EEE dd MMM')}
-                </p>
-                {grouped[date].map((credit) => (
-                  <div key={credit.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                    padding: 'var(--space-3) var(--space-2)',
-                    borderBottom: '1px solid var(--glass-border)',
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                      background: 'var(--accent-amber-glow)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <Utensils size={15} style={{ color: 'var(--accent-amber)' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{credit.meal_description ?? 'Meal'}</p>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{credit.vendor_name}</p>
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent-amber)', flexShrink: 0 }}>
-                      {formatNaira(credit.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
+          );
+        })}
       </div>
 
-      {/* Payment History */}
-      {(payments?.length ?? 0) > 0 && (
-        <div className="liquid-card">
-          <p className="section-label" style={{ marginBottom: 'var(--space-4)', position: 'relative', zIndex: 1 }}>Payment History</p>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {payments!.map((payment) => (
-              <div key={payment.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: 'var(--space-3) 0', borderBottom: '1px solid var(--glass-border)',
-              }}>
-                <div>
-                  <p style={{ fontSize: 'var(--text-sm)' }}>Week of {format(new Date(payment.paid_at), 'MMM dd')}</p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    {payment.credit_ids.length} items
-                  </p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent-green)' }}>
-                    {formatNaira(payment.total_amount)}
-                  </p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-green)' }}>✓ Paid</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Tab content with directional slide animation ──────── */}
+      <div style={{ overflow: 'hidden' }}>
+        <AnimatePresence mode="wait" custom={dir}>
+          <motion.div
+            key={tab}
+            custom={dir}
+            initial={{ opacity: 0, x: dir * 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: dir * -32 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {tab === 'overview' && (
+              <FoodVendorOverview
+                unpaid={unpaid}
+                payments={payments}
+                analytics={analytics}
+                vendors={vendors}
+                onMarkPaid={() => setShowConfirm(true)}
+              />
+            )}
+            {tab === 'analytics' && (
+              <FoodVendorAnalyticsTab
+                trend={trend}
+                vendors={vendors}
+                loading={loadingTrend}
+              />
+            )}
+            {tab === 'insights' && (
+              <FoodVendorInsights
+                analytics={analytics}
+                trend={trend}
+                vendors={vendors}
+                payments={payments}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Record Meal">
-        <FoodVendorForm recentVendors={recentVendors} onSubmit={handleCreate} onCancel={() => setShowAdd(false)} />
+      {/* ── Record Meal modal ─────────────────────────────────── */}
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Record Meal" accentColor="#F59E0B">
+        <FoodVendorForm
+          recentVendors={recentVendors}
+          onSubmit={handleCreate}
+          onCancel={() => setShowAdd(false)}
+        />
       </Modal>
 
-      <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} title="Mark All Paid"
+      {/* ── Pay all confirmation modal ────────────────────────── */}
+      <Modal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title="Mark All Paid"
+        accentColor="#F59E0B"
         footer={
           <>
             <button className="btn-ghost" onClick={() => setShowConfirm(false)}>Cancel</button>
@@ -185,11 +215,10 @@ export default function FoodVendorPage() {
           </>
         }
       >
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-          This will mark all {unpaid?.length} unpaid credits as paid and create a personal expense record of{' '}
-          <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-            {formatNaira(totalDebt)}
-          </strong>.
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          This will mark all{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{unpaid.length}</strong>{' '}
+          unpaid credits as paid and create a personal food expense.
         </p>
       </Modal>
     </div>

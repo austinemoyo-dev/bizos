@@ -85,14 +85,14 @@ export function StatWidget({ label, value, change, changePositive, accent = 'neu
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', position: 'relative' }}>
         <span style={{
-          fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase',
+          fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.1em', color: 'var(--text-muted)',
         }}>
           {label}
         </span>
         {icon && (
           <div style={{
-            width: 30, height: 30, borderRadius: 10,
+            width: 32, height: 32, borderRadius: 10,
             background: colors.glow,
             border: `1px solid ${colors.shadow}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -106,8 +106,8 @@ export function StatWidget({ label, value, change, changePositive, accent = 'neu
       {/* Value */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          <SkeletonPulse width="65%" height="2rem" />
-          <SkeletonPulse width="40%" height="0.75rem" />
+          <SkeletonPulse width="70%" height="1.75rem" />
+          <SkeletonPulse width="45%" height="0.75rem" />
         </div>
       ) : (
         <>
@@ -117,20 +117,21 @@ export function StatWidget({ label, value, change, changePositive, accent = 'neu
             transition={{ duration: 0.35, delay: 0.05, ease: [0.16,1,0.3,1] }}
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 'clamp(1.2rem, 2vw, 1.7rem)',
+              fontSize: 'clamp(1.3rem, 2.2vw, 1.9rem)',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              lineHeight: 1.15,
-              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
               marginBottom: sublabel || change ? 'var(--space-2)' : 0,
               position: 'relative',
+              wordBreak: 'break-all',
             }}
           >
             {value}
           </motion.div>
 
           {sublabel && (
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: change ? 4 : 0 }}>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: change ? 4 : 0, lineHeight: 1.4 }}>
               {sublabel}
             </p>
           )}
@@ -142,11 +143,11 @@ export function StatWidget({ label, value, change, changePositive, accent = 'neu
               transition={{ duration: 0.25, delay: 0.15 }}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: '0.7rem', fontWeight: 600,
+                fontSize: '0.68rem', fontWeight: 700,
                 color: changePositive === true ? '#10B981' : changePositive === false ? '#EF4444' : 'var(--text-secondary)',
                 background: changePositive === true ? 'rgba(16,185,129,0.1)' : changePositive === false ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
-                padding: '2px 7px', borderRadius: 20,
-                border: `1px solid ${changePositive === true ? 'rgba(16,185,129,0.2)' : changePositive === false ? 'rgba(239,68,68,0.2)' : 'var(--border-subtle)'}`,
+                padding: '2px 8px', borderRadius: 20,
+                border: `1px solid ${changePositive === true ? 'rgba(16,185,129,0.22)' : changePositive === false ? 'rgba(239,68,68,0.22)' : 'var(--border-subtle)'}`,
               }}
             >
               {changePositive === true && <TrendingUp size={10} />}

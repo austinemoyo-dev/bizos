@@ -59,7 +59,7 @@ export default function SavingsPage() {
     }
   };
 
-  const totalSaved = (goals ?? []).reduce((s, g) => s + g.current_amount, 0);
+  const totalSaved = (goals ?? []).reduce((s, g) => s + Number(g.current_amount), 0);
 
   return (
     <div>

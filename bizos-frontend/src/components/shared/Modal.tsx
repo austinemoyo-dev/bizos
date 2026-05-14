@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -15,6 +16,10 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, width = 520, footer, accentColor = '#C8102E' }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -22,7 +27,9 @@ export function Modal({ isOpen, onClose, title, children, width = 520, footer, a
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div style={{
@@ -141,6 +148,7 @@ export function Modal({ isOpen, onClose, title, children, width = 520, footer, a
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

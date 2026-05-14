@@ -1,0 +1,56 @@
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bizos_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: bizos_db
+    volumes:
+      - bizos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bizos_user -d bizos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # NOT exposed to host — only reachable inside the Docker network
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./bizos-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"   # only localhost — nginx proxies from outside
+    env_file:
+      - ./bizos-backend/.env
+    environment:
+      # Overrides the DATABASE_URL in .env so backend reaches the Docker db service
+      DATABASE_URL: postgresql://bizos_user:${DB_PASSWORD}@db:5432/bizos_db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Next.js frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./bizos-frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the JS bundle at build time — must match your real domain
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"   # only localhost — nginx proxies from outside
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+    depends_on:
+      - backend
+
+volumes:
+  bizos_pgdata:
+    name: bizos_pgdata

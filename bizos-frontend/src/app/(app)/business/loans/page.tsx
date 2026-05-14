@@ -12,7 +12,6 @@ import { formatNaira, formatDate } from '@/lib/format';
 import { Investment, InvestmentCreate } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Loader2, CheckCircle, Banknote } from 'lucide-react';
-import { format } from 'date-fns';
 
 const columns: Column<Investment>[] = [
   { key: 'party_name', label: 'Lender' },
@@ -70,9 +69,9 @@ export default function LoansPage() {
   const paid        = allLoans.filter((l) => l.is_settled);
   const items       = tab === 'outstanding' ? outstanding : paid;
 
-  const totalBorrowed    = allLoans.reduce((s, l) => s + l.amount, 0);
-  const totalOutstanding = outstanding.reduce((s, l) => s + l.balance_outstanding, 0);
-  const totalRepaid      = allLoans.reduce((s, l) => s + l.amount_repaid, 0);
+  const totalBorrowed    = allLoans.reduce((s, l) => s + Number(l.amount), 0);
+  const totalOutstanding = outstanding.reduce((s, l) => s + Number(l.balance_outstanding), 0);
+  const totalRepaid      = allLoans.reduce((s, l) => s + Number(l.amount_repaid), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,12 +219,6 @@ export default function LoansPage() {
             <input className="input" value={form.purpose ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
               placeholder="e.g. Buy tools, restock inventory" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Borrowed On</label>
-            <input type="date" className="input"
-              value={format(new Date(), 'yyyy-MM-dd')}
-              onChange={() => {}} readOnly />
           </div>
           <div className="form-group">
             <label className="form-label">Repayment Due Date (optional)</label>

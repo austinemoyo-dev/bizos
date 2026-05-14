@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from core.dependencies import get_current_user, get_db
@@ -141,7 +141,7 @@ def revenue_trend(
 def top_items(
     period_start: date = None,
     period_end: date = None,
-    limit: int = 10,
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
@@ -296,7 +296,7 @@ def spending_trend(
 def personal_category_breakdown(
     period_start: date = None,
     period_end: date = None,
-    tx_type: str = "expense",
+    tx_type: str = Query("expense"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
@@ -306,9 +306,10 @@ def personal_category_breakdown(
     if not period_start or not period_end:
         period_start, period_end = _default_period()
 
-    type_filter = PersonalTxType.expense
-    if tx_type == "income":
-        type_filter = PersonalTxType.income
+    try:
+        type_filter = PersonalTxType(tx_type)
+    except ValueError:
+        raise HTTPException(400, f"Invalid tx_type '{tx_type}'. Valid values: {[e.value for e in PersonalTxType]}")
 
     rows = (
         db.query(

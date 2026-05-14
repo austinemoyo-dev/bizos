@@ -97,7 +97,8 @@ export default function PersonalAnalyticsPage() {
   const savingsRate = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(0) : '0';
 
   const topCategory = expenseBreakdown?.[0]?.category ?? '—';
-  const expenseTotal = expenseBreakdown?.reduce((s, e) => s + e.amount, 0) ?? 0;
+  const expenseTotal = expenseBreakdown?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
+  const incomeTotal = incomeBreakdown?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -118,9 +119,9 @@ export default function PersonalAnalyticsPage() {
             style={{
               padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer',
               fontSize: 'var(--text-xs)', fontWeight: 600,
-              background: periodKey === p.key ? '#C8102E' : 'transparent',
+              background: periodKey === p.key ? 'var(--accent-gold)' : 'transparent',
               color: periodKey === p.key ? '#fff' : 'var(--text-secondary)',
-              boxShadow: periodKey === p.key ? '0 2px 8px rgba(200,16,46,0.35)' : 'none',
+              boxShadow: periodKey === p.key ? '0 2px 8px rgba(212,165,53,0.35)' : 'none',
               transition: 'all 0.2s',
             }}
           >
@@ -236,7 +237,6 @@ export default function PersonalAnalyticsPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {incomeBreakdown.map((cat, idx) => {
                   const Icon = CATEGORY_ICONS[cat.category] || Wallet;
-                  const incomeTotal = incomeBreakdown.reduce((s, e) => s + e.amount, 0);
                   const pct = incomeTotal > 0 ? ((cat.amount / incomeTotal) * 100).toFixed(0) : '0';
                   const color = CATEGORY_COLORS[(idx + 5) % CATEGORY_COLORS.length];
                   return (

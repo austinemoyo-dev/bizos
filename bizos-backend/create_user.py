@@ -1,12 +1,23 @@
-"""Run this once to create the first admin user."""
+"""Run this once to create the first admin user.
+
+Usage:
+    ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=SecurePass1 ADMIN_NAME=YourName python create_user.py
+    -- or run interactively and enter values at the prompts --
+"""
+import os
 import sys
+
 from core.database import SessionLocal
 from core.security import hash_password
 from models.user import User, UserRole
 
-email = "augustineakinmoyo@gmail.com"
-password = "akinmoyo"   # change this to whatever you want
-name = "Augustine"
+email    = os.environ.get("ADMIN_EMAIL")    or input("Admin email: ").strip()
+password = os.environ.get("ADMIN_PASSWORD") or input("Admin password: ").strip()
+name     = os.environ.get("ADMIN_NAME")     or input("Admin name: ").strip()
+
+if len(password) < 8:
+    print("Error: Password must be at least 8 characters")
+    sys.exit(1)
 
 db = SessionLocal()
 try:
@@ -25,8 +36,7 @@ try:
     db.add(user)
     db.commit()
     print(f"Success! User created:")
-    print(f"  Email:    {email}")
-    print(f"  Password: {password}")
-    print(f"  Role:     super_admin")
+    print(f"  Email:  {email}")
+    print(f"  Role:   super_admin")
 finally:
     db.close()

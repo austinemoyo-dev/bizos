@@ -2,32 +2,32 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 
 from models.inventory import MovementType
 
 
 class ItemCreate(BaseModel):
-    name: str
-    category: Optional[str] = None
-    sku: Optional[str] = None
-    purchase_price: Decimal
-    selling_price: Optional[Decimal] = None
-    quantity_in_stock: int = 0
-    reorder_level: int = 5
-    supplier: Optional[str] = None
-    notes: Optional[str] = None
+    name: str = Field(min_length=1, max_length=200)
+    category: Optional[str] = Field(None, max_length=100)
+    sku: Optional[str] = Field(None, max_length=100)
+    purchase_price: Decimal = Field(ge=Decimal("0"))
+    selling_price: Optional[Decimal] = Field(None, gt=Decimal("0"))
+    quantity_in_stock: int = Field(0, ge=0)
+    reorder_level: int = Field(5, ge=0)
+    supplier: Optional[str] = Field(None, max_length=200)
+    notes: Optional[str] = Field(None, max_length=1000)
 
 
 class ItemUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-    sku: Optional[str] = None
-    purchase_price: Optional[Decimal] = None
-    selling_price: Optional[Decimal] = None
-    reorder_level: Optional[int] = None
-    supplier: Optional[str] = None
-    notes: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    category: Optional[str] = Field(None, max_length=100)
+    sku: Optional[str] = Field(None, max_length=100)
+    purchase_price: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    selling_price: Optional[Decimal] = Field(None, gt=Decimal("0"))
+    reorder_level: Optional[int] = Field(None, ge=0)
+    supplier: Optional[str] = Field(None, max_length=200)
+    notes: Optional[str] = Field(None, max_length=1000)
 
 
 class ItemOut(BaseModel):
@@ -50,8 +50,8 @@ class ItemOut(BaseModel):
 
 
 class RestockRequest(BaseModel):
-    quantity: int
-    unit_cost: Decimal
+    quantity: int = Field(ge=1)
+    unit_cost: Decimal = Field(gt=Decimal("0"))
 
 
 class StockMovementOut(BaseModel):

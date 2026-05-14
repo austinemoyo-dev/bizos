@@ -16,18 +16,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-base)', overflow: 'hidden' }}>
-      {/* Desktop sidebar */}
-      <div className="desktop-sidebar">
-        <Sidebar />
-      </div>
+    <div className="app-shell">
+      <Sidebar />
 
-      {/* Main column */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+      {/* Main Content Area */}
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, height: '100dvh' }}>
         <OfflineBanner />
         <TopBar />
 
-        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} id="main-scroll">
+        <main className="main-content" style={{ flex: 1 }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -35,30 +32,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              style={{ padding: 'var(--space-5)', paddingBottom: 'calc(var(--space-5) + 80px)', minHeight: '100%' }}
-              className="page-content"
+              style={{ minHeight: '100%' }}
             >
               {children}
             </motion.div>
           </AnimatePresence>
         </main>
-
-        <MobileTabBar />
       </div>
 
+      <MobileTabBar />
       <ToastContainer />
-
-      <style>{`
-        .desktop-sidebar { display: flex; flex-shrink: 0; }
-        @media (max-width: 768px) {
-          .desktop-sidebar { display: none !important; }
-          .page-content { padding: var(--space-4) !important; padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important; }
-        }
-        @media (min-width: 769px) {
-          #main-scroll { padding-bottom: 0; }
-          .page-content { padding-bottom: var(--space-8) !important; }
-        }
-      `}</style>
     </div>
   );
 }

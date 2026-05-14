@@ -79,11 +79,7 @@ export function ToastContainer() {
   const { toasts } = useUIStore();
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 'var(--space-6)', right: 'var(--space-6)',
-      zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-      pointerEvents: 'none',
-    }}>
+    <div className="toast-container">
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <div key={toast.id} style={{ pointerEvents: 'all' }}>

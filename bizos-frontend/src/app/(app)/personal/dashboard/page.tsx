@@ -52,7 +52,7 @@ export default function PersonalDashboard() {
     queryFn: () => titheApi.list({ scope: 'personal', paid: false, date_from: start, date_to: end }),
   });
 
-  const foodDebt = (unpaidCredits ?? []).reduce((s, c) => s + c.amount, 0);
+  const foodDebt = (unpaidCredits ?? []).reduce((s, c) => s + Number(c.amount), 0);
   const titheDue = (unpaidTithe?.items ?? []).reduce((s, t) => s + Number(t.tithe_amount), 0);
   const savingsInfo = summary ? formatProfit(summary.net_savings) : null;
   const netSavings = summary?.net_savings ?? 0;
@@ -77,9 +77,9 @@ export default function PersonalDashboard() {
             style={{
               padding: '7px 18px', borderRadius: 50, border: 'none', cursor: 'pointer',
               fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
-              background: period === p.key ? '#C8102E' : 'transparent',
+              background: period === p.key ? 'var(--accent-gold)' : 'transparent',
               color: period === p.key ? '#fff' : 'var(--text-secondary)',
-              boxShadow: period === p.key ? '0 2px 8px rgba(200,16,46,0.35)' : 'none',
+              boxShadow: period === p.key ? '0 2px 8px rgba(212,165,53,0.35)' : 'none',
               transition: 'all 0.2s',
             }}
           >

@@ -2,29 +2,29 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 
 from models.investment import InvestmentType
 
 
 class InvestmentCreate(BaseModel):
-    party_name: str
+    party_name: str = Field(min_length=1, max_length=200)
     type: InvestmentType
-    amount: Decimal
-    expected_return: Optional[Decimal] = None
+    amount: Decimal = Field(gt=Decimal("0"))
+    expected_return: Optional[Decimal] = Field(None, ge=Decimal("0"))
     due_date: Optional[date] = None
-    purpose: Optional[str] = None
+    purpose: Optional[str] = Field(None, max_length=500)
 
 
 class InvestmentUpdate(BaseModel):
-    party_name: Optional[str] = None
-    expected_return: Optional[Decimal] = None
+    party_name: Optional[str] = Field(None, min_length=1, max_length=200)
+    expected_return: Optional[Decimal] = Field(None, ge=Decimal("0"))
     due_date: Optional[date] = None
-    purpose: Optional[str] = None
+    purpose: Optional[str] = Field(None, max_length=500)
 
 
 class RepaymentRequest(BaseModel):
-    amount: Decimal
+    amount: Decimal = Field(gt=Decimal("0"))
 
 
 class InvestmentOut(BaseModel):
@@ -46,18 +46,17 @@ class InvestmentOut(BaseModel):
 
     @classmethod
     def from_orm(cls, obj):
-        data = {
-            "id": obj.id,
-            "party_name": obj.party_name,
-            "type": obj.type,
-            "amount": obj.amount,
-            "expected_return": obj.expected_return,
-            "amount_repaid": obj.amount_repaid,
-            "balance_outstanding": obj.amount - obj.amount_repaid,
-            "due_date": obj.due_date,
-            "purpose": obj.purpose,
-            "is_settled": obj.is_settled,
-            "received_at": obj.received_at,
-            "created_at": obj.created_at,
-        }
-        return cls(**data)
+        return cls(
+            id=obj.id,
+            party_name=obj.party_name,
+            type=obj.type,
+            amount=obj.amount,
+            expected_return=obj.expected_return,
+            amount_repaid=obj.amount_repaid,
+            balance_outstanding=obj.amount - obj.amount_repaid,
+            due_date=obj.due_date,
+            purpose=obj.purpose,
+            is_settled=obj.is_settled,
+            received_at=obj.received_at,
+            created_at=obj.created_at,
+        )

@@ -2,16 +2,16 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 
 from models.repair import DeviceType, RepairStatus
 
 
 class JobPartCreate(BaseModel):
     item_id: UUID4
-    quantity: int
-    unit_cost: Decimal
-    selling_price: Optional[Decimal] = None
+    quantity: int = Field(ge=1)
+    unit_cost: Decimal = Field(ge=Decimal("0"))
+    selling_price: Optional[Decimal] = Field(None, ge=Decimal("0"))
     damaged: bool = False
 
 
@@ -30,35 +30,35 @@ class JobPartOut(BaseModel):
 
 
 class CancelJobRequest(BaseModel):
-    cancel_reason: Optional[str] = None
+    cancel_reason: Optional[str] = Field(None, max_length=500)
 
 
 class RepairPaymentUpdate(BaseModel):
-    amount_paid: Decimal
+    amount_paid: Decimal = Field(ge=Decimal("0"))
 
 
 class RepairJobCreate(BaseModel):
-    customer_name: str
-    customer_phone: Optional[str] = None
+    customer_name: str = Field(min_length=1, max_length=100)
+    customer_phone: Optional[str] = Field(None, max_length=20)
     device_type: DeviceType
-    device_model: Optional[str] = None
-    fault_description: Optional[str] = None
-    labor_charge: Decimal = Decimal("0")
-    total_charge: Decimal = Decimal("0")
-    amount_paid: Optional[Decimal] = None
-    notes: Optional[str] = None
+    device_model: Optional[str] = Field(None, max_length=100)
+    fault_description: Optional[str] = Field(None, max_length=1000)
+    labor_charge: Decimal = Field(Decimal("0"), ge=Decimal("0"))
+    total_charge: Decimal = Field(Decimal("0"), ge=Decimal("0"))
+    amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    notes: Optional[str] = Field(None, max_length=1000)
     parts: Optional[List[JobPartCreate]] = []
 
 
 class RepairJobUpdate(BaseModel):
-    customer_name: Optional[str] = None
-    customer_phone: Optional[str] = None
-    device_model: Optional[str] = None
-    fault_description: Optional[str] = None
-    labor_charge: Optional[Decimal] = None
-    total_charge: Optional[Decimal] = None
-    amount_paid: Optional[Decimal] = None
-    notes: Optional[str] = None
+    customer_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    customer_phone: Optional[str] = Field(None, max_length=20)
+    device_model: Optional[str] = Field(None, max_length=100)
+    fault_description: Optional[str] = Field(None, max_length=1000)
+    labor_charge: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    total_charge: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    notes: Optional[str] = Field(None, max_length=1000)
 
 
 class RepairStatusUpdate(BaseModel):

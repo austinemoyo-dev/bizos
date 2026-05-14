@@ -2,7 +2,7 @@ from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -26,8 +26,8 @@ router = APIRouter()
 
 @router.get("/transactions", response_model=List[PersonalTransactionOut])
 def list_transactions(
-    type: Optional[str] = None,
-    category: Optional[str] = None,
+    type: Optional[str] = Query(None, max_length=50),
+    category: Optional[str] = Query(None, max_length=100),
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     db: Session = Depends(get_db),
@@ -35,6 +35,10 @@ def list_transactions(
 ):
     q = db.query(PersonalTransaction)
     if type:
+        try:
+            PersonalTxType(type)
+        except ValueError:
+            raise HTTPException(400, "Invalid transaction type")
         q = q.filter(PersonalTransaction.type == type)
     if category:
         q = q.filter(PersonalTransaction.category == category)
