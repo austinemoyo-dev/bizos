@@ -13,7 +13,7 @@ exec gunicorn main:app \
     --workers "${WEB_CONCURRENCY:-4}" \
     --worker-class uvicorn.workers.UvicornWorker \
     --timeout 120 \
-    --keepalive 5 \
+    --keep-alive 5 \
     --access-logfile - \
     --error-logfile - \
     --log-level warning
