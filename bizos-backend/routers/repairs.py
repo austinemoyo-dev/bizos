@@ -128,8 +128,10 @@ def update_job(
     job = db.query(RepairJob).filter_by(id=job_id).first()
     if not job:
         raise HTTPException(404, "Job not found")
-    for field, value in payload.model_dump(exclude_none=True).items():
+    for field, value in payload.model_dump(exclude_none=True, exclude={"completed_at"}).items():
         setattr(job, field, value)
+    if payload.completed_at is not None:
+        job.completed_at = datetime.combine(payload.completed_at, datetime.min.time()).replace(tzinfo=timezone.utc)
     db.commit()
     db.refresh(job)
     return RepairJobOut.from_orm_with_profit(job)

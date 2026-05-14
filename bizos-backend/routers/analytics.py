@@ -188,6 +188,8 @@ def repair_stats(
     from models.repair import RepairJob
     if not period_start or not period_end:
         period_start, period_end = _default_period()
+    from models.repair import RepairStatus
+    rev_date = func.date(func.coalesce(RepairJob.completed_at, RepairJob.received_at))
     rows = (
         db.query(
             RepairJob.device_type,
@@ -195,14 +197,15 @@ def repair_stats(
             func.sum(RepairJob.total_charge).label("total_revenue"),
         )
         .filter(
-            func.date(RepairJob.received_at) >= period_start,
-            func.date(RepairJob.received_at) <= period_end,
+            RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
+            rev_date >= period_start,
+            rev_date <= period_end,
         )
         .group_by(RepairJob.device_type)
         .all()
     )
     return [
-        {"device_type": r.device_type.value, "job_count": r.job_count, "total_revenue": r.total_revenue}
+        {"device_type": r.device_type.value, "job_count": r.job_count, "total_revenue": r.total_revenue or 0}
         for r in rows
     ]
 

@@ -171,20 +171,16 @@ def cancel_job(db: Session, job_id: UUID, cancel_reason: str | None = None) -> R
 
 
 def compute_job_profit(job: RepairJob) -> RepairProfitOut:
-    parts_cost = sum(
-        p.unit_cost * p.quantity for p in job.parts if not p.damaged
-    )
-    damaged_cost = sum(
-        p.unit_cost * p.quantity for p in job.parts if p.damaged
-    )
-    total_expenses = parts_cost + damaged_cost
-    profit = job.total_charge - total_expenses
+    # Damaged parts are already recorded as damage_loss Expenses on the business ledger,
+    # so they must NOT be subtracted here again — otherwise profit (and tithe) are understated.
+    parts_cost = sum(p.unit_cost * p.quantity for p in job.parts if not p.damaged)
+    profit = job.total_charge - parts_cost
     tithe = profit * Decimal("0.10") if profit > 0 else Decimal("0")
     return RepairProfitOut(
         revenue=job.total_charge,
-        parts_cost=parts_cost + damaged_cost,
+        parts_cost=parts_cost,
         labor_charge=job.labor_charge,
-        total_expenses=total_expenses,
+        total_expenses=parts_cost,
         profit=profit,
         tithe_due=tithe,
         is_profitable=profit > 0,

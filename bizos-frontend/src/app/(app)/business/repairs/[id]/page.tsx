@@ -16,6 +16,7 @@ import {
   ArrowLeft, Phone, Plus, AlertTriangle, Loader2,
   Printer, Pencil, ChevronRight, Trash2, FileText,
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { generateRepairReceipt } from '@/lib/pdfReports';
 import { IfRole } from '@/components/shared/IfRole';
 import { useUndoDelete } from '@/lib/hooks/useUndoDelete';
@@ -56,6 +57,9 @@ export default function RepairDetailPage() {
   const [editingJob, setEditingJob] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [removingPartId, setRemovingPartId] = useState<string | null>(null);
+  const [editingCompletedAt, setEditingCompletedAt] = useState(false);
+  const [completedAtValue, setCompletedAtValue] = useState('');
+  const [savingCompletedAt, setSavingCompletedAt] = useState(false);
   const { deleteWithUndo } = useUndoDelete({ label: 'Part removed', delay: 5000 });
 
   const { data: job, isLoading } = useQuery<RepairJob>({
@@ -114,6 +118,22 @@ export default function RepairDetailPage() {
     qc.invalidateQueries({ queryKey: ['repairs'] });
     addToast({ type: 'success', title: 'Job updated' });
     setEditingJob(false);
+  };
+
+  const handleSaveCompletedAt = async () => {
+    if (!job || !completedAtValue) return;
+    setSavingCompletedAt(true);
+    try {
+      await repairsApi.update(job.id, { completed_at: completedAtValue });
+      qc.invalidateQueries({ queryKey: ['repair', id] });
+      qc.invalidateQueries({ queryKey: ['repairs'] });
+      addToast({ type: 'success', title: 'Completion date updated' });
+      setEditingCompletedAt(false);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed to update date', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setSavingCompletedAt(false);
+    }
   };
 
   const handlePrint = () => window.print();
@@ -287,11 +307,60 @@ export default function RepairDetailPage() {
                 {job.fault_description}
               </p>
             )}
-            <div style={{ display: 'flex', gap: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-6)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
               <div>
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>Received</p>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{formatDate(job.received_at)}</p>
               </div>
+
+              {/* Completed date — shows for completed/delivered jobs, editable for backdating */}
+              {(job.status === 'completed' || job.status === 'delivered') && (
+                <div>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>Completed</p>
+                  {editingCompletedAt ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <input
+                        type="date"
+                        className="input"
+                        style={{ padding: '2px 6px', fontSize: 'var(--text-sm)', width: 140 }}
+                        value={completedAtValue}
+                        max={format(new Date(), 'yyyy-MM-dd')}
+                        onChange={(e) => setCompletedAtValue(e.target.value)}
+                      />
+                      <button
+                        className="btn-primary"
+                        style={{ padding: '2px 10px', fontSize: 'var(--text-xs)' }}
+                        onClick={handleSaveCompletedAt}
+                        disabled={savingCompletedAt || !completedAtValue}
+                      >
+                        {savingCompletedAt ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : 'Save'}
+                      </button>
+                      <button className="btn-ghost" style={{ padding: '2px 8px', fontSize: 'var(--text-xs)' }}
+                        onClick={() => setEditingCompletedAt(false)}>
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <p style={{ fontSize: 'var(--text-sm)', color: job.completed_at ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                        {job.completed_at ? formatDate(job.completed_at) : 'Not set'}
+                      </p>
+                      <button
+                        className="btn-ghost"
+                        style={{ padding: 2 }}
+                        title="Backdate completion"
+                        onClick={() => {
+                          setCompletedAtValue(job.completed_at ? format(new Date(job.completed_at), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+                          setEditingCompletedAt(true);
+                        }}
+                      >
+                        <Pencil size={11} style={{ color: 'var(--text-muted)' }} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {job.delivered_at && (
                 <div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>Delivered</p>

@@ -1,5 +1,5 @@
 import { api, toPage } from './client';
-import { RepairJob, RepairJobCreate, AddPartPayload, RepairStatus, CancelJobPayload, PaginatedResponse } from '@/types/api';
+import { RepairJob, RepairJobCreate, RepairJobUpdate, AddPartPayload, RepairStatus, CancelJobPayload, PaginatedResponse } from '@/types/api';
 
 export const repairsApi = {
   list: async (params?: { status?: string; q?: string; page?: number; size?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<RepairJob>> => {
@@ -15,7 +15,7 @@ export const repairsApi = {
   },
   get: (id: string) => api.get<RepairJob>(`/repairs/${id}`),
   create: (data: RepairJobCreate) => api.post<RepairJob>('/repairs', data),
-  update: (id: string, data: Partial<RepairJobCreate>) => api.put<RepairJob>(`/repairs/${id}`, data),
+  update: (id: string, data: RepairJobUpdate) => api.put<RepairJob>(`/repairs/${id}`, data),
   updateStatus: (id: string, status: RepairStatus) =>
     api.patch<RepairJob>(`/repairs/${id}/status`, { status }),
   addPart: (id: string, data: AddPartPayload) =>

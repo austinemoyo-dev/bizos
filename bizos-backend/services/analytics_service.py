@@ -61,6 +61,8 @@ def get_business_summary(
     )
 
     from models.repair import JobPart
+    # Exclude damaged parts — their cost is already recorded as a damage_loss Expense,
+    # so including them here would double-count against profit.
     repair_parts_cost = (
         db.query(func.sum(JobPart.unit_cost * JobPart.quantity))
         .join(RepairJob, JobPart.job_id == RepairJob.id)
@@ -68,6 +70,7 @@ def get_business_summary(
             RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
             _rev_date >= period_start,
             _rev_date <= period_end,
+            JobPart.damaged == False,
         )
         .scalar()
         or Decimal("0")

@@ -103,6 +103,18 @@ export interface RepairJobCreate {
   received_at?: string; // YYYY-MM-DD — accounting period date for this job
 }
 
+export interface RepairJobUpdate {
+  customer_name?: string;
+  customer_phone?: string;
+  device_model?: string;
+  fault_description?: string;
+  labor_charge?: number;
+  total_charge?: number;
+  amount_paid?: number;
+  notes?: string;
+  completed_at?: string; // YYYY-MM-DD — backdatable for historical records
+}
+
 export interface AddPartPayload {
   item_id: string;
   quantity: number;

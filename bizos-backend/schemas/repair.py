@@ -60,6 +60,7 @@ class RepairJobUpdate(BaseModel):
     total_charge: Optional[Decimal] = Field(None, ge=Decimal("0"))
     amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0"))
     notes: Optional[str] = Field(None, max_length=1000)
+    completed_at: Optional[date] = None  # allow backdating for historical records
 
 
 class RepairStatusUpdate(BaseModel):
@@ -97,10 +98,10 @@ class RepairJobOut(BaseModel):
 
     @classmethod
     def from_orm_with_profit(cls, job) -> "RepairJobOut":
-        parts_cost = sum(
-            p.unit_cost * p.quantity for p in job.parts
-        )
-        profit = job.total_charge - parts_cost - job.labor_charge
+        # Damaged parts are already booked as damage_loss Expenses on the ledger.
+        # Including them here as COGS would double-count against profit.
+        parts_cost = sum(p.unit_cost * p.quantity for p in job.parts if not p.damaged)
+        profit = job.total_charge - parts_cost
         obj = cls.model_validate(job)
         obj.parts_cost = parts_cost
         obj.profit = profit
