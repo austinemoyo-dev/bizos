@@ -1,8 +1,12 @@
-from datetime import datetime, timezone
+import csv
+import io
+from datetime import datetime, timezone, date as date_type
+from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 from core.dependencies import get_current_user, get_db, role_required
@@ -37,6 +41,108 @@ NON_VIEWER = (
 )
 PART_ROLES = (UserRole.super_admin, UserRole.owner, UserRole.accountant, UserRole.technician)
 UPDATE_ROLES = (UserRole.super_admin, UserRole.owner, UserRole.accountant, UserRole.technician)
+
+REPAIR_CSV_HEADERS = (
+    "customer_name,customer_phone,device_type,device_model,fault_description,"
+    "labor_charge,total_charge,amount_paid,status,received_at,completed_at,notes\n"
+)
+REPAIR_CSV_EXAMPLE = (
+    "John Doe,08012345678,phone,iPhone 14,Cracked screen,"
+    "5000,22000,22000,received,2026-05-14,,Screen replacement\n"
+)
+VALID_DEVICE_TYPES = {
+    "phone", "tablet", "laptop", "computer", "fan",
+    "extension", "iron", "washing_machine", "tv", "gadget", "other",
+}
+VALID_STATUSES = {"received", "diagnosed", "in_progress", "completed", "delivered", "cancelled"}
+
+
+@router.get("/template/csv")
+def download_repair_csv_template():
+    return Response(
+        content=REPAIR_CSV_HEADERS + REPAIR_CSV_EXAMPLE,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=repairs_template.csv"},
+    )
+
+
+@router.post("/import/csv", status_code=201)
+def import_repairs_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(*NON_VIEWER)),
+):
+    try:
+        content = file.file.read().decode("utf-8-sig")
+    except Exception:
+        raise HTTPException(400, "Could not read file — ensure it is UTF-8 encoded")
+
+    reader = csv.DictReader(io.StringIO(content))
+    if "customer_name" not in (reader.fieldnames or []):
+        raise HTTPException(400, "CSV must have at least a 'customer_name' column")
+
+    created_count = 0
+    errors: list[dict] = []
+
+    for row_num, row in enumerate(reader, start=2):
+        try:
+            customer_name = row.get("customer_name", "").strip()
+            if not customer_name:
+                raise ValueError("customer_name is required")
+
+            raw_device = row.get("device_type", "phone").strip().lower() or "phone"
+            if raw_device not in VALID_DEVICE_TYPES:
+                raise ValueError(f"device_type '{raw_device}' must be one of: {', '.join(sorted(VALID_DEVICE_TYPES))}")
+
+            raw_status = row.get("status", "received").strip().lower() or "received"
+            if raw_status not in VALID_STATUSES:
+                raise ValueError(f"status '{raw_status}' must be one of: {', '.join(sorted(VALID_STATUSES))}")
+
+            def to_dec(val: str) -> Decimal:
+                v = val.strip().replace(",", "") if val else "0"
+                return Decimal(v) if v else Decimal("0")
+
+            def to_date_dt(val: str) -> datetime | None:
+                v = val.strip() if val else ""
+                if not v:
+                    return None
+                d = date_type.fromisoformat(v)
+                return datetime.combine(d, datetime.min.time()).replace(tzinfo=timezone.utc)
+
+            received_dt = to_date_dt(row.get("received_at", "")) or datetime.now(timezone.utc)
+            completed_dt = to_date_dt(row.get("completed_at", ""))
+
+            labor = to_dec(row.get("labor_charge", ""))
+            total = to_dec(row.get("total_charge", ""))
+            paid_raw = row.get("amount_paid", "").strip()
+            paid = Decimal(paid_raw.replace(",", "")) if paid_raw else total
+
+            job = RepairJob(
+                customer_name=customer_name,
+                customer_phone=row.get("customer_phone", "").strip() or None,
+                device_type=raw_device,
+                device_model=row.get("device_model", "").strip() or None,
+                fault_description=row.get("fault_description", "").strip() or None,
+                labor_charge=labor,
+                total_charge=total,
+                amount_paid=paid,
+                status=raw_status,
+                received_at=received_dt,
+                completed_at=completed_dt,
+                notes=row.get("notes", "").strip() or None,
+                created_by=current_user.id,
+            )
+            db.add(job)
+            created_count += 1
+        except (InvalidOperation, ValueError) as exc:
+            errors.append({"row": row_num, "customer": row.get("customer_name", ""), "error": str(exc)})
+        except Exception as exc:
+            errors.append({"row": row_num, "customer": row.get("customer_name", ""), "error": str(exc)})
+
+    if created_count:
+        db.commit()
+
+    return {"created": created_count, "errors": errors}
 
 
 @router.get("", response_model=List[RepairJobOut])

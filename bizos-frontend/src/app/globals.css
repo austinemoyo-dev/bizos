@@ -991,11 +991,12 @@ input[type=number]::-webkit-inner-spin-button {
 /* Layout */
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
-  max-width: 100%;
+  max-width: 100vw;
   background: var(--bg-base);
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Sidebar nav items — hover/active via CSS only, no JS handlers */
@@ -1100,6 +1101,8 @@ input[type=number]::-webkit-inner-spin-button {
   overflow-x: hidden;
   height: 100dvh;
   box-sizing: border-box;
+  /* Ensure it always fills its flex parent */
+  align-self: stretch;
 }
 
 .page-header {
@@ -1368,13 +1371,17 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOBILE — everything below here is mobile-only
+   MOBILE — full-screen layout, sidebar removed via JS in AppShell
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Hide sidebar ─────────────────────────────────────────────── */
-@media (max-width: 768px) {
+/* Sidebar hidden via JS conditional rendering (AppShell).
+   This CSS rule is a safety net only. */
+@media (max-width: 767px) {
   .sidebar {
     display: none !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    flex: none !important;
   }
 }
 
@@ -1482,30 +1489,46 @@ input[type=number]::-webkit-inner-spin-button {
   }
 }
 
-/* ── Adjust content + toast to clear the floating nav ─────────── */
-@media (max-width: 768px) {
+/* ── Full-screen mobile content ───────────────────────────────── */
+@media (max-width: 767px) {
+  /* App shell: single full-width column, no sidebar */
+  .app-shell {
+    flex-direction: column;
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Main content: full width, scrollable, clears bottom nav */
   .main-content {
+    width: 100vw;
+    max-width: 100vw;
     padding: var(--space-4) var(--space-4);
+    padding-top: var(--space-3);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
     height: auto;
-    min-height: 100dvh;
-    overflow-y: visible;
-    width: 100%;
-    max-width: 100%;
+    min-height: calc(100dvh - var(--header-height));
+    overflow-y: auto;
+    overflow-x: hidden;
     box-sizing: border-box;
+    /* Prevent any child from breaking out */
+    contain: layout style;
   }
 
-  .toast-container {
-    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
-    left: var(--space-4) !important;
-    right: var(--space-4) !important;
-  }
-
-  /* Force all direct page wrappers to fill width */
+  /* All direct children fill content area */
   .main-content > * {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Toast clears the bottom pill nav */
+  .toast-container {
+    bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+    left: var(--space-3) !important;
+    right: var(--space-3) !important;
+    max-width: calc(100vw - var(--space-6)) !important;
   }
 }
 
@@ -3030,13 +3053,7 @@ select.input option {
   z-index: 0;
 }
 
-/* ── 25. MOBILE CONTENT SPACING FIX ──────────────────────────── */
-/* Extra bottom safe area for phones with Home Indicator */
-@media (max-width: 768px) {
-  .main-content {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  }
-}
+/* ── 25. (consolidated into mobile layout block above) ────────── */
 
 /* ── 26. VIBRANT BADGE GLOW ──────────────────────────────────── */
 .badge-received  { box-shadow: 0 0 8px rgba(96,165,250,0.25); }

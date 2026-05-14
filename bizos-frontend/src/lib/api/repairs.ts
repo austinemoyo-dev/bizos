@@ -1,5 +1,5 @@
 import { api, toPage } from './client';
-import { RepairJob, RepairJobCreate, RepairJobUpdate, AddPartPayload, RepairStatus, CancelJobPayload, PaginatedResponse } from '@/types/api';
+import { RepairJob, RepairJobCreate, RepairJobUpdate, AddPartPayload, RepairStatus, CancelJobPayload, CsvImportResult, PaginatedResponse } from '@/types/api';
 
 export const repairsApi = {
   list: async (params?: { status?: string; q?: string; page?: number; size?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<RepairJob>> => {
@@ -24,6 +24,11 @@ export const repairsApi = {
     api.delete<void>(`/repairs/${jobId}/parts/${partId}`),
   cancelJob: (id: string, data: CancelJobPayload) =>
     api.post<RepairJob>(`/repairs/${id}/cancel`, data),
-  updatePayment: (id: string, amount_paid: number) => 
+  updatePayment: (id: string, amount_paid: number) =>
     api.patch<RepairJob>(`/repairs/${id}/payment`, { amount_paid }),
+  importCsv: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post<CsvImportResult>('/repairs/import/csv', fd);
+  },
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { repairsApi } from '@/lib/api/repairs';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -12,7 +12,7 @@ import { RepairJobForm } from '@/components/business/RepairJobForm';
 import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Search, ExternalLink, Download, Trash, Wrench } from 'lucide-react';
+import { Plus, Search, ExternalLink, Download, Upload, Loader2, Trash, Wrench } from 'lucide-react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
@@ -35,6 +35,8 @@ export default function RepairsPage() {
   const [search, setSearch] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showNewJob, setShowNewJob] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(search, 300);
 
   const handleQuickCancel = async (job: RepairJob) => {
@@ -93,30 +95,65 @@ export default function RepairsPage() {
     setShowNewJob(false);
   };
 
+  const handleDownloadTemplate = () => {
+    const csv =
+      'customer_name,customer_phone,device_type,device_model,fault_description,' +
+      'labor_charge,total_charge,amount_paid,status,received_at,completed_at,notes\n' +
+      'John Doe,08012345678,phone,iPhone 14,Cracked screen,5000,22000,22000,received,2026-05-14,,Screen replacement\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'repairs_template.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const result = await repairsApi.importCsv(file);
+      qc.invalidateQueries({ queryKey: ['repairs'] });
+      const msg = result.errors.length
+        ? `${result.created} imported, ${result.errors.length} rows had errors`
+        : `${result.created} jobs imported successfully`;
+      addToast({ type: result.errors.length ? 'warning' : 'success', title: 'CSV Import', message: msg });
+      if (result.errors.length) console.error('CSV import errors:', result.errors);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Import failed', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setImporting(false);
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Repair Jobs"
         actions={
           <>
+            <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+            <button className="btn-ghost" onClick={handleDownloadTemplate} style={{ gap: 'var(--space-2)' }} title="Download CSV template">
+              <Download size={14} /> Template
+            </button>
+            <IfRole minRole="technician">
+              <button className="btn-ghost" onClick={() => csvInputRef.current?.click()} disabled={importing} style={{ gap: 'var(--space-2)' }} title="Import jobs from CSV">
+                {importing ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />}
+                Import
+              </button>
+            </IfRole>
             <button
               className="btn-ghost"
               onClick={() => exportCsv('repairs', (data?.items ?? []).map(r => ({
-                job_number: r.job_number,
-                customer: r.customer_name,
-                phone: r.customer_phone ?? '',
-                device: r.device_type,
-                model: r.device_model ?? '',
-                status: r.status,
-                total_charge: r.total_charge,
-                labor_charge: r.labor_charge,
-                parts_cost: r.parts_cost,
-                profit: r.profit,
-                received_at: r.received_at,
+                job_number: r.job_number, customer: r.customer_name, phone: r.customer_phone ?? '',
+                device: r.device_type, model: r.device_model ?? '', status: r.status,
+                total_charge: r.total_charge, labor_charge: r.labor_charge,
+                parts_cost: r.parts_cost, profit: r.profit, received_at: r.received_at,
               })))}
               style={{ gap: 'var(--space-2)' }}
             >
-              <Download size={14} /> CSV
+              <Download size={14} /> Export
             </button>
             <IfRole minRole="technician">
               <button className="btn-primary" onClick={() => setShowNewJob(true)}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileTabBar } from './MobileTabBar';
 import { TopBar } from './TopBar';
@@ -13,27 +14,68 @@ import { usePathname } from 'next/navigation';
 export function AppShell({ children }: { children: React.ReactNode }) {
   useOnlineStatus();
   useSync();
-  const pathname = usePathname();
+
+  const pathname  = usePathname();
   const isPersonal = pathname.startsWith('/personal');
 
-  return (
-    <div className="app-shell" data-scope={isPersonal ? 'personal' : 'business'}>
-      <Sidebar />
+  /* ── Detect mobile once, keep in sync with resize ─────────────── */
+  const [isMobile, setIsMobile] = useState(false);
 
-      {/* Main Content Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, width: 0, overflow: 'hidden' }}>
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    const mq = window.matchMedia('(max-width: 767px)');
+    mq.addEventListener('change', check);
+    return () => mq.removeEventListener('change', check);
+  }, []);
+
+  return (
+    <div
+      className="app-shell"
+      data-scope={isPersonal ? 'personal' : 'business'}
+      style={{
+        display: 'flex',
+        width: '100%',
+        minHeight: '100dvh',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {/* Sidebar — only mounted when NOT mobile, eliminating any layout impact */}
+      {!isMobile && <Sidebar />}
+
+      {/* ── Main column — fills ALL remaining width ─────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: '1 1 0%',
+          minWidth: 0,
+          width: isMobile ? '100%' : undefined,
+          /* Prevent x-overflow from inner content */
+          overflowX: 'hidden',
+        }}
+      >
         <OfflineBanner />
         <TopBar />
 
-        <main className="main-content" style={{ flex: 1 }}>
+        <main
+          className="main-content"
+          style={{
+            flex: 1,
+            width: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+          }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              style={{ minHeight: '100%', width: '100%' }}
+              style={{ width: '100%', minWidth: 0, minHeight: '100%' }}
             >
               {children}
             </motion.div>
@@ -41,6 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
+      {/* Mobile bottom tab bar — fixed, rendered at root so it's never clipped */}
       <MobileTabBar />
       <ToastContainer />
     </div>
