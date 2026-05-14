@@ -93,10 +93,11 @@ export const analyticsApi = {
     const res = await api.get<PersonalCategoryItem[]>(`/analytics/personal/category-breakdown?${qs}`);
     return Array.isArray(res) ? res : [];
   },
-  debtors: async (): Promise<DebtorItem[]> => {
-    const res = await api.get<DebtorItem[] | { items?: DebtorItem[] }>('/analytics/business/debtors');
-    return Array.isArray(res) ? res : (res as any)?.items ?? [];
-  },
+  debtors: (): Promise<DebtorItem[]> =>
+    withOfflineCache('biz-debtors', async () => {
+      const res = await api.get<DebtorItem[] | { items?: DebtorItem[] }>('/analytics/business/debtors');
+      return Array.isArray(res) ? res : (res as any)?.items ?? [];
+    }),
   
   getMonthlyGoal: (params?: { month?: number; year?: number }) => {
     const qs = new URLSearchParams();

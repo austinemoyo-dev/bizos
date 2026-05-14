@@ -21,14 +21,16 @@ export const personalApi = {
     delete: (id: string) => api.delete<void>(`/personal/transactions/${id}`),
   },
   savings: {
-    list: () => api.get<SavingsGoal[]>('/personal/savings'),
+    list: (): Promise<SavingsGoal[]> =>
+      withOfflineCache('savings-list', () => api.get<SavingsGoal[]>('/personal/savings')),
     create: (data: SavingsGoalCreate) => api.post<SavingsGoal>('/personal/savings', data),
     deposit: (id: string, amount: number) =>
       api.post<SavingsGoal>(`/personal/savings/${id}/deposit`, { amount }),
     delete: (id: string) => api.delete<void>(`/personal/savings/${id}`),
   },
   marketList: {
-    list: () => api.get<MarketItem[]>('/personal/market-list'),
+    list: (): Promise<MarketItem[]> =>
+      withOfflineCache('market-list', () => api.get<MarketItem[]>('/personal/market-list')),
     create: (data: MarketItemCreate) => api.post<MarketItem>('/personal/market-list', data),
     toggle: (id: string) => api.patch<MarketItem>(`/personal/market-list/${id}/toggle`, {}),
     delete: (id: string) => api.delete<void>(`/personal/market-list/${id}`),

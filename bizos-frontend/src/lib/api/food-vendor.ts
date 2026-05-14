@@ -1,4 +1,5 @@
 import { api } from './client';
+import { withOfflineCache } from '@/lib/db/offlineCache';
 import { FoodCredit, FoodCreditCreate, FoodVendorPayment } from '@/types/api';
 
 export interface FoodVendorAnalytics {
@@ -26,17 +27,22 @@ export interface VendorSpendingSummary {
 
 export const foodVendorApi = {
   credits: {
-    list: (params?: { paid?: boolean }) => {
+    list: (params?: { paid?: boolean }): Promise<FoodCredit[]> => {
       const qs = new URLSearchParams();
       if (params?.paid !== undefined) qs.set('paid', String(params.paid));
-      return api.get<FoodCredit[]>(`/food-vendor/credits?${qs}`);
+      return withOfflineCache(`food-credits-${params?.paid ?? 'all'}`, () =>
+        api.get<FoodCredit[]>(`/food-vendor/credits?${qs}`));
     },
     create: (data: FoodCreditCreate) => api.post<FoodCredit>('/food-vendor/credits', data),
   },
   pay: (credit_ids: string[], vendor_name: string = 'Food Vendor') =>
     api.post<FoodVendorPayment>('/food-vendor/pay', { credit_ids, vendor_name }),
-  payments: () => api.get<FoodVendorPayment[]>('/food-vendor/payments'),
-  analytics: () => api.get<FoodVendorAnalytics>('/food-vendor/analytics'),
-  trend: (days = 30) => api.get<FoodTrendPoint[]>(`/food-vendor/trend?days=${days}`),
-  vendorBreakdown: () => api.get<VendorSpendingSummary[]>('/food-vendor/vendor-breakdown'),
+  payments: (): Promise<FoodVendorPayment[]> =>
+    withOfflineCache('food-payments', () => api.get<FoodVendorPayment[]>('/food-vendor/payments')),
+  analytics: (): Promise<FoodVendorAnalytics> =>
+    withOfflineCache('food-analytics', () => api.get<FoodVendorAnalytics>('/food-vendor/analytics')),
+  trend: (days = 30): Promise<FoodTrendPoint[]> =>
+    withOfflineCache(`food-trend-${days}`, () => api.get<FoodTrendPoint[]>(`/food-vendor/trend?days=${days}`)),
+  vendorBreakdown: (): Promise<VendorSpendingSummary[]> =>
+    withOfflineCache('food-vendor-breakdown', () => api.get<VendorSpendingSummary[]>('/food-vendor/vendor-breakdown')),
 };

@@ -7,7 +7,8 @@
       "Bash(pkill -f \"python -m uvicorn\")",
       "Bash(netstat -ano)",
       "Bash(venv/Scripts/python -m alembic revision --autogenerate -m \"cancel_status_device_types_selling_price\")",
-      "Bash(venv/Scripts/python -m alembic upgrade head)"
+      "Bash(venv/Scripts/python -m alembic upgrade head)",
+      "Read(//c/c/Users/CEMEX/Videos/biz/bizos-frontend/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\CEMEX\\Videos\\biz\\bizos-frontend\\src\\app\\(app)\\business\\inventory"

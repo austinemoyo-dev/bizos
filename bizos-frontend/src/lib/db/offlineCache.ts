@@ -22,14 +22,17 @@ export async function withOfflineCache<T>(
       .catch(() => {});
     return result;
   } catch (err) {
-    const isOffline =
-      typeof navigator !== 'undefined' && !navigator.onLine;
+    // Two cases warrant reading from cache:
+    //  1. navigator.onLine is false (device has no network interface)
+    //  2. TypeError: fetch itself threw a network error (e.g., Wi-Fi connected but
+    //     no internet — navigator.onLine is true but requests still fail)
+    const isNetworkError =
+      (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      err instanceof TypeError;
 
-    if (isOffline) {
+    if (isNetworkError) {
       const cached = await db.offlineCache.get(key).catch(() => null);
-      if (cached) {
-        return JSON.parse(cached.data) as T;
-      }
+      if (cached) return JSON.parse(cached.data) as T;
     }
 
     throw err;

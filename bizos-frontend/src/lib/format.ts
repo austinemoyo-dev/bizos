@@ -14,16 +14,33 @@ export const formatCompact = (amount: number): string => {
   return formatNaira(amount);
 };
 
+/**
+ * Safely parse a date string into a Date.
+ *
+ * The JS spec treats "YYYY-MM-DD" as UTC midnight, which shifts the displayed
+ * date by one day for users in UTC+ timezones (e.g. Nigeria WAT = UTC+1).
+ * Appending T00:00:00 (no Z) forces the engine to use local time instead.
+ *
+ * Full ISO-8601 datetime strings (with T) are left unchanged — they already
+ * carry enough information for the engine to interpret correctly.
+ */
+function parseDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  return /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(date + 'T00:00:00')   // local midnight, not UTC midnight
+    : new Date(date);
+}
+
 export const formatDate = (date: string | Date): string =>
   new Intl.DateTimeFormat('en-NG', {
     day: '2-digit', month: 'short', year: 'numeric',
-  }).format(new Date(date));
+  }).format(parseDate(date));
 
 export const formatDateTime = (date: string | Date): string =>
   new Intl.DateTimeFormat('en-NG', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
-  }).format(new Date(date));
+  }).format(parseDate(date));
 
 export const formatProfit = (profit: number) => ({
   formatted: formatNaira(Math.abs(profit)),
