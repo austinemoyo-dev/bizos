@@ -1,5 +1,5 @@
 import { api, toPage } from './client';
-import { Item, ItemCreate, RestockPayload, PaginatedResponse } from '@/types/api';
+import { Item, ItemCreate, RestockPayload, CsvImportResult, PaginatedResponse } from '@/types/api';
 
 export const inventoryApi = {
   list: async (params?: { q?: string; category?: string; page?: number; size?: number }): Promise<PaginatedResponse<Item>> => {
@@ -27,4 +27,10 @@ export const inventoryApi = {
   update: (id: string, data: Partial<ItemCreate>) => api.put<Item>(`/inventory/${id}`, data),
   restock: (id: string, data: RestockPayload) => api.post<Item>(`/inventory/${id}/restock`, data),
   delete: (id: string) => api.delete<void>(`/inventory/${id}`),
+  csvTemplate: () => api.get<Blob>('/inventory/template/csv'),
+  importCsv: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post<CsvImportResult>('/inventory/import/csv', fd);
+  },
 };

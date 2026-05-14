@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${dmSans.variable} ${spaceMono.variable} ${syne.variable}`}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0A0C10" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -43,15 +43,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <NextTopLoader
-          color="#3B82F6"
+          color="#C8102E"
           initialPosition={0.08}
           crawlSpeed={200}
-          height={3}
+          height={2}
           crawl={true}
           showSpinner={false}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #3B82F6,0 0 5px #3B82F6"
+          shadow="0 0 10px rgba(200,16,46,0.7),0 0 5px rgba(200,16,46,0.4)"
+          zIndex={9998}
         />
         <Providers>{children}</Providers>
       </body>

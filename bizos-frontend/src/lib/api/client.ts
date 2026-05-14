@@ -8,8 +8,10 @@ interface RequestOptions extends RequestInit {
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options;
 
+  // Let the browser set Content-Type automatically for FormData (multipart + boundary).
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
 
@@ -102,7 +104,7 @@ export const api = {
   get:    <T>(url: string, opts?: RequestOptions) =>
     request<T>(url, { method: 'GET', ...opts }),
   post:   <T>(url: string, body?: unknown, opts?: RequestOptions) =>
-    request<T>(url, { method: 'POST', body: JSON.stringify(body), ...opts }),
+    request<T>(url, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body), ...opts }),
   put:    <T>(url: string, body?: unknown, opts?: RequestOptions) =>
     request<T>(url, { method: 'PUT', body: JSON.stringify(body), ...opts }),
   patch:  <T>(url: string, body?: unknown, opts?: RequestOptions) =>

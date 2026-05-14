@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, height: '100dvh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, width: 0, overflow: 'hidden' }}>
         <OfflineBanner />
         <TopBar />
 
@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              style={{ minHeight: '100%' }}
+              style={{ minHeight: '100%', width: '100%' }}
             >
               {children}
             </motion.div>

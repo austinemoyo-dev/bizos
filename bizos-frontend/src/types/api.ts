@@ -43,6 +43,12 @@ export interface ItemCreate {
 export interface RestockPayload {
   quantity: number;
   unit_cost: number;
+  restock_date?: string; // YYYY-MM-DD
+}
+
+export interface CsvImportResult {
+  created: number;
+  errors: { row: number; name: string; error: string }[];
 }
 
 // Repairs

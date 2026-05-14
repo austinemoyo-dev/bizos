@@ -10,16 +10,7 @@ from models.inventory import Item
 from models.repair import RepairJob, RepairStatus
 from models.sales import Sale
 from models.tithe import TitheRecord, TitheScope
-from schemas.analytics import (
-    BusinessSummary,
-    ExpenseBreakdown,
-    PeriodComparison,
-    PersonalSummaryAnalytics,
-    RepairStats,
-    RevenueTrendPoint,
-    SpendingTrendPoint,
-    TopItem,
-)
+from schemas.analytics import BusinessSummary, ExpenseBreakdown
 
 
 def get_business_summary(
@@ -101,17 +92,10 @@ def get_business_summary(
 
     cash_collected = cash_from_repairs + cash_from_sales
 
-    total_expenses = (
-        db.query(func.sum(Expense.amount))
-        .filter(
-            Expense.expense_date >= period_start,
-            Expense.expense_date <= period_end,
-        )
-        .scalar()
-        or Decimal("0")
-    )
-
     from models.expense import ExpenseCategory
+    # Operating expenses = everything except inventory purchases.
+    # Inventory purchases are CAPITAL items (added to stock), not P&L expenses;
+    # their cost enters the P&L via COGS (sale_cogs + repair_parts_cost) when goods are sold/used.
     operating_expenses = (
         db.query(func.sum(Expense.amount))
         .filter(
@@ -123,8 +107,12 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    # Actual pure profit (subtracts COGS and parts cost)
     net_profit = sale_profit + repair_profit - operating_expenses
+
+    # total_expenses = COGS + operating_expenses so that: revenue - expenses = net_profit exactly.
+    # sale_cogs is implicit: sale_revenue - sale_profit (no extra query needed).
+    sale_cogs = sale_revenue - sale_profit
+    total_expenses = sale_cogs + repair_parts_cost + operating_expenses
 
     tithe_due = (
         db.query(func.sum(TitheRecord.tithe_amount))

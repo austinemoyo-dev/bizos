@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
@@ -52,6 +52,7 @@ class ItemOut(BaseModel):
 class RestockRequest(BaseModel):
     quantity: int = Field(ge=1)
     unit_cost: Decimal = Field(gt=Decimal("0"))
+    restock_date: Optional[date] = None  # backdatable for historical restock records
 
 
 class StockMovementOut(BaseModel):
