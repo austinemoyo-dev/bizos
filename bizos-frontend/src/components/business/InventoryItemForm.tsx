@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { ItemCreate, Item } from '@/types/api';
 import { Loader2 } from 'lucide-react';
@@ -24,6 +25,7 @@ export function InventoryItemForm({ initial, onSubmit, onCancel, submitLabel = '
     quantity_in_stock: initial?.quantity_in_stock ?? 0,
     reorder_level: initial?.reorder_level ?? 5,
     supplier: initial?.supplier ?? '',
+    purchase_date: initial?.created_at?.slice(0, 10) ?? format(new Date(), 'yyyy-MM-dd'),
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +38,8 @@ export function InventoryItemForm({ initial, onSubmit, onCancel, submitLabel = '
     setError('');
     setLoading(true);
     try {
-      await onSubmit(form);
+      const data = initial ? { ...form, purchase_date: undefined } : form;
+      await onSubmit(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save item');
     } finally {
@@ -83,6 +86,19 @@ export function InventoryItemForm({ initial, onSubmit, onCancel, submitLabel = '
             onChange={(e) => set('reorder_level', parseInt(e.target.value) || 0)} />
         </div>
       </div>
+      {!initial && (
+        <div className="form-group">
+          <label className="form-label">Purchase Date *</label>
+          <input
+            type="date"
+            className="input"
+            value={form.purchase_date ?? ''}
+            max={format(new Date(), 'yyyy-MM-dd')}
+            onChange={(e) => set('purchase_date', e.target.value)}
+            required
+          />
+        </div>
+      )}
       <div className="form-group">
         <label className="form-label">Supplier</label>
         <input className="input" value={form.supplier ?? ''}

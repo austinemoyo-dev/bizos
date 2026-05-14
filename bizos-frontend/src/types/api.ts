@@ -38,6 +38,7 @@ export interface ItemCreate {
   quantity_in_stock: number;
   reorder_level: number;
   supplier?: string;
+  purchase_date?: string; // YYYY-MM-DD
 }
 
 export interface RestockPayload {

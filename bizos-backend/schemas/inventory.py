@@ -17,6 +17,7 @@ class ItemCreate(BaseModel):
     reorder_level: int = Field(5, ge=0)
     supplier: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = Field(None, max_length=1000)
+    purchase_date: Optional[date] = None  # backdatable for initial inventory records
 
 
 class ItemUpdate(BaseModel):

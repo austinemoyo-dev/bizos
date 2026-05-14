@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api/inventory';
@@ -27,6 +28,7 @@ export default function InventoryDetailPage() {
   const [restockOpen, setRestockOpen] = useState(false);
   const [restockQty, setRestockQty] = useState(1);
   const [restockCost, setRestockCost] = useState(0);
+  const [restockDate, setRestockDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [restocking, setRestocking] = useState(false);
 
   const { data: item, isLoading } = useQuery<Item>({
@@ -48,13 +50,14 @@ export default function InventoryDetailPage() {
     if (!item || restockQty < 1) return;
     setRestocking(true);
     try {
-      await inventoryApi.restock(item.id, { quantity: restockQty, unit_cost: restockCost });
+      await inventoryApi.restock(item.id, { quantity: restockQty, unit_cost: restockCost, restock_date: restockDate });
       qc.invalidateQueries({ queryKey: ['inventory-item', id] });
       qc.invalidateQueries({ queryKey: ['inventory'] });
       addToast({ type: 'success', title: `Restocked ×${restockQty} units`, message: restockCost > 0 ? `₦${(restockQty * restockCost).toLocaleString()} expense recorded automatically` : undefined });
       setRestockOpen(false);
       setRestockQty(1);
       setRestockCost(0);
+      setRestockDate(format(new Date(), 'yyyy-MM-dd'));
     } catch (err) {
       addToast({ type: 'error', title: 'Restock failed', message: err instanceof Error ? err.message : '' });
     } finally {
@@ -335,6 +338,20 @@ export default function InventoryDetailPage() {
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Current stock</p>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>
             {item.quantity_in_stock} units
+          </p>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Date Restocked *</label>
+          <input
+            type="date"
+            className="input"
+            value={restockDate}
+            max={format(new Date(), 'yyyy-MM-dd')}
+            onChange={(e) => setRestockDate(e.target.value)}
+            required
+          />
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+            Sets the expense date for this purchase in the accounts.
           </p>
         </div>
         <div className="form-group">

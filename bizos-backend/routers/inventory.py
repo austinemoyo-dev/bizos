@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 from uuid import UUID
@@ -39,7 +39,17 @@ def create_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(UserRole.super_admin, UserRole.owner, UserRole.accountant, UserRole.technician)),
 ):
-    item = Item(**payload.model_dump())
+    data = payload.model_dump()
+    purchase_date = data.pop("purchase_date", None)
+    created_at = (
+        datetime.combine(purchase_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        if purchase_date else None
+    )
+
+    item = Item(**data)
+    if created_at:
+        item.created_at = created_at
+        item.updated_at = created_at
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -53,6 +63,7 @@ def create_item(
             movement_type=MovementType.purchase,
             quantity=item.quantity_in_stock,
             unit_cost=item.purchase_price,
+            created_at=created_at or datetime.utcnow(),
             note=f"Initial stock: {item.quantity_in_stock} units at ₦{item.purchase_price} each",
         )
         db.add(movement)
@@ -60,6 +71,7 @@ def create_item(
         expense = Expense(
             category=ExpenseCategory.inventory,
             amount=item.purchase_price * item.quantity_in_stock,
+            expense_date=purchase_date or date.today(),
             description=f"Purchased initial stock of {item.quantity_in_stock}× {item.name} at ₦{item.purchase_price}/unit",
             created_by=current_user.id
         )
