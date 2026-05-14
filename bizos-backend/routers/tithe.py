@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from core.dependencies import get_current_user, get_db, role_required
 from models.tithe import TitheRecord, TitheScope
 from models.user import User, UserRole
-from schemas.tithe import TitheRecordOut, TitheUnpaidTotal
+from schemas.tithe import TithePayRequest, TitheRecordOut, TitheUnpaidTotal
 from services.tithe_service import get_unpaid_total, pay_tithe
 
 router = APIRouter()
@@ -30,9 +30,11 @@ def list_tithe(
     if paid is not None:
         q = q.filter(TitheRecord.paid == paid)
     if date_from:
-        q = q.filter(func.date(TitheRecord.created_at) >= date_from)
+        date_column = TitheRecord.paid_at if paid is True else TitheRecord.created_at
+        q = q.filter(func.date(date_column) >= date_from)
     if date_to:
-        q = q.filter(func.date(TitheRecord.created_at) <= date_to)
+        date_column = TitheRecord.paid_at if paid is True else TitheRecord.created_at
+        q = q.filter(func.date(date_column) <= date_to)
     return q.order_by(TitheRecord.created_at.desc()).all()
 
 
@@ -51,7 +53,8 @@ def unpaid_total(
 @router.post("/{tithe_id}/pay", response_model=TitheRecordOut)
 def pay(
     tithe_id: UUID,
+    payload: TithePayRequest = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(UserRole.owner, UserRole.super_admin)),
 ):
-    return pay_tithe(db, tithe_id)
+    return pay_tithe(db, tithe_id, payload.paid_date if payload else None)

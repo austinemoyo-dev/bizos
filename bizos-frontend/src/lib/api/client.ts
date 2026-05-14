@@ -7,6 +7,7 @@ interface RequestOptions extends RequestInit {
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options;
+  const method = (fetchOptions.method ?? 'GET').toUpperCase();
 
   // Let the browser set Content-Type automatically for FormData (multipart + boundary).
   const isFormData = options.body instanceof FormData;
@@ -20,13 +21,25 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...fetchOptions,
-    headers,
-    // credentials: 'include' sends the HttpOnly refresh_token cookie on every request,
-    // which is required for the /auth/refresh endpoint to work from the browser
-    credentials: 'include',
-  });
+  if (shouldQueueOffline(method, skipAuth, isFormData)) {
+    const queued = await queueOfflineMutation<T>(endpoint, method, options.body);
+    if (queued) return queued;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      // credentials: 'include' sends the HttpOnly refresh_token cookie on every request,
+      // which is required for the /auth/refresh endpoint to work from the browser
+      credentials: 'include',
+    });
+  } catch (err) {
+    const queued = await queueOfflineMutation<T>(endpoint, method, options.body, err);
+    if (queued) return queued;
+    throw err;
+  }
 
   if (response.status === 401) {
     if (skipAuth || endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || options._retry) {
@@ -71,6 +84,55 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   if (response.status === 204) return undefined as T;
   return response.json();
+}
+
+function shouldQueueOffline(method: string, skipAuth: boolean, isFormData: boolean): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !skipAuth &&
+    !navigator.onLine &&
+    method !== 'GET' &&
+    !isFormData
+  );
+}
+
+async function queueOfflineMutation<T>(
+  endpoint: string,
+  method: string,
+  body?: BodyInit | null,
+  error?: unknown,
+): Promise<T | null> {
+  if (typeof window === 'undefined' || method === 'GET' || method === 'HEAD') return null;
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return null;
+
+  const isNetworkFailure = !error || error instanceof TypeError || (error instanceof Error && /fetch|network/i.test(error.message));
+  if (!isNetworkFailure) return null;
+
+  let payload: object | undefined;
+  if (typeof body === 'string' && body.length > 0) {
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      return null;
+    }
+  } else if (body == null) {
+    payload = undefined;
+  } else {
+    return null;
+  }
+
+  const { queueMutation } = await import('@/lib/sync/syncQueue');
+  await queueMutation(endpoint, method as 'POST' | 'PUT' | 'PATCH' | 'DELETE', payload);
+
+  if (method === 'DELETE') return undefined as T;
+
+  return {
+    id: `offline-${Date.now()}`,
+    ...(payload ?? {}),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    _queued: true,
+  } as T;
 }
 
 async function attemptRefresh(): Promise<boolean> {

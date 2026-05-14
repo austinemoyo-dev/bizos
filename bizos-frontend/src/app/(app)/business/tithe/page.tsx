@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { titheApi } from '@/lib/api/tithe';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { TitheCard } from '@/components/business/TitheCard';
@@ -19,6 +20,7 @@ export default function BusinessTithePage() {
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [payingAll, setPayingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [paidDate, setPaidDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const { data: unpaidData, isLoading: loadingUnpaid } = useQuery({
     queryKey: ['tithe', 'business', 'unpaid'],
@@ -55,7 +57,7 @@ export default function BusinessTithePage() {
   };
 
   const handleMarkPaid = async (id: string) => {
-    await titheApi.markPaid(id);
+    await titheApi.markPaid(id, { paid_date: paidDate });
     qc.invalidateQueries({ queryKey: ['tithe'] });
     qc.invalidateQueries({ queryKey: ['business-summary'] });
     setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
@@ -70,7 +72,7 @@ export default function BusinessTithePage() {
     let paid = 0;
     for (const id of ids) {
       try {
-        await titheApi.markPaid(id);
+        await titheApi.markPaid(id, { paid_date: paidDate });
         paid++;
       } catch {}
     }
@@ -108,6 +110,19 @@ export default function BusinessTithePage() {
         <StatWidget label="Total Due" value={formatNaira(totalDue)} accent="warning" />
         <StatWidget label="Total Paid" value={formatNaira(totalPaid)} accent="profit" />
       </div>
+
+      {unpaidItems.length > 0 && (
+        <div className="form-group" style={{ maxWidth: 240, marginBottom: 'var(--space-4)' }}>
+          <label className="form-label">Payment Date</label>
+          <input
+            type="date"
+            className="input"
+            value={paidDate}
+            max={format(new Date(), 'yyyy-MM-dd')}
+            onChange={(e) => setPaidDate(e.target.value)}
+          />
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
         <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>
@@ -190,6 +205,16 @@ export default function BusinessTithePage() {
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
             Each item will create an Expense record automatically.
           </p>
+          <div className="form-group" style={{ textAlign: 'left', marginTop: 'var(--space-4)' }}>
+            <label className="form-label">Payment Date</label>
+            <input
+              type="date"
+              className="input"
+              value={paidDate}
+              max={format(new Date(), 'yyyy-MM-dd')}
+              onChange={(e) => setPaidDate(e.target.value)}
+            />
+          </div>
         </div>
       </Modal>
     </div>

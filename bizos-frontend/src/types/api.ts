@@ -218,6 +218,10 @@ export interface Tithe {
   created_at: string;
 }
 
+export interface TithePayPayload {
+  paid_date?: string;
+}
+
 // Personal Finance
 export interface PersonalTransaction {
   id: string;

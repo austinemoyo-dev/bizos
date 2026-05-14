@@ -1,5 +1,5 @@
 import { api, toPage } from './client';
-import { Tithe, PaginatedResponse } from '@/types/api';
+import { Tithe, TithePayPayload, PaginatedResponse } from '@/types/api';
 
 export const titheApi = {
   list: async (params?: { scope?: string; paid?: boolean; page?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<Tithe>> => {
@@ -12,5 +12,5 @@ export const titheApi = {
     const raw = await api.get<Tithe[] | PaginatedResponse<Tithe>>(`/tithe?${qs}`);
     return toPage(raw as any);
   },
-  markPaid: (id: string) => api.post<Tithe>(`/tithe/${id}/pay`, {}),
+  markPaid: (id: string, data?: TithePayPayload) => api.post<Tithe>(`/tithe/${id}/pay`, data ?? {}),
 };

@@ -14,6 +14,7 @@ export async function queueMutation(
     created_at: Date.now(),
     retries: 0,
   });
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('bizos-sync-queue-changed'));
 
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
     try {
@@ -52,6 +53,7 @@ export async function flushSyncQueue(): Promise<{ synced: number; failed: number
 
       if (res.ok || (res.status >= 400 && res.status < 500)) {
         await db.pendingSync.delete(item.id!);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('bizos-sync-queue-changed'));
         if (res.ok) synced++;
         else failed++;
       } else {

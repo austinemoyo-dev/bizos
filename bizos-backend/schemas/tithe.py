@@ -7,6 +7,10 @@ from pydantic import UUID4, BaseModel
 from models.tithe import TitheScope
 
 
+class TithePayRequest(BaseModel):
+    paid_date: Optional[date] = None
+
+
 class TitheRecordOut(BaseModel):
     id: UUID4
     scope: TitheScope

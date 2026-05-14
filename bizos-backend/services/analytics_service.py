@@ -92,16 +92,12 @@ def get_business_summary(
 
     cash_collected = cash_from_repairs + cash_from_sales
 
-    from models.expense import ExpenseCategory
-    # Operating expenses = everything except inventory purchases.
-    # Inventory purchases are CAPITAL items (added to stock), not P&L expenses;
-    # their cost enters the P&L via COGS (sale_cogs + repair_parts_cost) when goods are sold/used.
+    # Include inventory purchase expenses so dashboard and analytics match the expense ledger.
     operating_expenses = (
         db.query(func.sum(Expense.amount))
         .filter(
             Expense.expense_date >= period_start,
             Expense.expense_date <= period_end,
-            Expense.category != ExpenseCategory.inventory
         )
         .scalar()
         or Decimal("0")
@@ -132,8 +128,8 @@ def get_business_summary(
         .filter(
             TitheRecord.scope == TitheScope.business,
             TitheRecord.paid == True,
-            func.date(TitheRecord.created_at) >= period_start,
-            func.date(TitheRecord.created_at) <= period_end,
+            func.date(TitheRecord.paid_at) >= period_start,
+            func.date(TitheRecord.paid_at) <= period_end,
         )
         .scalar()
         or Decimal("0")

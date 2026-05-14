@@ -43,7 +43,7 @@ export function TitheCard({ tithe, onMarkPaid }: TitheCardProps) {
             {formatNaira(Number(tithe.tithe_amount))}
           </p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-            {tithe.source ?? 'Business Tithe'} • {formatDate(tithe.created_at)}
+            {tithe.source ?? 'Business Tithe'} • {formatDate(tithe.paid ? tithe.paid_at ?? tithe.created_at : tithe.created_at)}
           </p>
         </div>
       </div>
@@ -68,4 +68,3 @@ export function TitheCard({ tithe, onMarkPaid }: TitheCardProps) {
     </div>
   );
 }
-

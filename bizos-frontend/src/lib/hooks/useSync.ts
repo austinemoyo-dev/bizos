@@ -14,6 +14,10 @@ export function useSync() {
     };
     update();
     const interval = setInterval(update, 30_000);
-    return () => clearInterval(interval);
+    window.addEventListener('bizos-sync-queue-changed', update);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('bizos-sync-queue-changed', update);
+    };
   }, [setPendingSyncCount]);
 }

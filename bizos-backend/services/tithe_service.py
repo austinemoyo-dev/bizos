@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -41,24 +41,30 @@ def create_personal_tithe(db: Session, income: Decimal) -> TitheRecord:
     return record
 
 
-def pay_tithe(db: Session, tithe_id: UUID) -> TitheRecord:
+def pay_tithe(db: Session, tithe_id: UUID, paid_date: date = None) -> TitheRecord:
     record = db.query(TitheRecord).filter_by(id=tithe_id).first()
     if not record:
         raise HTTPException(404, "Tithe record not found")
     if record.paid:
         raise HTTPException(400, "Tithe already paid")
 
+    paid_at = (
+        datetime.combine(paid_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        if paid_date else datetime.utcnow()
+    )
+
     expense = Expense(
         category=ExpenseCategory.tithe,
         amount=record.tithe_amount,
         description=f"{record.scope.value.capitalize()} tithe payment",
+        expense_date=paid_date or date.today(),
         reference_id=record.id,
     )
     db.add(expense)
     db.flush()  # get expense.id
 
     record.paid = True
-    record.paid_at = datetime.utcnow()
+    record.paid_at = paid_at
     record.expense_id = expense.id
 
     db.commit()
