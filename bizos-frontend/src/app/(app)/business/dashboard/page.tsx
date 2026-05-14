@@ -10,10 +10,10 @@ import { useLowStock } from '@/lib/hooks/useLowStock';
 import { RevenueAreaChart } from '@/components/charts/RevenueAreaChart';
 import { ExpensePieChart } from '@/components/charts/ExpensePieChart';
 import { formatNaira, formatCompact, formatProfit } from '@/lib/format';
-import { stagger, fadeUp } from '@/lib/motion-variants';
+import { stagger, fadeUp, scrollFadeUp } from '@/lib/motion-variants';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, subMonths } from 'date-fns';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { ChevronRight, Wrench, Target } from 'lucide-react';
+import { ChevronRight, Wrench, Target, TrendingDown } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import Link from 'next/link';
@@ -94,6 +94,7 @@ export default function BusinessDashboard() {
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const isLoss     = summary ? summary.net_profit < 0 : false;
   const profitInfo = summary ? formatProfit(summary.net_profit) : null;
   const recentJobs = recentJobsData?.items ?? [];
 
@@ -165,15 +166,31 @@ export default function BusinessDashboard() {
 
       {/* Hero revenue card */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
+        className={isLoss ? 'hero-card-loss' : ''}
         style={{
-          background: 'linear-gradient(135deg, #8B0018 0%, #C8102E 60%, #E8183A 100%)',
+          background: isLoss
+            ? 'linear-gradient(135deg, #1a0000 0%, #4a0000 55%, #700010 100%)'
+            : 'linear-gradient(135deg, #8B0018 0%, #C8102E 60%, #E8183A 100%)',
           borderRadius: 20, padding: 'var(--space-6)',
           marginBottom: 'var(--space-4)',
           position: 'relative', overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(200,16,46,0.4)',
+          boxShadow: isLoss
+            ? '0 8px 32px rgba(239,68,68,0.28)'
+            : '0 8px 32px rgba(200,16,46,0.4)',
+          transition: 'background 0.5s ease, box-shadow 0.5s ease',
         }}>
+        {/* Decorative orbs */}
         <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'absolute', bottom: -60, right: 20, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        {/* Top-left shine */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '55%', height: '50%', background: 'radial-gradient(ellipse at 10% 10%, rgba(255,255,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        {/* Loss badge */}
+        {isLoss && (
+          <div className="hero-loss-badge">
+            <TrendingDown size={11} />
+            Loss
+          </div>
+        )}
         <p style={{ fontSize: 'var(--text-xs)', color: 'rgba(255,255,255,0.65)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-2)' }}>
           Total Revenue
         </p>
@@ -222,12 +239,35 @@ export default function BusinessDashboard() {
 
       {/* Quick stat row */}
       <motion.div variants={stagger} initial="initial" animate="animate" className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
-        <StatWidget label="Tithe Due" value={summary ? formatNaira(summary.tithe_due) : '—'} accent="warning" loading={isLoading} />
-        <StatWidget label="Pending Jobs" value={summary ? String(summary.pending_jobs) : '—'} accent="neutral" loading={isLoading} />
-        <StatWidget label="Inventory Purchased" value={summary ? formatNaira(summary.inventory_value) : '—'} accent="neutral" loading={isLoading} />
+        <StatWidget
+          label="Tithe Due"
+          value={summary ? formatNaira(summary.tithe_due) : '—'}
+          numericValue={summary?.tithe_due}
+          numericFormat="currency"
+          accent="warning"
+          loading={isLoading}
+        />
+        <StatWidget
+          label="Pending Jobs"
+          value={summary ? String(summary.pending_jobs) : '—'}
+          numericValue={summary?.pending_jobs}
+          numericFormat="number"
+          accent="neutral"
+          loading={isLoading}
+        />
+        <StatWidget
+          label="Inventory Value"
+          value={summary ? formatNaira(summary.inventory_value) : '—'}
+          numericValue={summary?.inventory_value}
+          numericFormat="currency"
+          accent="neutral"
+          loading={isLoading}
+        />
         <StatWidget
           label="Low Stock"
           value={summary ? String(summary.low_stock_count) : '—'}
+          numericValue={summary?.low_stock_count}
+          numericFormat="number"
           accent={summary && summary.low_stock_count > 5 ? 'loss' : 'warning'}
           loading={isLoading}
         />
@@ -334,7 +374,7 @@ export default function BusinessDashboard() {
 
       {/* Revenue chart */}
       {trendData && trendData.length > 0 && (
-        <motion.div variants={fadeUp} initial="initial" animate="animate"
+        <motion.div {...scrollFadeUp}
           style={{ background: 'var(--bg-surface)', borderRadius: 20, padding: 'var(--space-5)', marginBottom: 'var(--space-4)', border: '1px solid var(--border-subtle)' }}>
           <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 'var(--space-3)' }}>
             Revenue vs Expenses
@@ -344,7 +384,7 @@ export default function BusinessDashboard() {
       )}
 
       {/* Recent repairs */}
-      <motion.div variants={fadeUp} initial="initial" animate="animate"
+      <motion.div {...scrollFadeUp}
         style={{ background: 'var(--bg-surface)', borderRadius: 20, border: '1px solid var(--border-subtle)', marginBottom: 'var(--space-4)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -374,7 +414,7 @@ export default function BusinessDashboard() {
 
       {/* Expense breakdown */}
       {expenseBreakdown && expenseBreakdown.length > 0 && (
-        <motion.div variants={fadeUp} initial="initial" animate="animate"
+        <motion.div {...scrollFadeUp}
           style={{ background: 'var(--bg-surface)', borderRadius: 20, padding: 'var(--space-5)', border: '1px solid var(--border-subtle)' }}>
           <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 'var(--space-3)' }}>
             Expense Breakdown

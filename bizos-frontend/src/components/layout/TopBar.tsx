@@ -60,13 +60,21 @@ export function TopBar() {
       position: 'relative',
       boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.15)',
     }}>
-      {/* Bottom accent line (animated) */}
-      <div style={{
-        position: 'absolute', bottom: -1, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, transparent, ${accentColor}40, transparent)`,
-        pointerEvents: 'none',
-        transition: 'all 0.4s ease',
-      }} />
+      {/* Bottom accent line — animates on scope switch */}
+      <div className="topbar-accent-line">
+        <motion.div
+          key={isPersonal ? 'personal' : 'business'}
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          exit={{ scaleX: 0, opacity: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            width: '100%', height: 2,
+            background: `linear-gradient(90deg, transparent 0%, ${accentColor}50 20%, ${accentColor} 50%, ${accentColor}50 80%, transparent 100%)`,
+            transformOrigin: 'left',
+          }}
+        />
+      </div>
 
       {/* Left: logo mark (mobile) + title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0 }}>

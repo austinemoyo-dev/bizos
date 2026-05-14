@@ -38,6 +38,14 @@ export default function LoginPage() {
       minHeight: '100vh', background: 'var(--bg-base)',
       display: 'flex', overflow: 'hidden', position: 'relative',
     }}>
+      {/* Ambient orbs for login page */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `
+          radial-gradient(ellipse 80% 50% at 10% 0%, rgba(200,16,46,0.1) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 40% at 90% 100%, rgba(212,165,53,0.07) 0%, transparent 55%)
+        `,
+      }} />
       {/* === LEFT BRAND PANEL === */}
       <div
         className="login-brand-panel"
@@ -48,6 +56,7 @@ export default function LoginPage() {
           flexDirection: 'column', justifyContent: 'space-between',
           padding: 'var(--space-10)',
           position: 'relative', overflow: 'hidden',
+          zIndex: 1,
         }}
       >
         {/* Pattern overlay */}
@@ -150,6 +159,7 @@ export default function LoginPage() {
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: 'var(--space-8)',
+        position: 'relative', zIndex: 1,
       }}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -211,35 +221,39 @@ export default function LoginPage() {
             </p>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <div>
-                <label className="form-label" htmlFor="email">Email address</label>
+              {/* Email — floating label */}
+              <div className="form-field" style={{ marginBottom: 0 }}>
                 <input
                   id="email" type="email" className="input"
                   value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com" required autoComplete="email" autoFocus
+                  placeholder=" " required autoComplete="email" autoFocus
                 />
+                <label className="float-label" htmlFor="email">Email address</label>
               </div>
 
-              <div>
-                <label className="form-label" htmlFor="password">Password</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="password" type={showPassword ? 'text' : 'password'}
-                    className="input" value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••" required autoComplete="current-password"
-                    style={{ paddingRight: 44 }}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', color: 'var(--text-muted)',
-                      cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
-                    }}
-                    aria-label={showPassword ? 'Hide' : 'Show'}>
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
+              {/* Password — floating label */}
+              <div className="form-field" style={{ marginBottom: 0 }}>
+                <input
+                  id="password" type={showPassword ? 'text' : 'password'}
+                  className="input" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder=" " required autoComplete="current-password"
+                  style={{ paddingRight: 44 }}
+                />
+                <label className="float-label" htmlFor="password">Password</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: 'var(--text-muted)',
+                    cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
+                    zIndex: 2,
+                  }}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
 
               {error && (

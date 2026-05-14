@@ -52,13 +52,7 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
   const lines = text.split('\n').filter(Boolean);
 
   return (
-    <div style={{
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border-subtle)',
-      borderRadius: 20,
-      overflow: 'hidden',
-      marginBottom: 'var(--space-4)',
-    }}>
+    <div className="insights-card">
       {/* Header */}
       <div
         style={{
@@ -71,9 +65,10 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: 'linear-gradient(135deg, #C8102E, #E8183A)',
+            width: 34, height: 34, borderRadius: 11,
+            background: 'linear-gradient(135deg, #8B0018, #C8102E, #D4A535)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(200,16,46,0.45), 0 0 0 1px rgba(212,165,53,0.2)',
           }}>
             <Sparkles size={15} style={{ color: '#fff' }} />
           </div>
@@ -147,10 +142,13 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
                       transition={{ delay: i * 0.06 }}
                       style={{
                         display: 'flex', gap: 10, alignItems: 'flex-start',
-                        padding: 'var(--space-3)', borderRadius: 12,
-                        background: 'var(--bg-elevated)',
+                        padding: 'var(--space-3) var(--space-4)', borderRadius: 12,
+                        background: 'var(--glass-bg-light)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        border: '1px solid var(--glass-border)',
                         fontSize: 'var(--text-sm)', color: 'var(--text-primary)',
-                        lineHeight: 1.5,
+                        lineHeight: 1.6,
                       }}
                     >
                       <span style={{ flexShrink: 0, fontSize: '1rem' }}>{line.slice(0, 2).trim() || '•'}</span>

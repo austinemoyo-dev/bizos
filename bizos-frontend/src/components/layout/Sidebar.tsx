@@ -132,8 +132,8 @@ function SectionHeading({ children, collapsed }: { children: string; collapsed: 
   }
   return (
     <p style={{
-      fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase',
-      letterSpacing: '0.14em', color: 'var(--text-muted)',
+      fontSize: 'var(--text-xs)', fontWeight: 800, textTransform: 'uppercase',
+      letterSpacing: '0.12em', color: 'var(--text-muted)',
       padding: '10px 10px 4px',
     }}>
       {children}
@@ -361,7 +361,7 @@ export function Sidebar() {
                   }}>
                     {user?.name}
                   </p>
-                  <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
                     {user?.role}
                   </p>
                 </motion.div>

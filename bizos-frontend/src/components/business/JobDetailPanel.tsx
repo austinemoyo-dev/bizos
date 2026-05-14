@@ -11,7 +11,17 @@ import { AddPartForm } from './AddPartForm';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { formatNaira, formatProfit, calcTithe } from '@/lib/format';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Phone, Plus, AlertTriangle, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { Phone, Plus, AlertTriangle, Loader2, Sparkles, XCircle, Check, TrendingDown } from 'lucide-react';
+
+/* ── Status stepper config ─────────────────────────────────────── */
+const STEPS: RepairStatus[] = ['received', 'diagnosed', 'in_progress', 'completed', 'delivered'];
+const STEP_LABELS: Record<string, string> = {
+  received:    'Received',
+  diagnosed:   'Diagnosed',
+  in_progress: 'In Progress',
+  completed:   'Completed',
+  delivered:   'Delivered',
+};
 
 interface JobDetailPanelProps {
   jobId: string | null;
@@ -175,11 +185,50 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
 
         {job && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-            {/* Status */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <Badge variant={job.status as RepairStatus} />
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>Current Status</span>
-            </div>
+            {/* ── Status Stepper ──────────────────────────────────── */}
+            {job.status !== 'cancelled' ? (
+              <div style={{ marginBottom: 'var(--space-2)' }}>
+                {/* Node row */}
+                <div className="status-stepper">
+                  {STEPS.map((step, i) => {
+                    const currentIdx = STEPS.indexOf(job.status);
+                    const done   = i < currentIdx;
+                    const active = i === currentIdx;
+                    const nodeClass = done ? 'done' : active ? 'active' : 'pending';
+                    return (
+                      <div key={step} className="status-step">
+                        <div className={`status-step-node ${nodeClass}`}>
+                          {done
+                            ? <Check size={11} strokeWidth={3} />
+                            : <span style={{ fontSize: '0.5rem', fontWeight: 900 }}>{i + 1}</span>
+                          }
+                        </div>
+                        {i < STEPS.length - 1 && (
+                          <div className={`status-step-line ${done ? 'done' : 'pending'}`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Label row */}
+                <div className="status-step-labels">
+                  {STEPS.map((step, i) => {
+                    const currentIdx = STEPS.indexOf(job.status);
+                    const labelClass = i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'pending';
+                    return (
+                      <span key={step} className={`status-step-label ${labelClass}`}>
+                        {STEP_LABELS[step]}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <Badge variant={job.status as RepairStatus} />
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>Current Status</span>
+              </div>
+            )}
 
             {/* Cancelled reason */}
             {job.status === 'cancelled' && job.cancel_reason && (
@@ -331,6 +380,53 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
                   </div>
                 </div>
               ))}
+              {/* ── Financial Breakdown Bar ─────────────────────── */}
+              {job.total_charge > 0 && (
+                <div className="finance-bar-wrap">
+                  <div className="finance-bar-track">
+                    <div
+                      className="finance-bar-segment"
+                      style={{
+                        flex: job.parts_cost,
+                        background: 'linear-gradient(90deg, #EF4444, #DC2626)',
+                        minWidth: job.parts_cost > 0 ? 4 : 0,
+                      }}
+                      title={`Parts cost: ${formatNaira(job.parts_cost)}`}
+                    />
+                    <div
+                      className="finance-bar-segment"
+                      style={{
+                        flex: job.labor_charge,
+                        background: 'linear-gradient(90deg, #60A5FA, #3B82F6)',
+                        minWidth: job.labor_charge > 0 ? 4 : 0,
+                      }}
+                      title={`Labor: ${formatNaira(job.labor_charge)}`}
+                    />
+                    <div
+                      className="finance-bar-segment"
+                      style={{
+                        flex: Math.max(0, job.profit),
+                        background: 'linear-gradient(90deg, #10B981, #059669)',
+                        minWidth: job.profit > 0 ? 4 : 0,
+                      }}
+                      title={`Profit: ${formatNaira(job.profit)}`}
+                    />
+                  </div>
+                  <div className="finance-bar-legend">
+                    {[
+                      { label: 'Parts',  color: '#EF4444', val: job.parts_cost },
+                      { label: 'Labor',  color: '#60A5FA', val: job.labor_charge },
+                      { label: 'Profit', color: '#10B981', val: Math.max(0, job.profit) },
+                    ].map(({ label, color, val }) => (
+                      <div key={label} className="finance-bar-legend-item">
+                        <div className="finance-bar-legend-dot" style={{ background: color }} />
+                        {label}: <span style={{ fontFamily: 'var(--font-mono)', color }}>{formatNaira(val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ height: 1, background: 'var(--border-subtle)', margin: 'var(--space-2) 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-1)' }}>
                 <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>

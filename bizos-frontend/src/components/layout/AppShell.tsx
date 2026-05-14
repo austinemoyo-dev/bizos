@@ -14,9 +14,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useOnlineStatus();
   useSync();
   const pathname = usePathname();
+  const isPersonal = pathname.startsWith('/personal');
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-scope={isPersonal ? 'personal' : 'business'}>
       <Sidebar />
 
       {/* Main Content Area */}
