@@ -20,7 +20,10 @@ const withPWA = require('next-pwa')({
   ],
 });
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+// CSP connect-src needs just the origin (no path) — a path without trailing slash
+// only matches that exact path, blocking /api/v1/auth/login, /api/v1/repairs, etc.
+const apiOrigin = (() => { try { return new URL(apiUrl).origin; } catch { return apiUrl; } })();
 
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control',  value: 'on' },
@@ -37,7 +40,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      `connect-src 'self' ${apiUrl} https://api.groq.com`,
+      `connect-src 'self' ${apiOrigin} https://api.groq.com`,
       "img-src 'self' data: blob:",
       "frame-ancestors 'none'",
     ].join('; '),
