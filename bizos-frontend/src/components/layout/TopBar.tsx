@@ -118,8 +118,7 @@ export function TopBar() {
 
       {/* Right: search + status + avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
-        <div className="search-trigger"><GlobalSearch /></div>
-        <div className="mobile-search-btn"><GlobalSearch /></div>
+        <GlobalSearch />
 
         {/* Theme toggle */}
         <button
@@ -177,13 +176,9 @@ export function TopBar() {
 
       <style>{`
         .mobile-logo-mark { display: none; }
-        .search-trigger { display: flex; }
-        .mobile-search-btn { display: none; }
         .online-label { display: inline; }
-        @media (max-width: 768px) {
+        @media (max-width: 767px) {
           .mobile-logo-mark { display: block; }
-          .search-trigger { display: none; }
-          .mobile-search-btn { display: flex; }
           .online-label { display: none; }
         }
       `}</style>

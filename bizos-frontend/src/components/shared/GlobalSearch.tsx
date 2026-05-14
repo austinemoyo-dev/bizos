@@ -99,22 +99,15 @@ export function GlobalSearch() {
 
   return (
     <>
-      {/* Trigger button (shown in TopBar) */}
+      {/* Trigger button — desktop: full label + kbd, mobile: icon only via CSS */}
       <button
         onClick={() => setOpen(true)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-          padding: '6px 12px', borderRadius: 8,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
-          color: 'var(--text-muted)', fontSize: 'var(--text-xs)', cursor: 'pointer',
-          transition: 'all 0.15s',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        className="gs-trigger-btn"
+        aria-label="Open search"
       >
         <Search size={13} />
-        <span>Search</span>
-        <kbd style={{
+        <span className="gs-trigger-text">Search</span>
+        <kbd className="gs-trigger-kbd" style={{
           display: 'inline-flex', alignItems: 'center', gap: 1,
           background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)',
           borderRadius: 4, padding: '1px 5px', fontSize: '0.6rem', fontFamily: 'var(--font-mono)',
@@ -133,6 +126,7 @@ export function GlobalSearch() {
             />
 
             <motion.div
+              className="gs-palette"
               initial={{ opacity: 0, scale: 0.96, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -10 }}
@@ -174,7 +168,7 @@ export function GlobalSearch() {
               </div>
 
               {/* Results */}
-              <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+              <div style={{ maxHeight: 'min(380px, 55dvh)', overflowY: 'auto' }}>
                 {debouncedQuery.length < 2 ? (
                   <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
                     Type at least 2 characters to search

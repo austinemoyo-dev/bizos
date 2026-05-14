@@ -1,4 +1,5 @@
 import { api } from './client';
+import { withOfflineCache } from '@/lib/db/offlineCache';
 import { BusinessSummary, RevenueTrendPoint, ExpenseBreakdownItem, PersonalSummary, DebtorItem, MonthlyGoal } from '@/types/api';
 
 export interface PersonalSpendingPoint {
@@ -30,28 +31,31 @@ export interface RepairStatData {
 }
 
 export const analyticsApi = {
-  businessSummary: (params?: { period_start?: string; period_end?: string }) => {
-    const qs = new URLSearchParams();
-    if (params?.period_start) qs.set('period_start', params.period_start);
-    if (params?.period_end) qs.set('period_end', params.period_end);
-    return api.get<BusinessSummary>(`/analytics/business/summary?${qs}`);
-  },
-  revenueTrend: async (params?: { days?: number; period_start?: string; period_end?: string }): Promise<RevenueTrendPoint[]> => {
-    const qs = new URLSearchParams();
-    if (params?.days) qs.set('days', String(params.days));
-    if (params?.period_start) qs.set('period_start', params.period_start);
-    if (params?.period_end) qs.set('period_end', params.period_end);
-    const res = await api.get<RevenueTrendPoint[] | { items?: RevenueTrendPoint[] }>(`/analytics/business/revenue-trend?${qs}`);
-    return Array.isArray(res) ? res : (res as any)?.items ?? [];
-  },
-  expenseBreakdown: async (params?: { period_start?: string; period_end?: string }): Promise<ExpenseBreakdownItem[]> => {
-    const qs = new URLSearchParams();
-    if (params?.period_start) qs.set('period_start', params.period_start);
-    if (params?.period_end) qs.set('period_end', params.period_end);
-    const res = await api.get<ExpenseBreakdownItem[] | { items?: ExpenseBreakdownItem[] }>(`/analytics/business/expense-breakdown?${qs}`);
-    const arr = Array.isArray(res) ? res : (res as any)?.items ?? [];
-    return arr.map((e: any) => ({ ...e, amount: e.amount ?? e.total ?? 0 }));
-  },
+  businessSummary: (params?: { period_start?: string; period_end?: string }) =>
+    withOfflineCache(`biz-summary-${JSON.stringify(params ?? {})}`, () => {
+      const qs = new URLSearchParams();
+      if (params?.period_start) qs.set('period_start', params.period_start);
+      if (params?.period_end) qs.set('period_end', params.period_end);
+      return api.get<BusinessSummary>(`/analytics/business/summary?${qs}`);
+    }),
+  revenueTrend: (params?: { days?: number; period_start?: string; period_end?: string }): Promise<RevenueTrendPoint[]> =>
+    withOfflineCache(`biz-revenue-trend-${JSON.stringify(params ?? {})}`, async () => {
+      const qs = new URLSearchParams();
+      if (params?.days) qs.set('days', String(params.days));
+      if (params?.period_start) qs.set('period_start', params.period_start);
+      if (params?.period_end) qs.set('period_end', params.period_end);
+      const res = await api.get<RevenueTrendPoint[] | { items?: RevenueTrendPoint[] }>(`/analytics/business/revenue-trend?${qs}`);
+      return Array.isArray(res) ? res : (res as any)?.items ?? [];
+    }),
+  expenseBreakdown: (params?: { period_start?: string; period_end?: string }): Promise<ExpenseBreakdownItem[]> =>
+    withOfflineCache(`biz-expense-breakdown-${JSON.stringify(params ?? {})}`, async () => {
+      const qs = new URLSearchParams();
+      if (params?.period_start) qs.set('period_start', params.period_start);
+      if (params?.period_end) qs.set('period_end', params.period_end);
+      const res = await api.get<ExpenseBreakdownItem[] | { items?: ExpenseBreakdownItem[] }>(`/analytics/business/expense-breakdown?${qs}`);
+      const arr = Array.isArray(res) ? res : (res as any)?.items ?? [];
+      return arr.map((e: any) => ({ ...e, amount: e.amount ?? e.total ?? 0 }));
+    }),
   topItems: async (params?: { period_start?: string; period_end?: string; limit?: number }): Promise<TopItemData[]> => {
     const qs = new URLSearchParams();
     if (params?.period_start) qs.set('period_start', params.period_start);
@@ -67,12 +71,13 @@ export const analyticsApi = {
     const res = await api.get<RepairStatData[]>(`/analytics/business/repair-stats?${qs}`);
     return Array.isArray(res) ? res : [];
   },
-  personalSummary: (params?: { period_start?: string; period_end?: string }) => {
-    const qs = new URLSearchParams();
-    if (params?.period_start) qs.set('period_start', params.period_start);
-    if (params?.period_end) qs.set('period_end', params.period_end);
-    return api.get<PersonalSummary>(`/analytics/personal/summary?${qs}`);
-  },
+  personalSummary: (params?: { period_start?: string; period_end?: string }) =>
+    withOfflineCache(`personal-summary-${JSON.stringify(params ?? {})}`, () => {
+      const qs = new URLSearchParams();
+      if (params?.period_start) qs.set('period_start', params.period_start);
+      if (params?.period_end) qs.set('period_end', params.period_end);
+      return api.get<PersonalSummary>(`/analytics/personal/summary?${qs}`);
+    }),
   personalSpendingTrend: async (params?: { period_start?: string; period_end?: string }): Promise<PersonalSpendingPoint[]> => {
     const qs = new URLSearchParams();
     if (params?.period_start) qs.set('period_start', params.period_start);

@@ -7,6 +7,7 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
+    // Google Fonts — cache forever
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com/,
       handler: 'CacheFirst',
@@ -16,9 +17,37 @@ const withPWA = require('next-pwa')({
       },
     },
     {
+      urlPattern: /^https:\/\/fonts\.gstatic\.com/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts-static',
+        expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+      },
+    },
+    // API — NetworkFirst with tighter timeout so offline fallback kicks in fast
+    {
       urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
       handler: 'NetworkFirst',
-      options: { cacheName: 'api-cache', networkTimeoutSeconds: 5 },
+      options: {
+        cacheName: 'api-cache',
+        networkTimeoutSeconds: 3,
+        expiration: { maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 },
+      },
+    },
+    // Next.js static assets — StaleWhileRevalidate (fast + fresh)
+    {
+      urlPattern: /\/_next\/static\/.*/,
+      handler: 'StaleWhileRevalidate',
+      options: { cacheName: 'next-static' },
+    },
+    // PWA icons & manifest
+    {
+      urlPattern: /\/icons\/.*\.png$/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'pwa-assets',
+        expiration: { maxEntries: 10, maxAgeSeconds: 30 * 24 * 60 * 60 },
+      },
     },
   ],
 });

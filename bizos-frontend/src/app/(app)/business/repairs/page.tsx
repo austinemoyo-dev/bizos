@@ -39,15 +39,28 @@ export default function RepairsPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(search, 300);
 
-  const handleQuickCancel = async (job: RepairJob) => {
-    const reason = window.prompt(`Cancel Repair Job #${job.job_number}?\nPlease provide a reason for cancellation. This will return any parts back to inventory.`);
-    if (reason === null) return;
+  // Cancel confirmation modal state
+  const [cancelTarget, setCancelTarget] = useState<RepairJob | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleQuickCancel = (job: RepairJob) => {
+    setCancelReason('');
+    setCancelTarget(job);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
     try {
-      await repairsApi.cancelJob(job.id, { cancel_reason: reason || undefined });
+      await repairsApi.cancelJob(cancelTarget.id, { cancel_reason: cancelReason || undefined });
       qc.invalidateQueries({ queryKey: ['repairs'] });
       addToast({ type: 'success', title: 'Job cancelled', message: 'Parts returned to inventory' });
+      setCancelTarget(null);
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to cancel', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -235,6 +248,43 @@ export default function RepairsPage() {
       </div>
 
       <JobDetailPanel jobId={selectedJobId} onClose={() => setSelectedJobId(null)} />
+
+      {/* Cancel job confirmation */}
+      <Modal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        title={`Cancel Job #${cancelTarget?.job_number ?? ''}`}
+        accentColor="#EF4444"
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setCancelTarget(null)} disabled={cancelling}>Keep Job</button>
+            <button
+              className="btn-danger"
+              onClick={handleConfirmCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel Job'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Cancelling this job will return all attached parts back to inventory. This action cannot be undone.
+          </p>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Reason for cancellation (optional)</label>
+            <textarea
+              className="input"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. Customer changed mind, part unavailable…"
+              rows={3}
+              style={{ resize: 'none', lineHeight: 1.6 }}
+            />
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={showNewJob} onClose={() => setShowNewJob(false)} title="New Repair Job">
         <RepairJobForm onSubmit={handleCreate} onCancel={() => setShowNewJob(false)} />

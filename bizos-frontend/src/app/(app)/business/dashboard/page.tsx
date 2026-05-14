@@ -9,7 +9,7 @@ import { StatWidget } from '@/components/shared/StatWidget';
 import { useLowStock } from '@/lib/hooks/useLowStock';
 import { RevenueAreaChart } from '@/components/charts/RevenueAreaChart';
 import { ExpensePieChart } from '@/components/charts/ExpensePieChart';
-import { formatNaira, formatCompact, formatProfit } from '@/lib/format';
+import { formatNaira, formatProfit } from '@/lib/format';
 import { stagger, fadeUp, scrollFadeUp } from '@/lib/motion-variants';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, subMonths } from 'date-fns';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -145,7 +145,11 @@ export default function BusinessDashboard() {
       )}
 
       {/* Period selector */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 'var(--space-4)' }}>
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 'var(--space-4)',
+        overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+        paddingBottom: 2,
+      }}>
         {PERIODS.map((p) => (
           <button
             key={p.key}
@@ -156,7 +160,7 @@ export default function BusinessDashboard() {
               background: period === p.key ? '#C8102E' : 'var(--bg-elevated)',
               color: period === p.key ? '#fff' : 'var(--text-secondary)',
               boxShadow: period === p.key ? '0 2px 8px rgba(200,16,46,0.35)' : 'none',
-              transition: 'all 0.2s',
+              transition: 'all 0.2s', flexShrink: 0,
             }}
           >
             {p.label}

@@ -1,26 +1,27 @@
 import { api, toPage } from './client';
+import { withOfflineCache } from '@/lib/db/offlineCache';
 import { Item, ItemCreate, RestockPayload, CsvImportResult, PaginatedResponse } from '@/types/api';
 
 export const inventoryApi = {
-  list: async (params?: { q?: string; category?: string; page?: number; size?: number }): Promise<PaginatedResponse<Item>> => {
-    const qs = new URLSearchParams();
-    if (params?.category) qs.set('category', params.category);
-    if (params?.page) qs.set('page', String(params.page));
-    if (params?.size) qs.set('size', String(params.size));
-    // Note: the backend list endpoint doesn't support ?q — use /search for that
-    const raw = await api.get<Item[] | PaginatedResponse<Item>>(`/inventory?${qs}`);
-    const page = toPage(raw as Item[] | PaginatedResponse<Item>);
-    // Client-side filter by q if provided (backend search is a separate endpoint)
-    if (params?.q) {
-      const q = params.q.toLowerCase();
-      page.items = page.items.filter(
-        (i: Item) => i.name.toLowerCase().includes(q) || (i.sku ?? '').toLowerCase().includes(q) || i.category.toLowerCase().includes(q)
-      );
-      page.total = page.items.length;
-    }
-    return page;
-  },
-  lowStock: () => api.get<Item[]>('/inventory/low-stock'),
+  list: (params?: { q?: string; category?: string; page?: number; size?: number }): Promise<PaginatedResponse<Item>> =>
+    withOfflineCache(`inventory-list-${JSON.stringify(params ?? {})}`, async () => {
+      const qs = new URLSearchParams();
+      if (params?.category) qs.set('category', params.category);
+      if (params?.page) qs.set('page', String(params.page));
+      if (params?.size) qs.set('size', String(params.size));
+      const raw = await api.get<Item[] | PaginatedResponse<Item>>(`/inventory?${qs}`);
+      const page = toPage(raw as Item[] | PaginatedResponse<Item>);
+      if (params?.q) {
+        const q = params.q.toLowerCase();
+        page.items = page.items.filter(
+          (i: Item) => i.name.toLowerCase().includes(q) || (i.sku ?? '').toLowerCase().includes(q) || i.category.toLowerCase().includes(q)
+        );
+        page.total = page.items.length;
+      }
+      return page;
+    }),
+  lowStock: () =>
+    withOfflineCache('inventory-low-stock', () => api.get<Item[]>('/inventory/low-stock')),
   search: (q: string) => api.get<Item[]>(`/inventory/search?q=${encodeURIComponent(q)}`),
   get: (id: string) => api.get<Item>(`/inventory/${id}`),
   create: (data: ItemCreate) => api.post<Item>('/inventory', data),

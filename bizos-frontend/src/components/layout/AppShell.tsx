@@ -6,6 +6,7 @@ import { MobileTabBar } from './MobileTabBar';
 import { TopBar } from './TopBar';
 import { ToastContainer } from '../shared/Toast';
 import { OfflineBanner } from '../shared/OfflineBanner';
+import { InstallPrompt } from '../shared/InstallPrompt';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 import { useSync } from '@/lib/hooks/useSync';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -86,6 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar — fixed, rendered at root so it's never clipped */}
       <MobileTabBar />
       <ToastContainer />
+      <InstallPrompt />
     </div>
   );
 }

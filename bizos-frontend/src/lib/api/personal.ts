@@ -1,19 +1,21 @@
 import { api, toPage } from './client';
+import { withOfflineCache } from '@/lib/db/offlineCache';
 import { PersonalTransaction, PersonalTransactionCreate, SavingsGoal, SavingsGoalCreate, MarketItem, MarketItemCreate, PaginatedResponse } from '@/types/api';
 
 export const personalApi = {
   transactions: {
-    list: async (params?: { type?: string; category?: string; page?: number; size?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<PersonalTransaction>> => {
-      const qs = new URLSearchParams();
-      if (params?.type) qs.set('type', params.type);
-      if (params?.category) qs.set('category', params.category);
-      if (params?.date_from) qs.set('date_from', params.date_from);
-      if (params?.date_to) qs.set('date_to', params.date_to);
-      if (params?.page) qs.set('page', String(params.page));
-      if (params?.size) qs.set('size', String(params.size));
-      const raw = await api.get<PersonalTransaction[] | PaginatedResponse<PersonalTransaction>>(`/personal/transactions?${qs}`);
-      return toPage(raw as any);
-    },
+    list: (params?: { type?: string; category?: string; page?: number; size?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<PersonalTransaction>> =>
+      withOfflineCache(`personal-tx-list-${JSON.stringify(params ?? {})}`, async () => {
+        const qs = new URLSearchParams();
+        if (params?.type) qs.set('type', params.type);
+        if (params?.category) qs.set('category', params.category);
+        if (params?.date_from) qs.set('date_from', params.date_from);
+        if (params?.date_to) qs.set('date_to', params.date_to);
+        if (params?.page) qs.set('page', String(params.page));
+        if (params?.size) qs.set('size', String(params.size));
+        const raw = await api.get<PersonalTransaction[] | PaginatedResponse<PersonalTransaction>>(`/personal/transactions?${qs}`);
+        return toPage(raw as any);
+      }),
     create: (data: PersonalTransactionCreate) =>
       api.post<PersonalTransaction>('/personal/transactions', data),
     delete: (id: string) => api.delete<void>(`/personal/transactions/${id}`),

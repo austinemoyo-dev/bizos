@@ -77,6 +77,12 @@ export interface PendingSync {
   retries: number;
 }
 
+export interface OfflineCacheEntry {
+  key: string;
+  data: string;
+  updated_at: number;
+}
+
 export class BizOSDatabase extends Dexie {
   items!: Table<LocalItem>;
   repairJobs!: Table<LocalRepairJob>;
@@ -85,6 +91,7 @@ export class BizOSDatabase extends Dexie {
   personalTx!: Table<LocalPersonalTx>;
   foodCredits!: Table<LocalFoodCredit>;
   pendingSync!: Table<PendingSync>;
+  offlineCache!: Table<OfflineCacheEntry>;
 
   constructor() {
     super('BizOSDB');
@@ -96,6 +103,16 @@ export class BizOSDatabase extends Dexie {
       personalTx:  'id, type, category, transaction_date',
       foodCredits: 'id, vendor_name, paid, purchase_date',
       pendingSync: '++id, endpoint, created_at',
+    });
+    this.version(2).stores({
+      items:        'id, name, category, quantity_in_stock, is_active',
+      repairJobs:   'id, job_number, status, customer_name, received_at',
+      sales:        'id, item_id, sold_at',
+      expenses:     'id, category, expense_date',
+      personalTx:   'id, type, category, transaction_date',
+      foodCredits:  'id, vendor_name, paid, purchase_date',
+      pendingSync:  '++id, endpoint, created_at',
+      offlineCache: 'key, updated_at',
     });
   }
 }

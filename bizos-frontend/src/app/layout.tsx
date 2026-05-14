@@ -68,11 +68,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="msapplication-TileColor" content="#C8102E" />
 
         {/* Icons */}
-        <link rel="apple-touch-icon"  href="/icons/icon-192.png" />
-        <link rel="icon"              href="/icons/icon-192.png" type="image/png" />
-        <link rel="manifest"          href="/manifest.json" />
+        <link rel="apple-touch-icon"        href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon"        sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="icon"                    href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+        <link rel="icon"                    href="/icons/icon-512.png" type="image/png" sizes="512x512" />
+        <link rel="manifest"                href="/manifest.json" />
       </head>
       <body>
+        {/* Runs synchronously before first paint to avoid theme flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('bizos-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
         <NextTopLoader
           color="#C8102E"
           initialPosition={0.08}
