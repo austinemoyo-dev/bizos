@@ -1,7 +1,10 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
+echo "Running pre-start setup (schema + alembic sync)..."
+python prestart.py
+
+echo "Running any pending migrations..."
 alembic upgrade head
 
 echo "Starting server..."
