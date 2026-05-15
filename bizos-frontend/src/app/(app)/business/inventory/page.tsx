@@ -14,7 +14,7 @@ import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { formatNaira } from '@/lib/format';
 import { Item, ItemCreate, RestockPayload } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package, Trash2 } from 'lucide-react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
@@ -54,6 +54,8 @@ export default function InventoryPage() {
   const [restockDate, setRestockDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [restocking, setRestocking] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<Item | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(search, 300);
 
@@ -103,6 +105,21 @@ export default function InventoryPage() {
       addToast({ type: 'error', title: 'Restock failed', message: err instanceof Error ? err.message : '' });
     } finally {
       setRestocking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    setDeleting(true);
+    try {
+      await inventoryApi.delete(deleteItem.id);
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+      addToast({ type: 'success', title: 'Item deleted', message: `${deleteItem.name} removed from inventory.` });
+      setDeleteItem(null);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Delete failed', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -232,6 +249,12 @@ export default function InventoryPage() {
                     <button className="btn-primary" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
                       onClick={() => setRestockItem(item)}>Restock</button>
                   </IfRole>
+                  <IfRole minRole="owner">
+                    <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
+                      onClick={() => setDeleteItem(item)} title="Delete item">
+                      <Trash2 size={13} />
+                    </button>
+                  </IfRole>
                   <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px' }}
                     onClick={() => router.push(`/business/inventory/${item.id}`)}>
                     <ExternalLink size={12} />
@@ -271,6 +294,12 @@ export default function InventoryPage() {
                     onClick={() => setRestockItem(r)}>Restock</button>
                   <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
                     onClick={() => setEditItem(r)}>Edit</button>
+                  <IfRole minRole="owner">
+                    <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
+                      onClick={() => setDeleteItem(r)}>
+                      <Trash2 size={13} />
+                    </button>
+                  </IfRole>
                 </div>
               </div>
             </div>
@@ -337,6 +366,27 @@ export default function InventoryPage() {
             onChange={(e) => setRestockQty(parseInt(e.target.value) || 0)} />
         </div>
         <CurrencyInput label="Unit Cost Paid" value={restockCost} onChange={setRestockCost} />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        title={`Delete — ${deleteItem?.name}`}
+        accentColor="#EF4444"
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setDeleteItem(null)} disabled={deleting}>Cancel</button>
+            <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
+              {deleting && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+              Delete Item
+            </button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Are you sure you want to delete <strong style={{ color: 'var(--text-primary)' }}>{deleteItem?.name}</strong>? This will hide the item from inventory. Historical records (sales, job parts) are not affected.
+        </p>
       </Modal>
     </div>
   );
