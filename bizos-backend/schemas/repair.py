@@ -46,9 +46,11 @@ class RepairJobCreate(BaseModel):
     labor_charge: Decimal = Field(Decimal("0"), ge=Decimal("0"))
     total_charge: Decimal = Field(Decimal("0"), ge=Decimal("0"))
     amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0"))
+    status: Optional[RepairStatus] = RepairStatus.received
     notes: Optional[str] = Field(None, max_length=1000)
     parts: Optional[List[JobPartCreate]] = []
-    received_at: Optional[date] = None  # date the device was physically received; defaults to today if omitted
+    received_at: Optional[date] = None
+    completed_at: Optional[date] = None
 
 
 class RepairJobUpdate(BaseModel):

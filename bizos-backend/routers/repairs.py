@@ -188,10 +188,12 @@ def create_job(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(*NON_VIEWER)),
 ):
-    payload_dict = payload.model_dump(exclude={"parts", "received_at"})
+    payload_dict = payload.model_dump(exclude={"parts", "received_at", "completed_at"})
     job = RepairJob(**payload_dict, created_by=current_user.id)
     if payload.received_at:
         job.received_at = datetime.combine(payload.received_at, datetime.min.time()).replace(tzinfo=timezone.utc)
+    if payload.completed_at:
+        job.completed_at = datetime.combine(payload.completed_at, datetime.min.time()).replace(tzinfo=timezone.utc)
     db.add(job)
     db.flush()  # To get the job id
     

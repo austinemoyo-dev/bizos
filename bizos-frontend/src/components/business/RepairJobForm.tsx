@@ -26,9 +26,11 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
     fault_description: initialValues?.fault_description ?? '',
     labor_charge:      initialValues?.labor_charge      ?? 0,
     total_charge:      initialValues?.total_charge      ?? 0,
+    status:            initialValues?.status            ?? 'received',
     notes:             initialValues?.notes             ?? '',
     parts:             initialValues?.parts             ?? [],
     received_at:       initialValues?.received_at       ?? format(new Date(), 'yyyy-MM-dd'),
+    completed_at:      initialValues?.completed_at      ?? '',
   });
 
   // Track the selected value including custom__ prefix values
@@ -125,11 +127,17 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
       return;
     }
 
+    if ((form.status === 'completed' || form.status === 'delivered') && !form.completed_at) {
+      setError('Please enter the date this job was completed.');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload: RepairJobCreate = {
         ...form,
         parts: form.parts?.map(({ _name, ...p }: any) => p),
+        completed_at: form.completed_at || undefined,
       };
 
       if (showModel && !initialValues) {
@@ -179,6 +187,45 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
           Determines which accounting period this job belongs to.
         </p>
       </div>
+
+      {/* Job Status */}
+      <div className="form-group">
+        <label className="form-label">Job Status *</label>
+        <select
+          className="input"
+          value={form.status ?? 'received'}
+          onChange={(e) => {
+            const s = e.target.value as RepairJobCreate['status'];
+            setForm(f => ({
+              ...f,
+              status: s,
+              completed_at: (s === 'completed' || s === 'delivered') ? (f.completed_at || format(new Date(), 'yyyy-MM-dd')) : '',
+            }));
+          }}
+        >
+          <option value="received">Received</option>
+          <option value="diagnosed">Diagnosed</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="delivered">Delivered</option>
+        </select>
+      </div>
+
+      {/* Completion date — shown only when status is completed or delivered */}
+      {(form.status === 'completed' || form.status === 'delivered') && (
+        <div className="form-group">
+          <label className="form-label">Date Completed *</label>
+          <input
+            className="input"
+            type="date"
+            value={form.completed_at ?? ''}
+            max={format(new Date(), 'yyyy-MM-dd')}
+            min={form.received_at ?? ''}
+            onChange={(e) => set('completed_at', e.target.value)}
+            required
+          />
+        </div>
+      )}
 
       {/* Device type with manage panel */}
       <div className="form-group">

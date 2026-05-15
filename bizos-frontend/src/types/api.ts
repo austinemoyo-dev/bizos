@@ -105,9 +105,11 @@ export interface RepairJobCreate {
   labor_charge: number;
   total_charge: number;
   amount_paid?: number;
+  status?: RepairStatus;
   notes?: string;
   parts?: AddPartPayload[];
-  received_at?: string; // YYYY-MM-DD — accounting period date for this job
+  received_at?: string;
+  completed_at?: string;
 }
 
 export interface RepairJobUpdate {
