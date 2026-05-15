@@ -277,6 +277,17 @@ export default function InventoryPage() {
         />
       </div>
 
+      {/* Mobile FAB — always reachable even when header scrolls out of view */}
+      <IfRole minRole="technician">
+        <button
+          onClick={() => setShowAdd(true)}
+          className="mobile-fab"
+          aria-label="Add inventory item"
+        >
+          <Plus size={22} />
+        </button>
+      </IfRole>
+
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Inventory Item">
         <InventoryItemForm onSubmit={handleCreate} onCancel={() => setShowAdd(false)} />

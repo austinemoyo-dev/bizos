@@ -41,8 +41,8 @@ export function TitheCard({ tithe, onMarkPaid }: TitheCardProps) {
     }
   };
 
-  // The source date is the repair completion date (when tithe was generated)
-  const sourceDate = tithe.created_at;
+  // Use period_start (repair's completed_at) when set — falls back to created_at for old records
+  const sourceDate = tithe.period_start ?? tithe.created_at;
   const paidDate   = tithe.paid_at;
   const period     = getTithePeriod(sourceDate);
 

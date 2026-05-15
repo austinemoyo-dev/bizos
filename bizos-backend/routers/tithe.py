@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from core.dependencies import get_current_user, get_db, role_required
@@ -30,11 +31,17 @@ def list_tithe(
     if paid is not None:
         q = q.filter(TitheRecord.paid == paid)
     if date_from:
-        date_column = TitheRecord.paid_at if paid is True else TitheRecord.created_at
-        q = q.filter(func.date(date_column) >= date_from)
+        if paid is True:
+            q = q.filter(func.date(TitheRecord.paid_at) >= date_from)
+        else:
+            earned = func.coalesce(TitheRecord.period_start, func.date(TitheRecord.created_at))
+            q = q.filter(earned >= date_from)
     if date_to:
-        date_column = TitheRecord.paid_at if paid is True else TitheRecord.created_at
-        q = q.filter(func.date(date_column) <= date_to)
+        if paid is True:
+            q = q.filter(func.date(TitheRecord.paid_at) <= date_to)
+        else:
+            earned = func.coalesce(TitheRecord.period_start, func.date(TitheRecord.created_at))
+            q = q.filter(earned <= date_to)
     return q.order_by(TitheRecord.created_at.desc()).all()
 
 

@@ -41,33 +41,6 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    sale_profit = (
-        db.query(func.sum((Sale.selling_price - Sale.cost_price) * Sale.quantity))
-        .filter(
-            func.date(Sale.sold_at) >= period_start,
-            func.date(Sale.sold_at) <= period_end,
-        )
-        .scalar()
-        or Decimal("0")
-    )
-
-    from models.repair import JobPart
-    # Exclude damaged parts — their cost is already recorded as a damage_loss Expense,
-    # so including them here would double-count against profit.
-    repair_parts_cost = (
-        db.query(func.sum(JobPart.unit_cost * JobPart.quantity))
-        .join(RepairJob, JobPart.job_id == RepairJob.id)
-        .filter(
-            RepairJob.status.in_([RepairStatus.completed, RepairStatus.delivered]),
-            _rev_date >= period_start,
-            _rev_date <= period_end,
-            JobPart.damaged == False,
-        )
-        .scalar()
-        or Decimal("0")
-    )
-
-    repair_profit = repair_revenue - repair_parts_cost
     total_revenue = repair_revenue + sale_revenue
 
     cash_from_repairs = (
@@ -103,20 +76,22 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    net_profit = sale_profit + repair_profit - operating_expenses
+    # Cash-basis accounting: inventory is expensed when purchased (in the expense table).
+    # Do NOT also subtract repair_parts_cost / sale_cogs — those items were already expensed
+    # at purchase time, so deducting them again doubles the count.
+    net_profit = total_revenue - operating_expenses
+    total_expenses = operating_expenses
 
-    # total_expenses = COGS + operating_expenses so that: revenue - expenses = net_profit exactly.
-    # sale_cogs is implicit: sale_revenue - sale_profit (no extra query needed).
-    sale_cogs = sale_revenue - sale_profit
-    total_expenses = sale_cogs + repair_parts_cost + operating_expenses
-
+    # Use period_start (the repair completion date) when set, fall back to created_at.
+    # This ensures backdated repairs are attributed to the correct accounting period.
+    _tithe_date = func.coalesce(TitheRecord.period_start, func.date(TitheRecord.created_at))
     tithe_due = (
         db.query(func.sum(TitheRecord.tithe_amount))
         .filter(
             TitheRecord.scope == TitheScope.business,
             TitheRecord.paid == False,
-            func.date(TitheRecord.created_at) >= period_start,
-            func.date(TitheRecord.created_at) <= period_end,
+            _tithe_date >= period_start,
+            _tithe_date <= period_end,
         )
         .scalar()
         or Decimal("0")
@@ -135,14 +110,10 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    from models.inventory import StockMovement, MovementType
-    inventory_purchases = (
-        db.query(func.sum(StockMovement.quantity * StockMovement.unit_cost))
-        .filter(
-            StockMovement.movement_type == MovementType.purchase,
-            func.date(StockMovement.created_at) >= period_start,
-            func.date(StockMovement.created_at) <= period_end,
-        )
+    # Current market value of all active inventory (purchase_price × quantity_in_stock)
+    inventory_value = (
+        db.query(func.sum(Item.purchase_price * Item.quantity_in_stock))
+        .filter(Item.is_active == True)
         .scalar()
         or Decimal("0")
     )
@@ -151,7 +122,7 @@ def get_business_summary(
     all_time_cash_repairs = db.query(func.sum(RepairJob.amount_paid)).scalar() or Decimal("0")
     all_time_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
     all_time_expenses = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
-    
+
     available_balance = (all_time_cash_repairs + all_time_cash_sales) - all_time_expenses
 
     repair_count = (
@@ -192,8 +163,6 @@ def get_business_summary(
         .scalar()
         or 0
     )
-
-    inventory_value = inventory_purchases
 
     return BusinessSummary(
         period_start=period_start,

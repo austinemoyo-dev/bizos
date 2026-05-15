@@ -215,6 +215,8 @@ export interface Tithe {
   paid: boolean;
   paid_at?: string;
   source?: string;
+  period_start?: string; // date the income was earned (repair completed_at); use for period display
+  period_end?: string;
   created_at: string;
 }
 

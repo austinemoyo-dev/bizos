@@ -11,7 +11,7 @@ from models.tithe import TitheRecord, TitheScope
 
 
 def create_business_tithe(
-    db: Session, profit: Decimal, reference_id: UUID = None
+    db: Session, profit: Decimal, reference_id: UUID = None, earned_date: date = None
 ) -> TitheRecord:
     tithe_amount = profit * Decimal("0.10")
     record = TitheRecord(
@@ -20,6 +20,7 @@ def create_business_tithe(
         tithe_amount=tithe_amount,
         paid=False,
         reference_id=reference_id,
+        period_start=earned_date,  # date the repair was completed (for correct period attribution)
     )
     db.add(record)
     db.commit()

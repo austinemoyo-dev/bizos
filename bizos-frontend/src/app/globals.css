@@ -1674,6 +1674,35 @@ input[type=number]::-webkit-inner-spin-button {
   }
 }
 
+/* ── Mobile FAB (floating action button) ─────────────────────── */
+.mobile-fab {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: calc(var(--bottom-nav-height, 72px) + 16px);
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #C8102E;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(200, 16, 46, 0.45), 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 900;
+    transition: transform 0.18s, box-shadow 0.18s;
+  }
+  .mobile-fab:active {
+    transform: scale(0.92);
+    box-shadow: 0 3px 12px rgba(200, 16, 46, 0.4);
+  }
+}
+
 /* ── Page header: hide the text (TopBar already shows it) ─────── */
 @media (max-width: 768px) {
   .page-header-info {

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -126,10 +126,13 @@ def update_job_status(db: Session, job_id: UUID, new_status: RepairStatus) -> Re
         )
 
     if new_status == RepairStatus.completed:
-        job.completed_at = datetime.utcnow()
+        # Preserve a backdated completed_at set by the user; only default to now if unset.
+        if not job.completed_at:
+            job.completed_at = datetime.utcnow()
+        earned_date: date = job.completed_at.date() if job.completed_at else date.today()
         profit_data = compute_job_profit(job)
         if profit_data.profit > 0:
-            create_business_tithe(db, profit_data.profit, reference_id=job.id)
+            create_business_tithe(db, profit_data.profit, reference_id=job.id, earned_date=earned_date)
 
     if new_status == RepairStatus.delivered:
         job.delivered_at = datetime.utcnow()
