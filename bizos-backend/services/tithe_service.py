@@ -14,6 +14,10 @@ def create_business_tithe(
     db: Session, profit: Decimal, reference_id: UUID = None, earned_date: date = None
 ) -> TitheRecord:
     tithe_amount = profit * Decimal("0.10")
+    created_at = (
+        datetime.combine(earned_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        if earned_date else datetime.utcnow()
+    )
     record = TitheRecord(
         scope=TitheScope.business,
         calculated_from=profit,
@@ -21,6 +25,8 @@ def create_business_tithe(
         paid=False,
         reference_id=reference_id,
         period_start=earned_date,  # date the repair was completed (for correct period attribution)
+        period_end=earned_date,
+        created_at=created_at,
     )
     db.add(record)
     db.commit()

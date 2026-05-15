@@ -60,7 +60,9 @@ function formatLive(value: number, format: StatWidgetProps['numericFormat']): st
   if (format === 'currency' || format === 'compact') {
     if (format === 'compact') {
       if (value >= 1_000_000) return `₦${(value / 1_000_000).toFixed(1)}M`;
-      if (value >= 1_000)     return `₦${(value / 1_000).toFixed(1)}K`;
+      return new Intl.NumberFormat('en-NG', {
+        style: 'currency', currency: 'NGN', minimumFractionDigits: 0, maximumFractionDigits: 0,
+      }).format(value);
     }
     return new Intl.NumberFormat('en-NG', {
       style: 'currency', currency: 'NGN', minimumFractionDigits: 2,

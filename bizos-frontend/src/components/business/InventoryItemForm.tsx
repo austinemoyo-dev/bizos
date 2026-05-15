@@ -53,7 +53,13 @@ export function InventoryItemForm({
     setError('');
     setLoading(true);
     try {
-      const data = initial ? { ...form, purchase_date: undefined } : form;
+      const data: ItemCreate = {
+        ...form,
+        sku: form.sku?.trim() || undefined,
+        supplier: form.supplier?.trim() || undefined,
+        selling_price: form.selling_price && form.selling_price > 0 ? form.selling_price : undefined,
+        purchase_date: initial ? undefined : form.purchase_date,
+      };
       await onSubmit(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save item');

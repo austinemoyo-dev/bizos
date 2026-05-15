@@ -69,7 +69,7 @@ export default function InventoryPage() {
 
   const items = tab === 'low' ? (lowStockData ?? []) : (data?.items ?? []);
   const totalItems = data?.total ?? 0;
-  const totalValue = (data?.items ?? []).reduce((s, i) => s + i.purchase_price * i.quantity_in_stock, 0);
+  const totalValue = (data?.items ?? []).reduce((s, i) => s + Number(i.purchase_price) * Number(i.quantity_in_stock), 0);
   const lowCount = lowStockData?.length ?? 0;
 
   const handleCreate = async (formData: ItemCreate) => {
@@ -190,9 +190,9 @@ export default function InventoryPage() {
 
       {/* Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }} className="stat-grid">
-        <StatWidget label="Total Items" value={String(totalItems)} accent="neutral" />
-        <StatWidget label="Inventory Value" value={formatNaira(totalValue)} accent="neutral" />
-        <StatWidget label="Low Stock" value={String(lowCount)} accent={lowCount > 5 ? 'loss' : 'warning'} />
+        <StatWidget label="Total Items" value={String(totalItems)} numericValue={totalItems} numericFormat="number" accent="neutral" />
+        <StatWidget label="Inventory Value" value={formatNaira(totalValue)} numericValue={totalValue} numericFormat="currency" accent="neutral" />
+        <StatWidget label="Low Stock" value={String(lowCount)} numericValue={lowCount} numericFormat="number" accent={lowCount > 5 ? 'loss' : 'warning'} />
       </div>
 
       {/* Tabs + Search */}

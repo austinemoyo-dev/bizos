@@ -45,7 +45,6 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     });
   } catch (err) {
     clearTimeout(timeoutId);
-    // Remap AbortError (our own timeout) to a friendly message
     if (err instanceof DOMException && err.name === 'AbortError') {
       throw new Error('Request timed out — please check your connection and try again.');
     }
@@ -119,7 +118,7 @@ async function queueOfflineMutation<T>(
   if (typeof window === 'undefined' || method === 'GET' || method === 'HEAD') return null;
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return null;
 
-  const isNetworkFailure = !error || error instanceof TypeError || (error instanceof Error && /fetch|network/i.test(error.message));
+  const isNetworkFailure = !error || error instanceof TypeError || (error instanceof Error && /fetch|network|abort/i.test(error.message));
   if (!isNetworkFailure) return null;
 
   let payload: object | undefined;

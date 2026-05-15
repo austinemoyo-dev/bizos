@@ -41,6 +41,12 @@ def create_item(
 ):
     data = payload.model_dump()
     purchase_date = data.pop("purchase_date", None)
+    if data.get("sku") == "":
+        data["sku"] = None
+    if data.get("supplier") == "":
+        data["supplier"] = None
+    if data.get("selling_price") == 0:
+        data["selling_price"] = None
     created_at = (
         datetime.combine(purchase_date, datetime.min.time()).replace(tzinfo=timezone.utc)
         if purchase_date else None
