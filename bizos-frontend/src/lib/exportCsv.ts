@@ -16,6 +16,8 @@ export function exportCsv(filename: string, rows: Record<string, unknown>[]) {
   const a = document.createElement('a');
   a.href = url;
   a.download = `${filename}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
