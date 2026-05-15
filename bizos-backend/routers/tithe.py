@@ -10,7 +10,7 @@ from core.dependencies import get_current_user, get_db, role_required
 from models.tithe import TitheRecord, TitheScope
 from models.user import User, UserRole
 from schemas.tithe import TithePayRequest, TitheRecordOut, TitheUnpaidTotal
-from services.tithe_service import get_unpaid_total, pay_tithe
+from services.tithe_service import generate_monthly_tithe, get_unpaid_total, pay_tithe
 
 router = APIRouter()
 
@@ -55,6 +55,18 @@ def unpaid_total(
         scope=scope,
         total=get_unpaid_total(db, scope),
     )
+
+
+@router.post("/generate", response_model=Optional[TitheRecordOut])
+def generate(
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(role_required(UserRole.owner, UserRole.super_admin, UserRole.accountant)),
+):
+    """Calculate 10 % of net profit for the given month and create/refresh a tithe record."""
+    record = generate_monthly_tithe(db, year, month)
+    return record
 
 
 @router.post("/{tithe_id}/pay", response_model=TitheRecordOut)

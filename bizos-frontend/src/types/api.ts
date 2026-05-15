@@ -211,11 +211,12 @@ export interface RepaymentPayload {
 export interface Tithe {
   id: string;
   scope: 'business' | 'personal';
+  calculated_from: number; // net profit the tithe is based on
   tithe_amount: number;
   paid: boolean;
   paid_at?: string;
   source?: string;
-  period_start?: string; // date the income was earned (repair completed_at); use for period display
+  period_start?: string;
   period_end?: string;
   created_at: string;
 }

@@ -15,4 +15,7 @@ export const titheApi = {
       return toPage(raw as any);
     }),
   markPaid: (id: string, data?: TithePayPayload) => api.post<Tithe>(`/tithe/${id}/pay`, data ?? {}),
+  /** Calculate 10% of net profit for the month and create/refresh a tithe record. */
+  generate: (year: number, month: number) =>
+    api.post<Tithe | null>(`/tithe/generate?year=${year}&month=${month}`, {}),
 };

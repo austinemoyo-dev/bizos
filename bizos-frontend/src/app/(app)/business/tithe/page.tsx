@@ -118,7 +118,7 @@ export default function BusinessTithePage() {
     <div>
       <PageHeader
         title="Business Tithe"
-        subtitle="10% of business profit, given first"
+        subtitle="10% of monthly net profit"
         actions={
           unpaidItems.length > 0 ? (
             <button

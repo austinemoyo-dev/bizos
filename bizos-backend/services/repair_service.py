@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -9,7 +9,6 @@ from models.expense import Expense, ExpenseCategory
 from models.inventory import Item, MovementType, StockMovement
 from models.repair import JobPart, RepairJob, RepairStatus
 from schemas.repair import RepairProfitOut
-from services.tithe_service import create_business_tithe
 
 
 def add_part_to_job(
@@ -129,10 +128,6 @@ def update_job_status(db: Session, job_id: UUID, new_status: RepairStatus) -> Re
         # Preserve a backdated completed_at set by the user; only default to now if unset.
         if not job.completed_at:
             job.completed_at = datetime.utcnow()
-        earned_date: date = job.completed_at.date() if job.completed_at else date.today()
-        profit_data = compute_job_profit(job)
-        if profit_data.profit > 0:
-            create_business_tithe(db, profit_data.profit, reference_id=job.id, earned_date=earned_date)
 
     if new_status == RepairStatus.delivered:
         job.delivered_at = datetime.utcnow()
@@ -140,6 +135,16 @@ def update_job_status(db: Session, job_id: UUID, new_status: RepairStatus) -> Re
     job.status = new_status
     db.commit()
     db.refresh(job)
+
+    # Auto-recalculate monthly tithe for the month this job's revenue lands in.
+    if new_status == RepairStatus.completed and job.completed_at:
+        try:
+            from services.tithe_service import generate_monthly_tithe
+            d = job.completed_at.date()
+            generate_monthly_tithe(db, d.year, d.month)
+        except Exception:
+            pass
+
     return job
 
 

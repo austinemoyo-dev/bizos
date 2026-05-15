@@ -76,6 +76,14 @@ def record_sale(
     db.add(sale)
     db.commit()
     db.refresh(sale)
+
+    try:
+        from services.tithe_service import generate_monthly_tithe
+        d = sale.sold_at.date()
+        generate_monthly_tithe(db, d.year, d.month)
+    except Exception:
+        pass
+
     return sale
 
 

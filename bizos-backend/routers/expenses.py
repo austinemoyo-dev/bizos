@@ -46,6 +46,14 @@ def create_expense(
     db.add(expense)
     db.commit()
     db.refresh(expense)
+
+    try:
+        from services.tithe_service import generate_monthly_tithe
+        d = expense.expense_date
+        generate_monthly_tithe(db, d.year, d.month)
+    except Exception:
+        pass
+
     return expense
 
 
@@ -110,5 +118,12 @@ def delete_expense(
     expense = db.query(Expense).filter_by(id=expense_id).first()
     if not expense:
         raise HTTPException(404, "Expense not found")
+    d = expense.expense_date
     db.delete(expense)
     db.commit()
+
+    try:
+        from services.tithe_service import generate_monthly_tithe
+        generate_monthly_tithe(db, d.year, d.month)
+    except Exception:
+        pass

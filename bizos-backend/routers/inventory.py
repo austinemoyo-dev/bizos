@@ -157,7 +157,17 @@ def restock(
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(UserRole.super_admin, UserRole.owner, UserRole.accountant, UserRole.technician)),
 ):
-    return restock_item(db, item_id, payload.quantity, payload.unit_cost, payload.restock_date)
+    item = restock_item(db, item_id, payload.quantity, payload.unit_cost, payload.restock_date)
+
+    try:
+        from services.tithe_service import generate_monthly_tithe
+        from datetime import date as _date
+        d = payload.restock_date or _date.today()
+        generate_monthly_tithe(db, d.year, d.month)
+    except Exception:
+        pass
+
+    return item
 
 
 CSV_TEMPLATE_HEADERS = "name,category,sku,purchase_price,selling_price,quantity_in_stock,reorder_level,supplier\n"
