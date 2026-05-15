@@ -79,15 +79,11 @@ export function TitheCard({ tithe, onMarkPaid }: TitheCardProps) {
               {tithe.source ?? 'Business Tithe'}
             </p>
 
-            {/* Period: when the income was earned */}
+            {/* Period: the calendar month this tithe belongs to */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
               <Calendar size={10} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
                 <span style={{ fontWeight: 700 }}>For:</span> {period}
-                {' '}
-                <span style={{ color: 'var(--border-strong)' }}>•</span>
-                {' '}
-                Earned {formatTitheDate(sourceDate)}
               </p>
             </div>
 
