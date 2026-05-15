@@ -137,10 +137,11 @@ def update_job_status(db: Session, job_id: UUID, new_status: RepairStatus) -> Re
     db.refresh(job)
 
     # Auto-recalculate monthly tithe for the month this job's revenue lands in.
-    if new_status == RepairStatus.completed and job.completed_at:
+    if new_status in (RepairStatus.completed, RepairStatus.delivered):
         try:
             from services.tithe_service import generate_monthly_tithe
-            d = job.completed_at.date()
+            ref_dt = job.completed_at or job.delivered_at or datetime.utcnow()
+            d = ref_dt.date() if hasattr(ref_dt, 'date') else ref_dt
             generate_monthly_tithe(db, d.year, d.month)
         except Exception:
             pass

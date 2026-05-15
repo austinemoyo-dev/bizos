@@ -12,7 +12,7 @@ import { formatNaira } from '@/lib/format';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { HandCoins, Loader2, CheckCheck } from 'lucide-react';
+import { HandCoins, Loader2, CheckCheck, RefreshCw } from 'lucide-react';
 
 type Period = 'this_month' | 'last_month' | 'all';
 
@@ -48,6 +48,29 @@ export default function BusinessTithePage() {
   const [payingAll, setPayingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [paidDate, setPaidDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [recalculating, setRecalculating] = useState(false);
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const now = new Date();
+      const [y, m] = period === 'last_month'
+        ? [subMonths(now, 1).getFullYear(), subMonths(now, 1).getMonth() + 1]
+        : [now.getFullYear(), now.getMonth() + 1];
+      const result = await titheApi.generate(y, m);
+      qc.invalidateQueries({ queryKey: ['tithe'] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      addToast({
+        type: 'success',
+        title: 'Tithe recalculated',
+        message: result ? `${format(new Date(y, m - 1), 'MMMM yyyy')}: 10% of profit = ${result.tithe_amount.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}` : 'No profit this period — no tithe due.',
+      });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Recalculate failed', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const dateRange = getPeriodDates(period);
 
@@ -120,16 +143,32 @@ export default function BusinessTithePage() {
         title="Business Tithe"
         subtitle="10% of monthly net profit"
         actions={
-          unpaidItems.length > 0 ? (
-            <button
-              className="btn-primary"
-              style={{ gap: 'var(--space-2)' }}
-              onClick={() => setConfirmBulk(true)}
-            >
-              <CheckCheck size={15} />
-              {selectedIds.size > 0 ? `Pay Selected (${selectedIds.size})` : `Pay All (${unpaidItems.length})`}
-            </button>
-          ) : undefined
+          <>
+            {period !== 'all' && (
+              <button
+                className="btn-ghost"
+                style={{ gap: 'var(--space-2)' }}
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                title="Recalculate tithe from this period's profit"
+              >
+                {recalculating
+                  ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <RefreshCw size={14} />}
+                Recalculate
+              </button>
+            )}
+            {unpaidItems.length > 0 && (
+              <button
+                className="btn-primary"
+                style={{ gap: 'var(--space-2)' }}
+                onClick={() => setConfirmBulk(true)}
+              >
+                <CheckCheck size={15} />
+                {selectedIds.size > 0 ? `Pay Selected (${selectedIds.size})` : `Pay All (${unpaidItems.length})`}
+              </button>
+            )}
+          </>
         }
       />
 

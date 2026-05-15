@@ -123,7 +123,11 @@ def generate_monthly_tithe(db: Session, year: int, month: int) -> TitheRecord | 
     )
     expenses = (
         db.query(func.coalesce(func.sum(Expense.amount), 0))
-        .filter(Expense.expense_date >= p_start, Expense.expense_date <= p_end)
+        .filter(
+            Expense.expense_date >= p_start,
+            Expense.expense_date <= p_end,
+            Expense.category != "tithe",  # tithe payments are not an operating cost
+        )
         .scalar()
     )
 

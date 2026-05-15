@@ -211,6 +211,16 @@ def create_job(
 
     db.commit()
     db.refresh(job)
+
+    if job.status in (RepairStatus.completed, RepairStatus.delivered):
+        try:
+            from services.tithe_service import generate_monthly_tithe
+            ref_dt = job.completed_at or job.received_at or datetime.now(timezone.utc)
+            d = ref_dt.date() if hasattr(ref_dt, 'date') else ref_dt
+            generate_monthly_tithe(db, d.year, d.month)
+        except Exception:
+            pass
+
     return RepairJobOut.from_orm_with_profit(job)
 
 
