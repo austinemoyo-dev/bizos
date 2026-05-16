@@ -1791,6 +1791,21 @@ input[type=number]::-webkit-inner-spin-button {
   .tabs {
     gap: 4px;
   }
+
+  /* ── Sticky bottom CTA on detail pages (One UI) ── */
+  .mobile-sticky-action {
+    position: fixed;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    z-index: 950;
+    padding: 0;
+  }
+
+  /* ── Hide desktop-only buttons on mobile ── */
+  .desktop-only-action {
+    display: none !important;
+  }
 }
 
 /* ── Mobile FAB (floating action button) ─────────────────────── */

@@ -227,60 +227,48 @@ export default function RepairDetailPage() {
       `}</style>
 
       {/* Back + Header */}
-      <div className="no-print" style={{ marginBottom: 'var(--space-5)' }}>
+      <div className="no-print" style={{ marginBottom: 'var(--space-4)' }}>
+        {/* Back row */}
         <button
           className="btn-ghost"
           onClick={() => router.back()}
-          style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}
+          style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', fontSize: 'var(--text-sm)' }}
         >
-          <ArrowLeft size={14} /> Back to Repairs
+          <ArrowLeft size={14} /> Back
         </button>
 
-        <div className="repair-detail-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <h1 className="page-title" style={{ marginBottom: 0 }}>
-              Job <span style={{ fontFamily: 'var(--font-mono)' }}>#{job.job_number}</span>
-            </h1>
-            <Badge variant={job.status} />
-          </div>
-          <div className="repair-detail-actions" style={{ display: 'flex', gap: 'var(--space-2)' }}>
-            <button className="btn-ghost" onClick={handlePrint} style={{ gap: 'var(--space-2)' }}>
-              <Printer size={14} /> Print
-            </button>
-            <button className="btn-ghost" onClick={handleReceipt} style={{ gap: 'var(--space-2)' }}>
-              <FileText size={14} /> Receipt
-            </button>
-            <IfRole minRole="technician">
-              {canModify && (
-                <button className="btn-ghost" onClick={() => setEditingJob(true)} style={{ gap: 'var(--space-2)' }}>
-                  <Pencil size={14} /> Edit
-                </button>
-              )}
-              {job.status !== 'cancelled' && job.status !== 'delivered' && (
-                <button
-                  className="btn-ghost"
-                  onClick={() => { setCancelReason(''); setCancelDepositResolution(null); setShowCancel(true); }}
-                  style={{ gap: 'var(--space-2)', color: 'var(--accent-red)' }}
-                >
-                  <XCircle size={14} /> Cancel
-                </button>
-              )}
-              {nextStatus && (
-                <button
-                  className="btn-primary"
-                  onClick={handleStatusChange}
-                  disabled={transitioning}
-                  style={{ gap: 'var(--space-2)' }}
-                >
-                  {transitioning
-                    ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                    : <ChevronRight size={14} />
-                  }
-                  {STATUS_LABELS[job.status]}
-                </button>
-              )}
-            </IfRole>
-          </div>
+        {/* Job title + badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>
+            Job <span style={{ fontFamily: 'var(--font-mono)' }}>#{job.job_number}</span>
+          </h1>
+          <Badge variant={job.status} />
+        </div>
+
+        {/* Action buttons — horizontal scroll on mobile */}
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+          <button className="btn-ghost" onClick={handlePrint} style={{ gap: 6, flexShrink: 0 }}>
+            <Printer size={14} /> Print
+          </button>
+          <button className="btn-ghost" onClick={handleReceipt} style={{ gap: 6, flexShrink: 0 }}>
+            <FileText size={14} /> Receipt
+          </button>
+          <IfRole minRole="technician">
+            {canModify && (
+              <button className="btn-ghost" onClick={() => setEditingJob(true)} style={{ gap: 6, flexShrink: 0 }}>
+                <Pencil size={14} /> Edit
+              </button>
+            )}
+            {job.status !== 'cancelled' && job.status !== 'delivered' && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setCancelReason(''); setCancelDepositResolution(null); setShowCancel(true); }}
+                style={{ gap: 6, color: 'var(--accent-red)', flexShrink: 0 }}
+              >
+                <XCircle size={14} /> Cancel
+              </button>
+            )}
+          </IfRole>
         </div>
       </div>
 
@@ -291,45 +279,43 @@ export default function RepairDetailPage() {
         <hr />
       </div>
 
-      {/* Status Progress Bar */}
-      <div className="card no-print" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
-        <div className="status-stepper-track">
-          <div className="status-stepper-inner" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-            {STATUS_ORDER.map((s, i) => {
-              const done = i <= currentStepIndex;
-              const isLast = i === STATUS_ORDER.length - 1;
-              return (
-                <div key={s} style={{ display: 'flex', alignItems: 'center', flex: isLast ? 'none' : 1, minWidth: isLast ? 64 : undefined }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: '50%',
-                      background: done ? 'var(--accent-primary)' : 'var(--bg-overlay)',
-                      border: `2px solid ${done ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, color: done ? 'white' : 'var(--text-muted)',
-                      fontWeight: 600, flexShrink: 0,
-                    }}>
-                      {i + 1}
-                    </div>
-                    <span className="step-label" style={{
-                      whiteSpace: 'nowrap',
-                      color: done ? 'var(--accent-primary)' : 'var(--text-muted)',
-                      fontWeight: i === currentStepIndex ? 600 : 400,
-                      fontSize: 'var(--text-xs)',
-                    }}>
-                      {STATUS_DISPLAY[s]}
-                    </span>
+      {/* Status Progress Bar — horizontally scrollable on mobile */}
+      <div className="card no-print" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', minWidth: 'max-content', gap: 0 }}>
+          {STATUS_ORDER.map((s, i) => {
+            const done = i <= currentStepIndex;
+            const isCurrent = i === currentStepIndex;
+            const isLast = i === STATUS_ORDER.length - 1;
+            return (
+              <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: done ? 'var(--accent-primary)' : 'var(--bg-overlay)',
+                    border: `2px solid ${done ? 'var(--accent-primary)' : 'var(--border-default)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, color: done ? 'white' : 'var(--text-muted)',
+                    fontWeight: 700, flexShrink: 0,
+                  }}>
+                    {i + 1}
                   </div>
-                  {!isLast && (
-                    <div style={{
-                      flex: 1, height: 2, marginBottom: 16, minWidth: 16,
-                      background: i < currentStepIndex ? 'var(--accent-primary)' : 'var(--border-default)',
-                    }} />
-                  )}
+                  <span style={{
+                    whiteSpace: 'nowrap', fontSize: '0.65rem',
+                    color: done ? 'var(--accent-primary)' : 'var(--text-muted)',
+                    fontWeight: isCurrent ? 700 : 400,
+                  }}>
+                    {STATUS_DISPLAY[s]}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                {!isLast && (
+                  <div style={{
+                    width: 32, height: 2, marginBottom: 18, marginLeft: 4, marginRight: 4, flexShrink: 0,
+                    background: i < currentStepIndex ? 'var(--accent-primary)' : 'var(--border-default)',
+                  }} />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -394,8 +380,8 @@ export default function RepairDetailPage() {
         </div>
       )}
 
-      {/* Main Grid */}
-      <div className="detail-grid">
+      {/* Main Grid — single column on mobile */}
+      <div className="detail-grid" style={{ marginBottom: nextStatus ? 80 : 0 }}>
 
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -513,8 +499,8 @@ export default function RepairDetailPage() {
                 No parts added yet.
               </p>
             ) : (
-              <div className="table-responsive">
-                <table className="data-table" style={{ minWidth: 460 }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as 'touch' }}>
+                <table className="data-table" style={{ minWidth: 420 }}>
                   <thead>
                     <tr>
                       <th>Part</th>
@@ -640,10 +626,10 @@ export default function RepairDetailPage() {
             ))}
           </div>
 
-          {/* Advance status */}
+          {/* Advance status — desktop only (mobile uses sticky bar below) */}
           {nextStatus && (
             <button
-              className="btn-primary no-print"
+              className="btn-primary no-print desktop-only-action"
               style={{ width: '100%', justifyContent: 'center', gap: 'var(--space-2)' }}
               onClick={handleStatusChange}
               disabled={transitioning}
@@ -756,6 +742,25 @@ export default function RepairDetailPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Mobile sticky advance-status bar */}
+      {nextStatus && (
+        <IfRole minRole="technician">
+          <div className="mobile-sticky-action no-print">
+            <button
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center', gap: 8, height: 50, fontSize: 'var(--text-sm)', borderRadius: 16 }}
+              onClick={handleStatusChange}
+              disabled={transitioning}
+            >
+              {transitioning
+                ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                : <ChevronRight size={16} />}
+              {STATUS_LABELS[job.status]}
+            </button>
+          </div>
+        </IfRole>
+      )}
 
       <Modal isOpen={editingJob} onClose={() => setEditingJob(false)} title="Edit Repair Job">
         <RepairJobForm

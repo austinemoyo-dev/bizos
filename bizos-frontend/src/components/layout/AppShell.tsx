@@ -70,12 +70,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }}
         >
           <AnimatePresence mode="wait">
+            {/* NO transform here — transforms break position:fixed inside (bottom search bar) */}
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.14 }}
               style={{ width: '100%', minWidth: 0, minHeight: '100%' }}
             >
               {children}
