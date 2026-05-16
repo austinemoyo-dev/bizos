@@ -1486,10 +1486,7 @@ input[type=number]::-webkit-inner-spin-button {
   width: 100%;
 }
 
-/* ── Floating pill bottom nav ─────────────────────────────────── */
-.mobile-bottom-nav {
-  display: none;
-}
+/* Bottom nav is rendered via JS (SVG + inline styles) — no global styles needed */
 
 @media (max-width: 767px) {
   /* ── Liquid glass nav bar ─────────────────────────────────────── */
