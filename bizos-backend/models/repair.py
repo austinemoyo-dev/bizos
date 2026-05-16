@@ -89,3 +89,7 @@ class JobPart(Base):
 
     job = relationship("RepairJob", back_populates="parts")
     item = relationship("Item")
+
+    @property
+    def item_name(self) -> str | None:
+        return self.item.name if self.item else None

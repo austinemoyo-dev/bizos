@@ -236,14 +236,14 @@ export default function RepairDetailPage() {
           <ArrowLeft size={14} /> Back to Repairs
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div className="repair-detail-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <h1 className="page-title" style={{ marginBottom: 0 }}>
               Job <span style={{ fontFamily: 'var(--font-mono)' }}>#{job.job_number}</span>
             </h1>
             <Badge variant={job.status} />
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div className="repair-detail-actions" style={{ display: 'flex', gap: 'var(--space-2)' }}>
             <button className="btn-ghost" onClick={handlePrint} style={{ gap: 'var(--space-2)' }}>
               <Printer size={14} /> Print
             </button>
@@ -262,7 +262,7 @@ export default function RepairDetailPage() {
                   onClick={() => { setCancelReason(''); setCancelDepositResolution(null); setShowCancel(true); }}
                   style={{ gap: 'var(--space-2)', color: 'var(--accent-red)' }}
                 >
-                  <XCircle size={14} /> Cancel Job
+                  <XCircle size={14} /> Cancel
                 </button>
               )}
               {nextStatus && (
@@ -514,7 +514,7 @@ export default function RepairDetailPage() {
               </p>
             ) : (
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="data-table" style={{ minWidth: 460 }}>
                   <thead>
                     <tr>
                       <th>Part</th>
@@ -528,12 +528,12 @@ export default function RepairDetailPage() {
                   <tbody>
                     {job.parts.map((part) => (
                       <tr key={part.id}>
-                        <td style={{ fontWeight: 500 }}>{part.item_name}</td>
-                        <td className="numeric">×{part.quantity}</td>
-                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)' }}>
+                        <td style={{ fontWeight: 500, minWidth: 100 }}>{part.item_name ?? '—'}</td>
+                        <td className="numeric" style={{ whiteSpace: 'nowrap' }}>×{part.quantity}</td>
+                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                           {formatNaira(part.unit_cost)}
                         </td>
-                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)' }}>
+                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                           {formatNaira(part.unit_cost * part.quantity)}
                         </td>
                         <td>
@@ -566,7 +566,7 @@ export default function RepairDetailPage() {
                       <td colSpan={canModify ? 3 : 3} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
                         Total Parts Cost
                       </td>
-                      <td className="numeric" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      <td className="numeric" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                         {formatNaira(job.parts_cost)}
                       </td>
                       <td colSpan={canModify ? 2 : 1} />
