@@ -106,8 +106,9 @@ export function MobileTabBar() {
           onClick={() => setCreate(true)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
-            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 0, padding: '4px 0',
+            flex: 1, alignSelf: 'stretch',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 0, padding: 0,
             WebkitTapHighlightColor: 'transparent', outline: 'none',
           }}
         >
