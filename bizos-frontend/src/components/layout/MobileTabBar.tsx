@@ -142,7 +142,7 @@ export function MobileTabBar() {
 
         {/* More */}
         <button
-          className={`mobile-nav-item${isMoreActive || open ? ' more-active' : ''}`}
+          className={`mobile-nav-item${open ? ' more-active' : ''}`}
           onClick={() => setOpen(true)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
@@ -150,7 +150,7 @@ export function MobileTabBar() {
           }}
         >
           <div className="mobile-nav-icon">
-            <LayoutGrid size={20} strokeWidth={isMoreActive || open ? 2.4 : 1.8} />
+            <LayoutGrid size={20} strokeWidth={open ? 2.4 : 1.8} />
           </div>
           <span>More</span>
         </button>
