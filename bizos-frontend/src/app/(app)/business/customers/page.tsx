@@ -111,7 +111,7 @@ export default function CustomersPage() {
       />
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+      <div className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
         {[
           { label: 'Total Customers', value: String(profiles.length) },
           { label: 'Total Revenue', value: formatNaira(profiles.reduce((s, p) => s + p.totalRevenue, 0)) },
@@ -298,7 +298,7 @@ function CustomersSkeleton() {
         <Skeleton width={160} height={32} />
         <Skeleton width={280} height={16} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+      <div className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
         {[1, 2, 3].map((i) => <Skeleton key={i} width="100%" height={80} />)}
       </div>
       <Skeleton width={420} height={40} />

@@ -32,10 +32,13 @@ export function Modal({ isOpen, onClose, title, children, width = 520, footer, a
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div
+          className="modal-container"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -53,10 +56,10 @@ export function Modal({ isOpen, onClose, title, children, width = 520, footer, a
 
           {/* Modal / Bottom Sheet */}
           <motion.div
-            initial={{ opacity: 0, y: 32, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 32, scale: 0.96 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: '40px' }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '40px' }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             className="modal-glass-sheet"
             style={{
               position: 'relative', zIndex: 1,

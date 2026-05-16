@@ -255,12 +255,7 @@ export default function PersonalDashboard() {
 
       {/* ── Quick links row ──────────────────────────────────────── */}
       <motion.div {...scrollFadeUp} style={{ width: '100%' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 'var(--space-3)',
-          width: '100%',
-        }}>
+        <div className="stat-grid" style={{ width: '100%' }}>
           {[
             { label: 'Transactions', href: '/personal/transactions', color: 'var(--accent-gold)' },
             { label: 'Food Vendor',  href: '/personal/food-vendor',  color: 'var(--accent-primary)' },

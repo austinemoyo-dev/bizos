@@ -130,7 +130,7 @@ export default function MarketListPage() {
 
       {/* Summary row */}
       {(items ?? []).length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
+        <div className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
           {[
             { label: 'Still Needed', value: String(pending.length), color: 'var(--text-primary)' },
             { label: 'Est. Remaining', value: formatNaira(totalEstimate), color: 'var(--accent-amber)' },

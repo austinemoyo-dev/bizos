@@ -398,7 +398,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Secondary metrics row */}
-        <div style={{
+        <div className="analytics-grid-3" style={{
           display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
           gap: 1, marginTop: 'var(--space-4)',
           background: 'rgba(255,255,255,0.08)',

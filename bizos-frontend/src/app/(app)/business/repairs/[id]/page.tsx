@@ -293,40 +293,43 @@ export default function RepairDetailPage() {
 
       {/* Status Progress Bar */}
       <div className="card no-print" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {STATUS_ORDER.map((s, i) => {
-            const done = i <= currentStepIndex;
-            const isLast = i === STATUS_ORDER.length - 1;
-            return (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', flex: isLast ? 'none' : 1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    background: done ? 'var(--accent-primary)' : 'var(--bg-overlay)',
-                    border: `2px solid ${done ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, color: done ? 'white' : 'var(--text-muted)',
-                    fontWeight: 600, flexShrink: 0,
-                  }}>
-                    {i + 1}
+        <div className="status-stepper-track">
+          <div className="status-stepper-inner" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            {STATUS_ORDER.map((s, i) => {
+              const done = i <= currentStepIndex;
+              const isLast = i === STATUS_ORDER.length - 1;
+              return (
+                <div key={s} style={{ display: 'flex', alignItems: 'center', flex: isLast ? 'none' : 1, minWidth: isLast ? 64 : undefined }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%',
+                      background: done ? 'var(--accent-primary)' : 'var(--bg-overlay)',
+                      border: `2px solid ${done ? 'var(--accent-primary)' : 'var(--border-default)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, color: done ? 'white' : 'var(--text-muted)',
+                      fontWeight: 600, flexShrink: 0,
+                    }}>
+                      {i + 1}
+                    </div>
+                    <span className="step-label" style={{
+                      whiteSpace: 'nowrap',
+                      color: done ? 'var(--accent-primary)' : 'var(--text-muted)',
+                      fontWeight: i === currentStepIndex ? 600 : 400,
+                      fontSize: 'var(--text-xs)',
+                    }}>
+                      {STATUS_DISPLAY[s]}
+                    </span>
                   </div>
-                  <span style={{
-                    fontSize: 'var(--text-xs)', whiteSpace: 'nowrap',
-                    color: done ? 'var(--accent-primary)' : 'var(--text-muted)',
-                    fontWeight: i === currentStepIndex ? 600 : 400,
-                  }}>
-                    {STATUS_DISPLAY[s]}
-                  </span>
+                  {!isLast && (
+                    <div style={{
+                      flex: 1, height: 2, marginBottom: 16, minWidth: 16,
+                      background: i < currentStepIndex ? 'var(--accent-primary)' : 'var(--border-default)',
+                    }} />
+                  )}
                 </div>
-                {!isLast && (
-                  <div style={{
-                    flex: 1, height: 2, marginBottom: 16,
-                    background: i < currentStepIndex ? 'var(--accent-primary)' : 'var(--border-default)',
-                  }} />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 

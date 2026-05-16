@@ -27,8 +27,8 @@ export function PageHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Hidden on mobile — TopBar already shows the page title */}
-      <div className="page-header-info" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+      {/* Hides on mobile — TopBar already shows the page title */}
+      <div className="page-header-info" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0, flex: 1 }}>
         {Icon && (
           <div style={{
             width: 44, height: 44, borderRadius: 16,
@@ -52,7 +52,7 @@ export function PageHeader({
         </div>
       </div>
       {actions && (
-        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="page-header-actions" style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
           {actions}
         </div>
       )}

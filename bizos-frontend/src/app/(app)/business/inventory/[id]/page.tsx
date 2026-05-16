@@ -198,7 +198,7 @@ export default function InventoryDetailPage() {
           {/* Item details */}
           <div className="card" style={{ padding: 'var(--space-5)' }}>
             <p className="section-label">Item Details</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4) var(--space-8)' }}>
+            <div className="two-col-detail" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4) var(--space-8)' }}>
               {[
                 { label: 'Name', value: item.name },
                 { label: 'Category', value: item.category },
@@ -444,10 +444,10 @@ function InventoryDetailSkeleton() {
           <Skeleton width={180} height={36} />
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+      <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
         {[1,2,3,4].map((i) => <Skeleton key={i} width="100%" height={100} />)}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-5)' }}>
+      <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-5)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <Skeleton width="100%" height={280} />
           <Skeleton width="100%" height={180} />

@@ -2046,15 +2046,18 @@ select.input option {
 
 /* ═══ MASTER MOBILE RESPONSIVE ═══ */
 @media (max-width: 768px) {
+
+  /* ── Slide panel ── */
   .slide-panel-content {
     max-width: 100% !important;
   }
 
+  /* ── Detail grids collapse to single column ── */
   .detail-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* Stat grids: max 2 columns on mobile */
+  /* ── Stat grids: max 2 columns on mobile ── */
   .stat-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: var(--space-2) !important;
@@ -2064,24 +2067,43 @@ select.input option {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* Page headers: stack vertically */
+  /* Analytics 3-column grid → 1 column */
+  .analytics-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Page headers ── */
+  /* Hide the title/icon section — TopBar already shows the page title */
+  .page-header-info {
+    display: none !important;
+  }
+
+  /* Actions row: horizontal scroll instead of ugly wrapping */
   .page-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
   }
 
-  .page-header>div:last-child {
-    width: 100%;
-    flex-wrap: wrap;
+  .page-header::-webkit-scrollbar { display: none; }
+
+  /* Tighter buttons in header on mobile */
+  .page-header .btn-primary,
+  .page-header .btn-ghost,
+  .page-header .btn-danger {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-xs);
   }
 
-  /* Page title: smaller on mobile */
-  .page-title {
-    font-size: var(--text-lg) !important;
-  }
-
-  /* Buttons: touch-friendly min height */
+  /* ── Global button touch targets ── */
   .btn-primary,
   .btn-ghost,
   .btn-danger {
@@ -2089,35 +2111,66 @@ select.input option {
     justify-content: center;
   }
 
-  .page-header .btn-primary,
-  .page-header .btn-ghost {
-    flex: 1;
-    min-width: 0;
+  /* ── Page title: smaller on mobile ── */
+  .page-title {
+    font-size: var(--text-lg) !important;
   }
 
-  /* Customer table: hide less important columns */
-  .customers-table-col-hide {
-    display: none !important;
+  /* ── Modal → bottom sheet on mobile ── */
+  .modal-container {
+    align-items: flex-end !important;
   }
 
-  /* Modal full-width on mobile */
+  .modal-glass-sheet {
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    max-height: 92dvh !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Keep the legacy selector working too */
   .modal-box {
     max-width: calc(100vw - var(--space-6)) !important;
     margin: var(--space-4) !important;
   }
 
-  /* Make sure data tables scroll horizontally */
+  /* ── Status stepper: horizontal scroll ── */
+  .status-stepper-track {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .status-stepper-track::-webkit-scrollbar { display: none; }
+
+  .status-stepper-inner {
+    min-width: 420px;
+  }
+
+  /* Shrink step text labels on mobile */
+  .step-label {
+    font-size: 9px !important;
+    white-space: nowrap;
+  }
+
+  /* ── Data tables scroll horizontally ── */
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Hero card text adjust */
+  /* ── Hero card text ── */
   .hero-amount {
     font-size: clamp(1.4rem, 8vw, 2rem) !important;
   }
 
-  /* Customers table: collapse to card-like rows */
+  /* ── Customer table ── */
+  .customers-table-col-hide {
+    display: none !important;
+  }
+
   .customers-header {
     display: none !important;
   }
@@ -2128,7 +2181,7 @@ select.input option {
     padding: var(--space-3) !important;
   }
 
-  /* Calculator responsive */
+  /* ── Calculator ── */
   .calc-repair-grid {
     grid-template-columns: 1fr !important;
   }
@@ -2141,7 +2194,7 @@ select.input option {
     flex-wrap: wrap !important;
   }
 
-  /* Tabs scroll */
+  /* ── Tabs scroll ── */
   .tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -2152,15 +2205,40 @@ select.input option {
     display: none;
   }
 
-  /* Card padding reduction */
+  /* ── Card padding reduction ── */
   .card {
     padding: var(--space-4);
     border-radius: var(--card-radius);
   }
 
-  /* Search full width */
+  /* ── Search full width ── */
   .page-search {
     max-width: 100% !important;
+  }
+
+  /* ── 2-column detail rows → 1 column ── */
+  .two-col-detail {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Extra small phones (≤ 390px) ── */
+@media (max-width: 390px) {
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .page-title {
+    font-size: var(--text-base) !important;
+  }
+
+  /* Reduce card and page padding on very small screens */
+  .card {
+    padding: var(--space-3) !important;
   }
 }
 
