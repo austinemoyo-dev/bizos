@@ -101,23 +101,29 @@ export function MobileTabBar() {
           );
         })}
 
-        {/* Center + create button */}
+        {/* Center + create button — liquid glass */}
         <button
           onClick={() => setCreate(true)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', gap: 0, padding: '4px 0',
+            WebkitTapHighlightColor: 'transparent', outline: 'none',
           }}
         >
           <div style={{
-            width: 44, height: 44, borderRadius: 14,
-            background: 'linear-gradient(135deg, #C8102E, #9B0D22)',
+            width: 46, height: 46, borderRadius: 16,
+            background: 'linear-gradient(145deg, #E01535 0%, #C8102E 45%, #9B0D22 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(200,16,46,0.5)',
+            boxShadow: [
+              '0 6px 22px rgba(200,16,46,0.58)',
+              '0 2px 6px rgba(200,16,46,0.35)',
+              'inset 0 1.5px 0 rgba(255,180,170,0.3)',
+              'inset 0 -1px 0 rgba(80,0,10,0.25)',
+            ].join(', '),
             transition: 'transform 0.15s, box-shadow 0.15s',
           }}>
-            <Plus size={22} color="white" strokeWidth={2.5} />
+            <Plus size={21} color="white" strokeWidth={2.5} />
           </div>
         </button>
 
