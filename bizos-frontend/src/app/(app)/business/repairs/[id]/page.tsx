@@ -200,8 +200,22 @@ export default function RepairDetailPage() {
     });
   };
 
+  const canModify = job ? job.status !== 'completed' && job.status !== 'delivered' : false;
+  const nextStatus = job ? STATUS_TRANSITIONS[job.status] : null;
+  const profitInfo = job ? formatProfit(job.profit) : null;
+  const tithe = job ? calcTithe(job.profit) : 0;
+  const currentStepIndex = job ? STATUS_ORDER.indexOf(job.status) : -1;
+
+  // Sticky bottom CTA — must be called unconditionally (Rules of Hooks)
+  useBottomCta({
+    label: job && nextStatus ? STATUS_LABELS[job.status] : '',
+    enabled: !!nextStatus,
+    loading: transitioning,
+    onClick: handleStatusChange,
+  });
+
   if (isLoading) return <RepairDetailSkeleton />;
-  if (!job) return (
+  if (!job || !profitInfo) return (
     <div style={{ textAlign: 'center', padding: 'var(--space-16)', color: 'var(--text-muted)' }}>
       Job not found.
       <button className="btn-ghost" style={{ display: 'block', margin: 'var(--space-4) auto' }} onClick={() => router.back()}>
@@ -209,20 +223,6 @@ export default function RepairDetailPage() {
       </button>
     </div>
   );
-
-  const canModify = job.status !== 'completed' && job.status !== 'delivered';
-  const nextStatus = STATUS_TRANSITIONS[job.status];
-  const profitInfo = formatProfit(job.profit);
-  const tithe = calcTithe(job.profit);
-  const currentStepIndex = STATUS_ORDER.indexOf(job.status);
-
-  // Sticky bottom CTA — advance status (rendered at AppShell level, never broken by transforms)
-  useBottomCta({
-    label: nextStatus ? STATUS_LABELS[job.status] : '',
-    enabled: !!nextStatus,
-    loading: transitioning,
-    onClick: handleStatusChange,
-  });
 
   return (
     <>
