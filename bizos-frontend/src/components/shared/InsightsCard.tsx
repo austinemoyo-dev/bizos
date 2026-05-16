@@ -43,7 +43,7 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
       }
       setHasLoaded(true);
     } catch {
-      setText('Could not generate insights. Check your ANTHROPIC_API_KEY in .env.local.');
+      setText('Could not generate insights. Check your GROQ_API_KEY in .env.local.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
               AI Business Insights
             </p>
             <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-              Powered by Claude · {period ?? 'This month'}
+              Powered by Groq · {period ?? 'This month'}
             </p>
           </div>
         </div>
