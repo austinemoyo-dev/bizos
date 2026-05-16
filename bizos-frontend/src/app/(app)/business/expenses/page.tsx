@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { expensesApi } from '@/lib/api/expenses';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { StatWidget } from '@/components/shared/StatWidget';
@@ -163,28 +164,21 @@ export default function ExpensesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Expenses"
-        actions={
-          <>
-            <button
-              className="btn-ghost"
-              onClick={() => exportCsv('expenses', items.map((r) => ({
-                category: r.category, description: r.description ?? '',
-                amount: r.amount, date: r.expense_date,
-              })))}
-              style={{ gap: 'var(--space-2)' }}
-            >
-              <Download size={14} /> CSV
-            </button>
-            <IfRole minRole="accountant">
-              <button className="btn-primary" onClick={() => setShowAdd(true)}>
-                <Plus size={16} /> Add Expense
+      <div className="mobile-header-only">
+        <PageHeader
+          title="Expenses"
+          actions={
+            <>
+              <button className="btn-ghost" onClick={() => exportCsv('expenses', items.map((r) => ({ category: r.category, description: r.description ?? '', amount: r.amount, date: r.expense_date })))} style={{ gap: 'var(--space-2)' }}>
+                <Download size={14} /> CSV
               </button>
-            </IfRole>
-          </>
-        }
-      />
+              <IfRole minRole="accountant">
+                <button className="btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Add Expense</button>
+              </IfRole>
+            </>
+          }
+        />
+      </div>
 
       {/* Date preset pills */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 'var(--space-3)' }}>
@@ -408,6 +402,11 @@ export default function ExpensesPage() {
           )}
         </div>
       )}
+
+      <div className="bsb-spacer" />
+      <IfRole minRole="accountant">
+        <BottomSearchBar value="" onChange={() => {}} placeholder="Expenses" onAdd={() => setShowAdd(true)} />
+      </IfRole>
 
       {/* Add Expense Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Expense"

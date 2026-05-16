@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/shared/Skeleton';
 import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairStatus } from '@/types/api';
 import { Search, Phone, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface CustomerProfile {
@@ -126,8 +127,8 @@ export default function CustomersPage() {
         ))}
       </div>
 
-      {/* Search */}
-      <div style={{ position: 'relative', maxWidth: 420, marginBottom: 'var(--space-4)' }}>
+      {/* Desktop-only search */}
+      <div className="desktop-search" style={{ position: 'relative', maxWidth: 420, marginBottom: 'var(--space-4)' }}>
         <Search size={14} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input
           className="input"
@@ -287,6 +288,13 @@ export default function CustomersPage() {
           </div>
         </div>
       )}
+
+      <div className="bsb-spacer" />
+      <BottomSearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search customer, phone…"
+      />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { formatNaira } from '@/lib/format';
 import { Item, ItemCreate, RestockPayload } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package, Trash2 } from 'lucide-react';
+import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
@@ -162,80 +163,51 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Inventory"
-        actions={
-          <>
-            {/* Hidden file input for CSV import */}
-            <input
-              ref={csvInputRef}
-              type="file"
-              accept=".csv"
-              style={{ display: 'none' }}
-              onChange={handleImportCsv}
-            />
-            <button className="btn-ghost" onClick={handleDownloadTemplate} style={{ gap: 'var(--space-2)' }} title="Download CSV template">
-              <Download size={14} /> Template
-            </button>
-            <IfRole minRole="technician">
-              <button
-                className="btn-ghost"
-                onClick={() => csvInputRef.current?.click()}
-                disabled={importing}
-                style={{ gap: 'var(--space-2)' }}
-                title="Import items from CSV"
-              >
-                {importing ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />}
-                Import
+      {/* Desktop header */}
+      <div className="mobile-header-only">
+        <PageHeader
+          title="Inventory"
+          actions={
+            <>
+              <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+              <button className="btn-ghost" onClick={handleDownloadTemplate} style={{ gap: 'var(--space-2)' }}><Download size={14} /> Template</button>
+              <IfRole minRole="technician">
+                <button className="btn-ghost" onClick={() => csvInputRef.current?.click()} disabled={importing} style={{ gap: 'var(--space-2)' }}>
+                  {importing ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />} Import
+                </button>
+              </IfRole>
+              <button className="btn-ghost" onClick={() => exportCsv('inventory', (data?.items ?? []).map(r => ({ name: r.name, category: r.category, sku: r.sku ?? '', quantity_in_stock: r.quantity_in_stock, reorder_level: r.reorder_level, purchase_price: r.purchase_price, selling_price: r.selling_price ?? '', supplier: r.supplier ?? '' })))} style={{ gap: 'var(--space-2)' }}>
+                <Download size={14} /> Export
               </button>
-            </IfRole>
-            <button
-              className="btn-ghost"
-              onClick={() => exportCsv('inventory', (data?.items ?? []).map(r => ({
-                name: r.name, category: r.category, sku: r.sku ?? '',
-                quantity_in_stock: r.quantity_in_stock, reorder_level: r.reorder_level,
-                purchase_price: r.purchase_price, selling_price: r.selling_price ?? '',
-                supplier: r.supplier ?? '',
-              })))}
-              style={{ gap: 'var(--space-2)' }}
-              title="Export current inventory to CSV"
-            >
-              <Download size={14} /> Export
-            </button>
-            <IfRole minRole="technician">
-              <button className="btn-primary" onClick={() => setShowAdd(true)}>
-                <Plus size={16} /> Add Item
-              </button>
-            </IfRole>
-          </>
-        }
-      />
+              <IfRole minRole="technician">
+                <button className="btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Add Item</button>
+              </IfRole>
+            </>
+          }
+        />
+      </div>
 
-      {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }} className="stat-grid">
+      {/* Summary stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }} className="stat-grid">
         <StatWidget label="Total Items" value={String(totalItems)} numericValue={totalItems} numericFormat="number" accent="neutral" />
-        <StatWidget label="Inventory Value" value={formatNaira(totalValue)} numericValue={totalValue} numericFormat="currency" accent="neutral" />
+        <StatWidget label="Stock Value" value={formatNaira(totalValue)} numericValue={totalValue} numericFormat="currency" accent="neutral" />
         <StatWidget label="Low Stock" value={String(lowCount)} numericValue={lowCount} numericFormat="number" accent={lowCount > 5 ? 'loss' : 'warning'} />
       </div>
 
-      {/* Tabs + Search */}
-      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+      {/* Tabs */}
+      <div style={{ marginBottom: 'var(--space-4)' }}>
         <div className="tabs">
           <button className={`tab ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>All Items</button>
           <button className={`tab ${tab === 'low' ? 'active' : ''}`} onClick={() => setTab('low')}>
             Low Stock {lowCount > 0 && `(${lowCount})`}
           </button>
         </div>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
-          <Search size={14} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input
-            className="input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search items..."
-            style={{ paddingLeft: 'calc(var(--space-3) + 14px + var(--space-2))' }}
-          />
-        </div>
+      </div>
+
+      {/* Desktop-only search */}
+      <div className="desktop-search" style={{ position: 'relative', marginBottom: 'var(--space-4)', maxWidth: 360 }}>
+        <Search size={14} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <input className="input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items..." style={{ paddingLeft: 'calc(var(--space-3) + 14px + var(--space-2))' }} />
       </div>
 
       {/* Table with action column */}
@@ -311,6 +283,17 @@ export default function InventoryPage() {
           )}
         />
       </div>
+
+      {/* Mobile spacer + bottom search bar */}
+      <div className="bsb-spacer" />
+      <IfRole minRole="technician">
+        <BottomSearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder="Search items…"
+          onAdd={() => setShowAdd(true)}
+        />
+      </IfRole>
 
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Inventory Item">

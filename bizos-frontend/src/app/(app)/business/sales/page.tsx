@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api/sales';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
 import { DataTable, Column } from '@/components/shared/DataTable';
 import { Modal } from '@/components/shared/Modal';
 import { SaleForm } from '@/components/business/SaleForm';
@@ -126,33 +127,21 @@ export default function SalesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Sales"
-        actions={
-          <>
-            <button
-              className="btn-ghost"
-              onClick={() => exportCsv('sales', items.map(r => ({
-                item: r.item_name,
-                customer: r.customer ?? '',
-                quantity: r.quantity,
-                selling_price: r.selling_price,
-                cost_price: r.cost_price,
-                profit: r.profit,
-                sold_at: r.sold_at,
-              })))}
-              style={{ gap: 'var(--space-2)' }}
-            >
-              <Download size={14} /> CSV
-            </button>
-            <IfRole minRole="staff">
-              <button className="btn-primary" onClick={() => setShowAdd(true)}>
-                <Plus size={16} /> Record Sale
+      <div className="mobile-header-only">
+        <PageHeader
+          title="Sales"
+          actions={
+            <>
+              <button className="btn-ghost" onClick={() => exportCsv('sales', items.map(r => ({ item: r.item_name, customer: r.customer ?? '', quantity: r.quantity, selling_price: r.selling_price, cost_price: r.cost_price, profit: r.profit, sold_at: r.sold_at })))} style={{ gap: 'var(--space-2)' }}>
+                <Download size={14} /> CSV
               </button>
-            </IfRole>
-          </>
-        }
-      />
+              <IfRole minRole="staff">
+                <button className="btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Record Sale</button>
+              </IfRole>
+            </>
+          }
+        />
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }} className="stat-grid">
         <StatWidget label="Total Transactions" value={String(data?.total ?? 0)} accent="neutral" />
@@ -202,6 +191,11 @@ export default function SalesPage() {
           )}
         />
       </div>
+
+      <div className="bsb-spacer" />
+      <IfRole minRole="staff">
+        <BottomSearchBar value="" onChange={() => {}} placeholder="Sales" onAdd={() => setShowAdd(true)} />
+      </IfRole>
 
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Record Sale">
         <SaleForm onSubmit={handleCreate} onCancel={() => setShowAdd(false)} />

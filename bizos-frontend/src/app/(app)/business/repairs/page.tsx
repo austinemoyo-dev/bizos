@@ -14,6 +14,7 @@ import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Search, ExternalLink, Download, Upload, Loader2, Trash, Wrench, Calendar } from 'lucide-react';
+import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
@@ -196,40 +197,58 @@ export default function RepairsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Repair Jobs"
-        actions={
-          <>
-            <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
-            <button className="btn-ghost" onClick={handleDownloadTemplate} style={{ gap: 'var(--space-2)' }} title="Download CSV template">
-              <Download size={14} /> Template
-            </button>
-            <IfRole minRole="technician">
-              <button className="btn-ghost" onClick={() => csvInputRef.current?.click()} disabled={importing} style={{ gap: 'var(--space-2)' }} title="Import jobs from CSV">
-                {importing ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />}
-                Import
+      {/* Desktop header with all actions */}
+      <div className="mobile-header-only">
+        <PageHeader
+          title="Repair Jobs"
+          actions={
+            <>
+              <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+              <button className="btn-ghost" onClick={handleDownloadTemplate} style={{ gap: 'var(--space-2)' }} title="Download CSV template">
+                <Download size={14} /> Template
               </button>
-            </IfRole>
+              <IfRole minRole="technician">
+                <button className="btn-ghost" onClick={() => csvInputRef.current?.click()} disabled={importing} style={{ gap: 'var(--space-2)' }}>
+                  {importing ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />}
+                  Import
+                </button>
+              </IfRole>
+              <button
+                className="btn-ghost"
+                onClick={() => exportCsv('repairs', (data?.items ?? []).map(r => ({
+                  job_number: r.job_number, customer: r.customer_name, phone: r.customer_phone ?? '',
+                  device: r.device_type, model: r.device_model ?? '', status: r.status,
+                  total_charge: r.total_charge, labor_charge: r.labor_charge,
+                  parts_cost: r.parts_cost, profit: r.profit, received_at: r.received_at,
+                })))}
+                style={{ gap: 'var(--space-2)' }}
+              >
+                <Download size={14} /> Export
+              </button>
+              <IfRole minRole="technician">
+                <button className="btn-primary" onClick={() => setShowNewJob(true)}>
+                  <Plus size={16} /> New Job
+                </button>
+              </IfRole>
+            </>
+          }
+        />
+      </div>
+
+      {/* Status tabs — always visible, scrollable */}
+      <div style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 'var(--space-3)' }}>
+        <div className="tabs" style={{ width: 'max-content' }}>
+          {STATUS_TABS.map((tab) => (
             <button
-              className="btn-ghost"
-              onClick={() => exportCsv('repairs', (data?.items ?? []).map(r => ({
-                job_number: r.job_number, customer: r.customer_name, phone: r.customer_phone ?? '',
-                device: r.device_type, model: r.device_model ?? '', status: r.status,
-                total_charge: r.total_charge, labor_charge: r.labor_charge,
-                parts_cost: r.parts_cost, profit: r.profit, received_at: r.received_at,
-              })))}
-              style={{ gap: 'var(--space-2)' }}
+              key={tab.value}
+              className={`tab ${activeTab === tab.value ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.value)}
             >
-              <Download size={14} /> Export
+              {tab.label}
             </button>
-            <IfRole minRole="technician">
-              <button className="btn-primary" onClick={() => setShowNewJob(true)}>
-                <Plus size={16} /> New Job
-              </button>
-            </IfRole>
-          </>
-        }
-      />
+          ))}
+        </div>
+      </div>
 
       {/* Date filter pills */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 'var(--space-3)', alignItems: 'center' }}>
@@ -261,27 +280,9 @@ export default function RepairsPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ overflowX: 'auto', marginBottom: 'var(--space-4)' }}>
-        <div className="tabs" style={{ width: 'max-content' }}>
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              className={`tab ${activeTab === tab.value ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.value)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search */}
-      <div style={{ position: 'relative', marginBottom: 'var(--space-5)', maxWidth: 400 }}>
-        <Search size={14} style={{
-          position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)',
-          color: 'var(--text-muted)',
-        }} />
+      {/* Desktop-only search (hidden on mobile — use bottom search bar) */}
+      <div className="desktop-search" style={{ position: 'relative', marginBottom: 'var(--space-5)', maxWidth: 400 }}>
+        <Search size={14} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input
           className="input"
           value={search}
@@ -331,7 +332,20 @@ export default function RepairsPage() {
         />
       </div>
 
+      {/* Spacer so content clears the bottom search bar on mobile */}
+      <div className="bsb-spacer" />
+
       <JobDetailPanel jobId={selectedJobId} onClose={() => setSelectedJobId(null)} />
+
+      {/* Mobile bottom search + FAB (One UI style) */}
+      <IfRole minRole="technician">
+        <BottomSearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder="Search customer, device…"
+          onAdd={() => setShowNewJob(true)}
+        />
+      </IfRole>
 
       {/* Cancel job confirmation */}
       <Modal

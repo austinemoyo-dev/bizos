@@ -1631,6 +1631,168 @@ input[type=number]::-webkit-inner-spin-button {
   }
 }
 
+/* ── One UI: Bottom Search Bar ────────────────────────────────── */
+.bottom-search-bar-wrap {
+  display: none; /* desktop: hidden, shown on mobile only */
+}
+
+@media (max-width: 767px) {
+  /* ── Bottom search bar container ── */
+  .bottom-search-bar-wrap {
+    display: block;
+    position: fixed;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    z-index: 950;
+    pointer-events: none; /* children re-enable */
+  }
+
+  .bottom-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px 8px 16px;
+    border-radius: 22px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.22),
+      0 2px 8px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    pointer-events: all;
+  }
+
+  [data-theme="light"] .bottom-search-bar {
+    background: rgba(255, 253, 250, 0.96);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.10),
+      0 1px 4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  /* Filter toggle button */
+  .bsb-filter-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Search input row */
+  .bsb-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    cursor: text;
+  }
+
+  .bsb-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .bsb-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .bsb-input::-webkit-search-cancel-button { display: none; }
+
+  .bsb-input::placeholder { color: var(--text-muted); }
+
+  .bsb-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: var(--text-muted);
+    display: flex;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Primary action FAB */
+  .bsb-fab {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #E01535 0%, #C8102E 55%, #9B0D22 100%);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow:
+      0 4px 18px rgba(200, 16, 46, 0.50),
+      inset 0 1.5px 0 rgba(255, 180, 170, 0.28);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.14s;
+  }
+
+  .bsb-fab:active { transform: scale(0.88); }
+
+  /* ── Spacer so content isn't hidden behind the bottom bar ── */
+  .bsb-spacer {
+    height: 82px;
+  }
+
+  /* ── Hide desktop-only search on mobile ── */
+  .desktop-search {
+    display: none !important;
+  }
+
+  /* ── Hide PageHeader actions on mobile (they move to bottom) ── */
+  .mobile-header-only .page-header-actions {
+    display: none !important;
+  }
+
+  /* ── One UI: bigger touch targets on mobile ── */
+  .tab, .period-pill {
+    min-height: 36px;
+    padding: 6px 16px;
+    font-size: 0.75rem;
+  }
+
+  .input, input[type="text"], input[type="search"], input[type="date"], input[type="number"] {
+    min-height: 48px;
+    font-size: 16px !important; /* prevents iOS zoom */
+    border-radius: 14px;
+  }
+
+  /* ── Larger list items (min thumb target) ── */
+  .mobile-txn-card {
+    min-height: 72px;
+  }
+
+  /* ── Status tabs: horizontal scroll, compact ── */
+  .tabs {
+    gap: 4px;
+  }
+}
+
 /* ── Mobile FAB (floating action button) ─────────────────────── */
 .mobile-fab {
   display: none;
