@@ -200,22 +200,8 @@ export default function RepairDetailPage() {
     });
   };
 
-  const canModify = job ? job.status !== 'completed' && job.status !== 'delivered' : false;
-  const nextStatus = job ? STATUS_TRANSITIONS[job.status] : null;
-  const profitInfo = job ? formatProfit(job.profit) : null;
-  const tithe = job ? calcTithe(job.profit) : 0;
-  const currentStepIndex = job ? STATUS_ORDER.indexOf(job.status) : -1;
-
-  // Sticky bottom CTA — must be called unconditionally (Rules of Hooks)
-  useBottomCta({
-    label: job && nextStatus ? STATUS_LABELS[job.status] : '',
-    enabled: !!nextStatus,
-    loading: transitioning,
-    onClick: handleStatusChange,
-  });
-
   if (isLoading) return <RepairDetailSkeleton />;
-  if (!job || !profitInfo) return (
+  if (!job) return (
     <div style={{ textAlign: 'center', padding: 'var(--space-16)', color: 'var(--text-muted)' }}>
       Job not found.
       <button className="btn-ghost" style={{ display: 'block', margin: 'var(--space-4) auto' }} onClick={() => router.back()}>
@@ -224,8 +210,17 @@ export default function RepairDetailPage() {
     </div>
   );
 
+  const canModify = job.status !== 'completed' && job.status !== 'delivered';
+  const nextStatus = STATUS_TRANSITIONS[job.status];
+  const profitInfo = formatProfit(job.profit);
+  const tithe = calcTithe(job.profit);
+  const currentStepIndex = STATUS_ORDER.indexOf(job.status);
+
   return (
     <>
+      {/* Mounts only when job is ready — keeps useBottomCta unconditional within its own scope */}
+      <RepairBottomCta job={job} transitioning={transitioning} onStatusChange={handleStatusChange} />
+
       {/* Print styles */}
       <style>{`
         @media print {
@@ -398,7 +393,7 @@ export default function RepairDetailPage() {
           {/* Customer */}
           <div className="card" style={{ padding: 'var(--space-5)' }}>
             <p className="section-label">Customer</p>
-            <p style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-1)' }}>
+            <p style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-1)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {job.customer_name}
             </p>
             {job.customer_phone ? (
@@ -416,11 +411,11 @@ export default function RepairDetailPage() {
           {/* Device */}
           <div className="card" style={{ padding: 'var(--space-5)' }}>
             <p className="section-label">Device</p>
-            <p style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-1)' }}>
+            <p style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-1)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {job.device_type}{job.device_model ? ` — ${job.device_model}` : ''}
             </p>
             {job.fault_description && (
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                 {job.fault_description}
               </p>
             )}
@@ -769,6 +764,25 @@ export default function RepairDetailPage() {
       </Modal>
     </>
   );
+}
+
+function RepairBottomCta({
+  job,
+  transitioning,
+  onStatusChange,
+}: {
+  job: RepairJob;
+  transitioning: boolean;
+  onStatusChange: () => void;
+}) {
+  const nextStatus = STATUS_TRANSITIONS[job.status];
+  useBottomCta({
+    label: nextStatus ? STATUS_LABELS[job.status] : '',
+    enabled: !!nextStatus,
+    loading: transitioning,
+    onClick: onStatusChange,
+  });
+  return null;
 }
 
 function RepairDetailSkeleton() {

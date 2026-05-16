@@ -378,21 +378,21 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
           {form.parts && form.parts.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {form.parts.map((part: any, idx) => (
-                <div key={part.item_id} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                  <div style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500 }}>
+                <div key={part.item_id} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 100px', minWidth: 0, fontSize: 'var(--text-sm)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {part._name || 'Item'}
                   </div>
                   <input type="number" className="input"
-                    style={{ width: 68, padding: '4px 8px', fontSize: 'var(--text-xs)' }}
+                    style={{ width: 58, flexShrink: 0, padding: '4px 8px', fontSize: 'var(--text-xs)' }}
                     min={1} value={part.quantity} title="Quantity"
                     onChange={(e) => handleUpdatePart(idx, { quantity: parseInt(e.target.value) || 1 })}
                   />
-                  <div style={{ width: 120 }}>
+                  <div style={{ flex: '1 1 90px', minWidth: 90 }}>
                     <CurrencyInput value={part.selling_price || 0}
                       onChange={(v) => handleUpdatePart(idx, { selling_price: v })} />
                   </div>
                   <button type="button" className="btn-ghost"
-                    style={{ padding: '6px', color: 'var(--accent-red)' }}
+                    style={{ padding: '6px', color: 'var(--accent-red)', flexShrink: 0 }}
                     onClick={() => handleRemovePart(idx)}>
                     <Trash2 size={14} />
                   </button>
@@ -415,8 +415,8 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
         </div>
       )}
 
-      {/* Charges */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)' }}>
+      {/* Charges — auto-fit wraps to 2-col on narrow modal, 3-col on wider screens */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
         <div className="form-group">
           <CurrencyInput label="Labor Charge" value={form.labor_charge}
             onChange={(v) => {
@@ -427,18 +427,12 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
             }} />
         </div>
         <div className="form-group">
-          <label className="form-label">Total Estimate</label>
-          <div style={{ marginTop: 'var(--space-2)' }}>
-            <CurrencyInput value={form.total_charge}
-              onChange={(v) => set('total_charge', v)} />
-          </div>
+          <CurrencyInput label="Total Estimate" value={form.total_charge}
+            onChange={(v) => set('total_charge', v)} />
         </div>
         <div className="form-group">
-          <label className="form-label">Amount Paid</label>
-          <div style={{ marginTop: 'var(--space-2)' }}>
-            <CurrencyInput value={form.amount_paid ?? form.total_charge}
-              onChange={(v) => set('amount_paid', v)} />
-          </div>
+          <CurrencyInput label="Amount Paid" value={form.amount_paid ?? form.total_charge}
+            onChange={(v) => set('amount_paid', v)} />
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
             Balance: ₦{(form.total_charge - (form.amount_paid ?? form.total_charge)).toLocaleString()}
           </p>
