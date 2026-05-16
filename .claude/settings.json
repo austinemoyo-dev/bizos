@@ -9,7 +9,9 @@
       "Bash(venv/Scripts/python -m alembic revision --autogenerate -m \"cancel_status_device_types_selling_price\")",
       "Bash(venv/Scripts/python -m alembic upgrade head)",
       "Read(//c/c/Users/CEMEX/Videos/biz/bizos-frontend/**)",
-      "Read(//c/Users/CEMEX/AppData/Local/Temp/claude/c--Users-CEMEX-Videos-biz/11b1ec91-15b0-4ee9-9cc8-23cace7ea28c/tasks/**)"
+      "Read(//c/Users/CEMEX/AppData/Local/Temp/claude/c--Users-CEMEX-Videos-biz/11b1ec91-15b0-4ee9-9cc8-23cace7ea28c/tasks/**)",
+      "Bash(npm list *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('next installed:', d['version']\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\CEMEX\\Videos\\biz\\bizos-frontend\\src\\app\\(app)\\business\\inventory"
