@@ -12,7 +12,8 @@ import { RepairJobForm } from '@/components/business/RepairJobForm';
 import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Search, ExternalLink, Download, Upload, Loader2, Trash, Wrench } from 'lucide-react';
+import { Plus, Search, ExternalLink, Download, Upload, Loader2, Trash, Wrench, Calendar } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
@@ -27,6 +28,38 @@ const STATUS_TABS = [
   { label: 'Delivered', value: 'delivered' },
 ];
 
+type DatePreset = 'all' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
+
+const DATE_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: 'all',         label: 'All Time' },
+  { key: 'this_week',   label: 'This Week' },
+  { key: 'last_week',   label: 'Last Week' },
+  { key: 'this_month',  label: 'This Month' },
+  { key: 'last_month',  label: 'Last Month' },
+  { key: 'custom',      label: 'Custom' },
+];
+
+function getRepairDateRange(preset: DatePreset, customFrom: string, customTo: string) {
+  const now = new Date();
+  switch (preset) {
+    case 'all': return {};
+    case 'this_week':
+      return { date_from: format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'), date_to: format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd') };
+    case 'last_week': {
+      const s = subWeeks(now, 1);
+      return { date_from: format(startOfWeek(s, { weekStartsOn: 1 }), 'yyyy-MM-dd'), date_to: format(endOfWeek(s, { weekStartsOn: 1 }), 'yyyy-MM-dd') };
+    }
+    case 'this_month':
+      return { date_from: format(startOfMonth(now), 'yyyy-MM-dd'), date_to: format(endOfMonth(now), 'yyyy-MM-dd') };
+    case 'last_month': {
+      const s = subMonths(now, 1);
+      return { date_from: format(startOfMonth(s), 'yyyy-MM-dd'), date_to: format(endOfMonth(s), 'yyyy-MM-dd') };
+    }
+    case 'custom':
+      return { date_from: customFrom || undefined, date_to: customTo || undefined };
+  }
+}
+
 export default function RepairsPage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
@@ -36,8 +69,12 @@ export default function RepairsPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showNewJob, setShowNewJob] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const csvInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(search, 300);
+  const dateRange = getRepairDateRange(datePreset, customFrom, customTo);
 
   // Cancel confirmation modal state
   const [cancelTarget, setCancelTarget] = useState<RepairJob | null>(null);
@@ -97,8 +134,8 @@ export default function RepairsPage() {
   ];
 
   const { data, isLoading } = useQuery({
-    queryKey: ['repairs', activeTab, debouncedSearch],
-    queryFn: () => repairsApi.list({ status: activeTab || undefined, q: debouncedSearch || undefined }),
+    queryKey: ['repairs', activeTab, debouncedSearch, datePreset, customFrom, customTo],
+    queryFn: () => repairsApi.list({ status: activeTab || undefined, q: debouncedSearch || undefined, ...dateRange }),
   });
 
   const handleCreate = async (formData: RepairJobCreate) => {
@@ -177,6 +214,36 @@ export default function RepairsPage() {
           </>
         }
       />
+
+      {/* Date filter pills */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 'var(--space-3)', alignItems: 'center' }}>
+        <Calendar size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        {DATE_PRESETS.map((p) => (
+          <button key={p.key} onClick={() => setDatePreset(p.key)} style={{
+            padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', flexShrink: 0,
+            fontSize: 'var(--text-xs)', fontWeight: 600,
+            background: datePreset === p.key ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+            color: datePreset === p.key ? 'white' : 'var(--text-secondary)',
+            transition: 'all 0.2s',
+          }}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom date inputs */}
+      {datePreset === 'custom' && (
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label className="form-label">From</label>
+            <input type="date" className="input" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label className="form-label">To</label>
+            <input type="date" className="input" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ overflowX: 'auto', marginBottom: 'var(--space-4)' }}>

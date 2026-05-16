@@ -11,11 +11,12 @@ import { InventoryItemForm } from '@/components/business/InventoryItemForm';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { formatNaira, formatDate } from '@/lib/format';
-import { Item, ItemCreate } from '@/types/api';
+import { Item, ItemCreate, StockMovement, StockMovementType } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import {
   ArrowLeft, AlertTriangle, Package, Loader2,
   Pencil, RefreshCw, TrendingUp, TrendingDown,
+  ArrowUpCircle, ArrowDownCircle, Wrench, ShieldAlert, SlidersHorizontal, History,
 } from 'lucide-react';
 
 export default function InventoryDetailPage() {
@@ -34,6 +35,12 @@ export default function InventoryDetailPage() {
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ['inventory-item', id],
     queryFn: () => inventoryApi.get(id),
+    enabled: !!id,
+  });
+
+  const { data: movements = [] } = useQuery<StockMovement[]>({
+    queryKey: ['inventory-movements', id],
+    queryFn: () => inventoryApi.movements(id),
     enabled: !!id,
   });
 
@@ -236,6 +243,54 @@ export default function InventoryDetailPage() {
               ))}
             </div>
           )}
+          {/* Movement History */}
+          <div className="card" style={{ padding: 'var(--space-5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+              <History size={15} style={{ color: 'var(--text-muted)' }} />
+              <p className="section-label" style={{ marginBottom: 0 }}>Movement History</p>
+            </div>
+            {movements.length === 0 ? (
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-4) 0' }}>
+                No stock movements recorded yet.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {movements.slice(0, 20).map((m) => {
+                  const config: Record<StockMovementType, { label: string; color: string; icon: React.ReactNode; sign: string }> = {
+                    purchase:   { label: 'Restock',      color: 'var(--accent-green)',  icon: <ArrowUpCircle size={14} />,      sign: '+' },
+                    sale:       { label: 'Sale',         color: 'var(--accent-primary)', icon: <ArrowDownCircle size={14} />,   sign: '−' },
+                    repair_use: { label: 'Repair Use',   color: 'var(--accent-amber)',   icon: <Wrench size={14} />,            sign: '−' },
+                    damage:     { label: 'Damage',       color: 'var(--accent-red)',     icon: <ShieldAlert size={14} />,       sign: '−' },
+                    adjustment: { label: 'Adjustment',   color: 'var(--text-secondary)', icon: <SlidersHorizontal size={14} />, sign: '±' },
+                  };
+                  const c = config[m.type];
+                  return (
+                    <div key={m.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: 'var(--space-2) var(--space-3)',
+                      background: 'var(--bg-overlay)', borderRadius: 'var(--radius-sm)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <span style={{ color: c.color }}>{c.icon}</span>
+                        <div>
+                          <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>{c.label}</p>
+                          {m.note && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{m.note}</p>}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: c.color }}>
+                          {c.sign}{m.quantity}
+                        </p>
+                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                          {new Date(m.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right — Stock health */}

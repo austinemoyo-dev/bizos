@@ -24,6 +24,7 @@ export const personalApi = {
     list: (): Promise<SavingsGoal[]> =>
       withOfflineCache('savings-list', () => api.get<SavingsGoal[]>('/personal/savings')),
     create: (data: SavingsGoalCreate) => api.post<SavingsGoal>('/personal/savings', data),
+    update: (id: string, data: Partial<SavingsGoalCreate>) => api.put<SavingsGoal>(`/personal/savings/${id}`, data),
     deposit: (id: string, amount: number) =>
       api.post<SavingsGoal>(`/personal/savings/${id}/deposit`, { amount }),
     delete: (id: string) => api.delete<void>(`/personal/savings/${id}`),

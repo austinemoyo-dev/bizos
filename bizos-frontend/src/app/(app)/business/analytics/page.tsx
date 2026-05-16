@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { analyticsApi, TopItemData, RepairStatData } from '@/lib/api/analytics';
 import { ComparisonLineChart, ComparisonPoint } from '@/components/charts/ComparisonLineChart';
@@ -12,7 +12,10 @@ import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   subWeeks, subMonths, subDays, eachDayOfInterval, parseISO, differenceInDays,
 } from 'date-fns';
-import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Wrench, Flame, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Wrench, Flame, BarChart2, Target, Loader2 } from 'lucide-react';
+import { Modal } from '@/components/shared/Modal';
+import { CurrencyInput } from '@/components/shared/CurrencyInput';
+import { useUIStore } from '@/lib/stores/uiStore';
 import { fadeUp, stagger } from '@/lib/motion-variants';
 
 // ── Period definitions ──────────────────────────────────────────────────────
@@ -175,11 +178,19 @@ function TrendChip({ label, current, previous }: { label: string; current: numbe
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
+  const { addToast } = useUIStore();
+  const qc = useQueryClient();
   const [periodKey, setPeriodKey] = useState<PeriodKey>('this_month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [metric, setMetric] = useState<'revenue' | 'expenses' | 'profit'>('profit');
   const [showCustom, setShowCustom] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [goalRevenue, setGoalRevenue] = useState(0);
+  const [goalProfit, setGoalProfit] = useState(0);
+  const [savingGoals, setSavingGoals] = useState(false);
+  const thisMonth = new Date().getMonth() + 1;
+  const thisYear  = new Date().getFullYear();
 
   const { current, previous } = useMemo(
     () => getPeriods(periodKey, customStart, customEnd),
@@ -193,6 +204,11 @@ export default function AnalyticsPage() {
   const { data: topItems }    = useQuery({ queryKey: ['top-items', current.start, current.end], queryFn: () => analyticsApi.topItems({ period_start: current.start, period_end: current.end, limit: 8 }) });
   const { data: repairStats } = useQuery({ queryKey: ['repair-stats', current.start, current.end], queryFn: () => analyticsApi.repairStats({ period_start: current.start, period_end: current.end }) });
   const { data: expBreakdown }= useQuery({ queryKey: ['exp-breakdown', current.start, current.end], queryFn: () => analyticsApi.expenseBreakdown({ period_start: current.start, period_end: current.end }) });
+
+  const { data: monthlyGoal } = useQuery({
+    queryKey: ['monthly-goal', thisMonth, thisYear],
+    queryFn: () => analyticsApi.getMonthlyGoal({ month: thisMonth, year: thisYear }),
+  });
 
   const curDays  = useMemo(() => makeDays(current.start,  current.end),  [current.start,  current.end]);
   const prevDays = useMemo(() => makeDays(previous.start, previous.end), [previous.start, previous.end]);
@@ -228,12 +244,38 @@ export default function AnalyticsPage() {
   const profitChange = pct(curProfit, prevProfit);
   const isBetter     = curProfit >= prevProfit;
 
+  const handleSaveGoals = async () => {
+    setSavingGoals(true);
+    try {
+      await analyticsApi.updateMonthlyGoal(thisMonth, thisYear, { revenue_target: goalRevenue, profit_target: goalProfit });
+      qc.invalidateQueries({ queryKey: ['monthly-goal'] });
+      addToast({ type: 'success', title: 'Monthly goals updated' });
+      setShowGoals(false);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed to save goals', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setSavingGoals(false);
+    }
+  };
+
+  const openGoals = () => {
+    setGoalRevenue(monthlyGoal?.revenue_target ?? 0);
+    setGoalProfit(monthlyGoal?.profit_target ?? 0);
+    setShowGoals(true);
+  };
+
   return (
     <div className="analytics-page">
       {/* Header */}
-      <motion.div variants={fadeUp} initial="initial" animate="animate">
-        <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Business</p>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800 }}>Analytics</h2>
+      <motion.div variants={fadeUp} initial="initial" animate="animate"
+        style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div>
+          <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Business</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800 }}>Analytics</h2>
+        </div>
+        <button className="btn-ghost" onClick={openGoals} style={{ gap: 'var(--space-2)', fontSize: 'var(--text-xs)' }}>
+          <Target size={14} /> Set Monthly Goals
+        </button>
       </motion.div>
 
       {/* Period selector */}
@@ -267,6 +309,53 @@ export default function AnalyticsPage() {
           {' '}vs <span>{previous.start} → {previous.end}</span>
         </p>
       </div>
+
+      {/* Monthly goals progress */}
+      {monthlyGoal && (monthlyGoal.revenue_target > 0 || monthlyGoal.profit_target > 0) && periodKey === 'this_month' && (
+        <motion.div variants={fadeUp} initial="initial" animate="animate"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+          {monthlyGoal.revenue_target > 0 && (
+            <div className="card" style={{ padding: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Revenue Goal</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                  {formatNaira(curSummary?.total_revenue ?? 0)} / {formatNaira(monthlyGoal.revenue_target)}
+                </span>
+              </div>
+              <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 3, transition: 'width 0.6s ease',
+                  width: `${Math.min(100, ((curSummary?.total_revenue ?? 0) / monthlyGoal.revenue_target) * 100)}%`,
+                  background: (curSummary?.total_revenue ?? 0) >= monthlyGoal.revenue_target ? 'var(--accent-green)' : 'var(--accent-primary)',
+                }} />
+              </div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
+                {Math.min(100, ((curSummary?.total_revenue ?? 0) / monthlyGoal.revenue_target * 100)).toFixed(0)}%
+              </p>
+            </div>
+          )}
+          {monthlyGoal.profit_target > 0 && (
+            <div className="card" style={{ padding: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Profit Goal</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                  {formatNaira(curSummary?.net_profit ?? 0)} / {formatNaira(monthlyGoal.profit_target)}
+                </span>
+              </div>
+              <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 3, transition: 'width 0.6s ease',
+                  width: `${Math.min(100, ((curSummary?.net_profit ?? 0) / monthlyGoal.profit_target) * 100)}%`,
+                  background: (curSummary?.net_profit ?? 0) >= monthlyGoal.profit_target ? 'var(--accent-green)' : 'var(--accent-amber)',
+                }} />
+              </div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
+                {Math.min(100, ((curSummary?.net_profit ?? 0) / monthlyGoal.profit_target * 100)).toFixed(0)}%
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* ── Hero: Revenue as primary ─────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
@@ -578,6 +667,29 @@ export default function AnalyticsPage() {
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-6)' }}>No expenses recorded for this period.</p>
         )}
       </motion.div>
+
+      <Modal
+        isOpen={showGoals}
+        onClose={() => setShowGoals(false)}
+        title={`Monthly Goals — ${new Date().toLocaleString('default', { month: 'long' })} ${thisYear}`}
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setShowGoals(false)}>Cancel</button>
+            <button className="btn-primary" onClick={handleSaveGoals} disabled={savingGoals}>
+              {savingGoals && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+              Save Goals
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Set targets for this month. Progress bars will appear on the analytics page when goals are active.
+          </p>
+          <CurrencyInput label="Revenue Target" value={goalRevenue} onChange={setGoalRevenue} />
+          <CurrencyInput label="Profit Target" value={goalProfit} onChange={setGoalProfit} />
+        </div>
+      </Modal>
     </div>
   );
 }

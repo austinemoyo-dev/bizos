@@ -14,7 +14,7 @@ import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import {
   ArrowLeft, Phone, Plus, AlertTriangle, Loader2,
-  Printer, Pencil, ChevronRight, Trash2, FileText,
+  Printer, Pencil, ChevronRight, Trash2, FileText, XCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { generateRepairReceipt } from '@/lib/pdfReports';
@@ -60,6 +60,9 @@ export default function RepairDetailPage() {
   const [editingCompletedAt, setEditingCompletedAt] = useState(false);
   const [completedAtValue, setCompletedAtValue] = useState('');
   const [savingCompletedAt, setSavingCompletedAt] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
   const { deleteWithUndo } = useUndoDelete({ label: 'Part removed', delay: 5000 });
 
   const { data: job, isLoading } = useQuery<RepairJob>({
@@ -136,6 +139,22 @@ export default function RepairDetailPage() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!job) return;
+    setCancelling(true);
+    try {
+      await repairsApi.cancelJob(job.id, { cancel_reason: cancelReason || undefined });
+      qc.invalidateQueries({ queryKey: ['repair', id] });
+      qc.invalidateQueries({ queryKey: ['repairs'] });
+      addToast({ type: 'success', title: 'Job cancelled', message: 'All parts returned to inventory' });
+      setShowCancel(false);
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed to cancel', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const handlePrint = () => window.print();
   const handleReceipt = () => {
     if (!job) return;
@@ -205,6 +224,15 @@ export default function RepairDetailPage() {
               {canModify && (
                 <button className="btn-ghost" onClick={() => setEditingJob(true)} style={{ gap: 'var(--space-2)' }}>
                   <Pencil size={14} /> Edit
+                </button>
+              )}
+              {job.status !== 'cancelled' && job.status !== 'delivered' && (
+                <button
+                  className="btn-ghost"
+                  onClick={() => { setCancelReason(''); setShowCancel(true); }}
+                  style={{ gap: 'var(--space-2)', color: 'var(--accent-red)' }}
+                >
+                  <XCircle size={14} /> Cancel Job
                 </button>
               )}
               {nextStatus && (
@@ -554,6 +582,38 @@ export default function RepairDetailPage() {
       {/* Modals */}
       <Modal isOpen={addingPart} onClose={() => setAddingPart(false)} title="Add Part to Job">
         <AddPartForm onSubmit={handleAddPart} onCancel={() => setAddingPart(false)} />
+      </Modal>
+
+      <Modal
+        isOpen={showCancel}
+        onClose={() => setShowCancel(false)}
+        title={`Cancel Job #${job.job_number}`}
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setShowCancel(false)} disabled={cancelling}>Keep Job</button>
+            <button className="btn-danger" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <XCircle size={14} />}
+              {cancelling ? 'Cancelling…' : 'Cancel Job'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            This will return all attached parts back to inventory. This action cannot be undone.
+          </p>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Reason for cancellation (optional)</label>
+            <textarea
+              className="input"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. Customer changed mind, part unavailable…"
+              rows={3}
+              style={{ resize: 'none', lineHeight: 1.6 }}
+            />
+          </div>
+        </div>
       </Modal>
 
       <Modal isOpen={editingJob} onClose={() => setEditingJob(false)} title="Edit Repair Job">

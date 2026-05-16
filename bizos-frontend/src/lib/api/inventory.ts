@@ -1,6 +1,6 @@
 import { api, toPage } from './client';
 import { withOfflineCache } from '@/lib/db/offlineCache';
-import { Item, ItemCreate, RestockPayload, CsvImportResult, PaginatedResponse } from '@/types/api';
+import { Item, ItemCreate, RestockPayload, CsvImportResult, StockMovement, PaginatedResponse } from '@/types/api';
 
 export const inventoryApi = {
   list: (params?: { q?: string; category?: string; page?: number; size?: number }): Promise<PaginatedResponse<Item>> =>
@@ -28,6 +28,11 @@ export const inventoryApi = {
   update: (id: string, data: Partial<ItemCreate>) => api.put<Item>(`/inventory/${id}`, data),
   restock: (id: string, data: RestockPayload) => api.post<Item>(`/inventory/${id}/restock`, data),
   delete: (id: string) => api.delete<void>(`/inventory/${id}`),
+  movements: (id: string): Promise<StockMovement[]> =>
+    withOfflineCache(`inventory-movements-${id}`, async () => {
+      const res = await api.get<StockMovement[] | { items?: StockMovement[] }>(`/inventory/${id}/movements`);
+      return Array.isArray(res) ? res : (res as any)?.items ?? [];
+    }),
   csvTemplate: () => api.get<Blob>('/inventory/template/csv'),
   importCsv: (file: File) => {
     const fd = new FormData();

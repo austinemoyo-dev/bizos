@@ -378,6 +378,19 @@ export interface PersonalSummary {
   tithe_due: number;
 }
 
+// Stock Movements
+export type StockMovementType = 'purchase' | 'sale' | 'repair_use' | 'damage' | 'adjustment';
+
+export interface StockMovement {
+  id: string;
+  item_id: string;
+  type: StockMovementType;
+  quantity: number;
+  reference_id?: string;
+  note?: string;
+  created_at: string;
+}
+
 // Pagination
 export interface PaginatedResponse<T> {
   items: T[];

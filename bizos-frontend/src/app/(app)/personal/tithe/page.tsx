@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { formatNaira } from '@/lib/format';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { HandCoins } from 'lucide-react';
+import { HandCoins, RefreshCw, Loader2 } from 'lucide-react';
 
 type Period = 'this_month' | 'last_month' | 'all';
 
@@ -43,6 +43,7 @@ export default function PersonalTithePage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
   const [period, setPeriod] = useState<Period>('this_month');
+  const [generating, setGenerating] = useState(false);
 
   const dateRange = getPeriodDates(period);
 
@@ -56,6 +57,21 @@ export default function PersonalTithePage() {
     queryFn: () => titheApi.list({ scope: 'personal', paid: true, ...dateRange }),
   });
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const now = new Date();
+      const targetPeriod = period === 'last_month' ? subMonths(now, 1) : now;
+      await titheApi.generate(targetPeriod.getFullYear(), targetPeriod.getMonth() + 1);
+      qc.invalidateQueries({ queryKey: ['tithe'] });
+      addToast({ type: 'success', title: 'Personal tithe recalculated' });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed to generate tithe', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleMarkPaid = async (id: string) => {
     await titheApi.markPaid(id);
     qc.invalidateQueries({ queryKey: ['tithe'] });
@@ -67,7 +83,19 @@ export default function PersonalTithePage() {
 
   return (
     <div>
-      <PageHeader title="Personal Tithe" subtitle="Give first from personal income" />
+      <PageHeader
+        title="Personal Tithe"
+        subtitle="Give first from personal income"
+        actions={
+          <button className="btn-ghost" onClick={handleGenerate} disabled={generating} style={{ gap: 'var(--space-2)' }}>
+            {generating
+              ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <RefreshCw size={14} />
+            }
+            Recalculate
+          </button>
+        }
+      />
 
       {/* Period selector */}
       <div style={{

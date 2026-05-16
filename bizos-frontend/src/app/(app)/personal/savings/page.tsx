@@ -9,7 +9,7 @@ import { SavingsGoalCard } from '@/components/personal/SavingsGoalCard';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatNaira } from '@/lib/format';
-import { SavingsGoalCreate } from '@/types/api';
+import { SavingsGoal, SavingsGoalCreate } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Loader2, PiggyBank } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export default function SavingsPage() {
   const [depositAmount, setDepositAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<SavingsGoalCreate>({ title: '', target_amount: 0, deadline: '' });
+  const [editGoal, setEditGoal] = useState<{ id: string } & SavingsGoalCreate | null>(null);
 
   const { data: goals } = useQuery({
     queryKey: ['savings-goals'],
@@ -36,6 +37,30 @@ export default function SavingsPage() {
       addToast({ type: 'success', title: 'Savings goal created' });
       setShowAdd(false);
       setForm({ title: '', target_amount: 0, deadline: '' });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEdit = (goal: SavingsGoal) => {
+    setEditGoal({ id: goal.id, title: goal.title, target_amount: goal.target_amount, deadline: goal.deadline ?? '' });
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editGoal) return;
+    setLoading(true);
+    try {
+      await personalApi.savings.update(editGoal.id, {
+        title: editGoal.title,
+        target_amount: editGoal.target_amount,
+        deadline: editGoal.deadline || undefined,
+      });
+      qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      addToast({ type: 'success', title: 'Goal updated' });
+      setEditGoal(null);
     } catch (err) {
       addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' });
     } finally {
@@ -83,7 +108,7 @@ export default function SavingsPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
           {goals.map((goal) => (
-            <SavingsGoalCard key={goal.id} goal={goal} onDeposit={setDepositGoalId} />
+            <SavingsGoalCard key={goal.id} goal={goal} onDeposit={setDepositGoalId} onEdit={openEdit} />
           ))}
         </div>
       )}
@@ -116,6 +141,38 @@ export default function SavingsPage() {
               onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))} />
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Goal Modal */}
+      <Modal isOpen={!!editGoal} onClose={() => setEditGoal(null)} title="Edit Savings Goal"
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setEditGoal(null)}>Cancel</button>
+            <button className="btn-primary" form="edit-goal-form" type="submit" disabled={loading}>
+              {loading && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+              Save Changes
+            </button>
+          </>
+        }
+      >
+        {editGoal && (
+          <form id="edit-goal-form" onSubmit={handleEdit}>
+            <div className="form-group">
+              <label className="form-label">Goal Title *</label>
+              <input className="input" value={editGoal.title} required
+                onChange={(e) => setEditGoal((g) => g ? { ...g, title: e.target.value } : g)} />
+            </div>
+            <div className="form-group">
+              <CurrencyInput label="Target Amount *" value={editGoal.target_amount}
+                onChange={(v) => setEditGoal((g) => g ? { ...g, target_amount: v } : g)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Deadline (optional)</label>
+              <input type="date" className="input" value={editGoal.deadline ?? ''}
+                onChange={(e) => setEditGoal((g) => g ? { ...g, deadline: e.target.value } : g)} />
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Deposit Modal */}

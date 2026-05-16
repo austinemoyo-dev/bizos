@@ -2,14 +2,15 @@
 
 import { SavingsGoal } from '@/types/api';
 import { formatNaira, formatDate } from '@/lib/format';
-import { PiggyBank, Target } from 'lucide-react';
+import { PiggyBank, Target, Pencil } from 'lucide-react';
 
 interface SavingsGoalCardProps {
   goal: SavingsGoal;
   onDeposit: (id: string) => void;
+  onEdit?: (goal: SavingsGoal) => void;
 }
 
-export function SavingsGoalCard({ goal, onDeposit }: SavingsGoalCardProps) {
+export function SavingsGoalCard({ goal, onDeposit, onEdit }: SavingsGoalCardProps) {
   const progress = Math.min((goal.current_amount / goal.target_amount) * 100, 100);
   const isComplete = progress >= 100;
 
@@ -38,12 +39,20 @@ export function SavingsGoalCard({ goal, onDeposit }: SavingsGoalCardProps) {
               )}
             </div>
           </div>
-          {!isComplete && (
-            <button className="btn-primary" style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-1) var(--space-3)' }}
-              onClick={() => onDeposit(goal.id)}>
-              Deposit
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            {onEdit && (
+              <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-1) var(--space-2)' }}
+                onClick={() => onEdit(goal)}>
+                <Pencil size={12} />
+              </button>
+            )}
+            {!isComplete && (
+              <button className="btn-primary" style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-1) var(--space-3)' }}
+                onClick={() => onDeposit(goal.id)}>
+                Deposit
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Amounts */}
