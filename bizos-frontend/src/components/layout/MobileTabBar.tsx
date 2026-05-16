@@ -137,7 +137,10 @@ export function MobileTabBar() {
         <button
           className={`mobile-nav-item${isMoreActive || open ? ' more-active' : ''}`}
           onClick={() => setOpen(true)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
+            WebkitTapHighlightColor: 'transparent', outline: 'none', overflow: 'hidden',
+          }}
         >
           <div className="mobile-nav-icon">
             <LayoutGrid size={20} strokeWidth={isMoreActive || open ? 2.4 : 1.8} />

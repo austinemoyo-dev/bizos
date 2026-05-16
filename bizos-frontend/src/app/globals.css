@@ -1553,6 +1553,9 @@ input[type=number]::-webkit-inner-spin-button {
     font-family: var(--font-ui);
     border-radius: 18px;
     position: relative;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    overflow: hidden;
   }
 
   /* Active item text + icon color */

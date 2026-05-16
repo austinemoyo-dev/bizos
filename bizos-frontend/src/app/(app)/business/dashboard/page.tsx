@@ -584,12 +584,12 @@ export default function BusinessDashboard() {
             No repair jobs yet
           </div>
         ) : (
-          recentJobs.map((job, i) => (
+          recentJobs.slice(0, 5).map((job, i) => (
             <RepairJobCard
               key={job.id}
               job={job}
               onClick={(j) => router.push(`/business/repairs/${j.id}`)}
-              showBorder={i < recentJobs.length - 1}
+              showBorder={i < Math.min(recentJobs.length, 5) - 1}
             />
           ))
         )}
