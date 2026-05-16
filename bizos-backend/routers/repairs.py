@@ -21,12 +21,14 @@ from schemas.repair import (
     RepairProfitOut,
     RepairStatusUpdate,
     RepairPaymentUpdate,
+    ResolveDepositRequest,
 )
 from services.repair_service import (
     add_part_to_job,
     cancel_job,
     compute_job_profit,
     remove_part_from_job,
+    resolve_deposit,
     update_job_status,
 )
 
@@ -294,6 +296,17 @@ def cancel_repair_job(
     current_user: User = Depends(role_required(*UPDATE_ROLES)),
 ):
     job = cancel_job(db, job_id, cancel_reason=payload.cancel_reason)
+    return RepairJobOut.from_orm_with_profit(job)
+
+
+@router.post("/{job_id}/resolve-deposit", response_model=RepairJobOut)
+def resolve_job_deposit(
+    job_id: UUID,
+    payload: ResolveDepositRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(*UPDATE_ROLES)),
+):
+    job = resolve_deposit(db, job_id, payload.resolution)
     return RepairJobOut.from_orm_with_profit(job)
 
 

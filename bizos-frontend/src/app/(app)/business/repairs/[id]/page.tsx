@@ -15,6 +15,7 @@ import { useUIStore } from '@/lib/stores/uiStore';
 import {
   ArrowLeft, Phone, Plus, AlertTriangle, Loader2,
   Printer, Pencil, ChevronRight, Trash2, FileText, XCircle,
+  Banknote,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { generateRepairReceipt } from '@/lib/pdfReports';
@@ -63,6 +64,8 @@ export default function RepairDetailPage() {
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [cancelDepositResolution, setCancelDepositResolution] = useState<'refunded' | 'kept' | null>(null);
+  const [resolvingDeposit, setResolvingDeposit] = useState(false);
   const { deleteWithUndo } = useUndoDelete({ label: 'Part removed', delay: 5000 });
 
   const { data: job, isLoading } = useQuery<RepairJob>({
@@ -139,13 +142,40 @@ export default function RepairDetailPage() {
     }
   };
 
+  const handleResolveDeposit = async (resolution: 'refunded' | 'kept') => {
+    if (!job) return;
+    setResolvingDeposit(true);
+    try {
+      await repairsApi.resolveDeposit(job.id, resolution);
+      qc.invalidateQueries({ queryKey: ['repair', id] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      const msg = resolution === 'refunded'
+        ? 'Refund recorded — deposit removed from your balance'
+        : 'Deposit kept — recorded as cancellation fee income';
+      addToast({ type: 'success', title: 'Deposit resolved', message: msg });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' });
+    } finally {
+      setResolvingDeposit(false);
+    }
+  };
+
   const handleCancel = async () => {
     if (!job) return;
+    const hasDeposit = Number(job.amount_paid) > 0;
+    if (hasDeposit && !cancelDepositResolution) {
+      addToast({ type: 'error', title: 'Select what happened to the deposit' });
+      return;
+    }
     setCancelling(true);
     try {
       await repairsApi.cancelJob(job.id, { cancel_reason: cancelReason || undefined });
+      if (hasDeposit && cancelDepositResolution) {
+        await repairsApi.resolveDeposit(job.id, cancelDepositResolution);
+      }
       qc.invalidateQueries({ queryKey: ['repair', id] });
       qc.invalidateQueries({ queryKey: ['repairs'] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
       addToast({ type: 'success', title: 'Job cancelled', message: 'All parts returned to inventory' });
       setShowCancel(false);
     } catch (err) {
@@ -229,7 +259,7 @@ export default function RepairDetailPage() {
               {job.status !== 'cancelled' && job.status !== 'delivered' && (
                 <button
                   className="btn-ghost"
-                  onClick={() => { setCancelReason(''); setShowCancel(true); }}
+                  onClick={() => { setCancelReason(''); setCancelDepositResolution(null); setShowCancel(true); }}
                   style={{ gap: 'var(--space-2)', color: 'var(--accent-red)' }}
                 >
                   <XCircle size={14} /> Cancel Job
@@ -299,6 +329,67 @@ export default function RepairDetailPage() {
           })}
         </div>
       </div>
+
+      {/* Deposit resolution banner — shown on cancelled jobs with unresolved deposits */}
+      {job.status === 'cancelled' && Number(job.amount_paid) > 0 && !job.deposit_resolution && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          gap: 'var(--space-4)', flexWrap: 'wrap',
+          background: 'rgba(245,158,11,0.07)',
+          border: '1px solid rgba(245,158,11,0.3)',
+          borderLeft: '3px solid var(--accent-amber)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-4)',
+          marginBottom: 'var(--space-5)',
+        }} className="no-print">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+            <Banknote size={16} style={{ color: 'var(--accent-amber)', flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent-amber)', marginBottom: 4 }}>
+                Deposit not resolved — {formatNaira(Number(job.amount_paid))} paid
+              </p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                This job was cancelled but a deposit was already collected. What happened to the money?
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+            <button
+              className="btn-ghost"
+              style={{ fontSize: 'var(--text-xs)', gap: 'var(--space-1)', borderColor: 'rgba(245,158,11,0.4)' }}
+              onClick={() => handleResolveDeposit('refunded')}
+              disabled={resolvingDeposit}
+            >
+              {resolvingDeposit ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+              Refunded to customer
+            </button>
+            <button
+              className="btn-primary"
+              style={{ fontSize: 'var(--text-xs)', background: 'var(--accent-amber)', boxShadow: 'none' }}
+              onClick={() => handleResolveDeposit('kept')}
+              disabled={resolvingDeposit}
+            >
+              Kept as fee
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Deposit resolved confirmation */}
+      {job.status === 'cancelled' && job.deposit_resolution && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-5)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
+        }} className="no-print">
+          <Banknote size={13} />
+          Deposit {formatNaira(Number(job.amount_paid))} —{' '}
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+            {job.deposit_resolution === 'refunded' ? 'Refunded to customer' : 'Kept as cancellation fee'}
+          </span>
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-5)', alignItems: 'start' }}>
@@ -602,6 +693,53 @@ export default function RepairDetailPage() {
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             This will return all attached parts back to inventory. This action cannot be undone.
           </p>
+
+          {Number(job.amount_paid) > 0 && (
+            <div style={{
+              background: 'rgba(245,158,11,0.07)',
+              border: '1px solid rgba(245,158,11,0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-4)',
+            }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-amber)', marginBottom: 'var(--space-3)' }}>
+                {formatNaira(Number(job.amount_paid))} was already paid — what happened to it?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {(['refunded', 'kept'] as const).map((opt) => (
+                  <label
+                    key={opt}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                      padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)',
+                      border: `1px solid ${cancelDepositResolution === opt ? 'var(--accent-amber)' : 'var(--border-default)'}`,
+                      background: cancelDepositResolution === opt ? 'rgba(245,158,11,0.1)' : 'var(--bg-overlay)',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="cancel_deposit_resolution"
+                      value={opt}
+                      checked={cancelDepositResolution === opt}
+                      onChange={() => setCancelDepositResolution(opt)}
+                      style={{ accentColor: 'var(--accent-amber)' }}
+                    />
+                    <div>
+                      <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {opt === 'refunded' ? 'Refunded to customer' : 'Kept as cancellation fee'}
+                      </p>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {opt === 'refunded'
+                          ? 'Removes the amount from your balance'
+                          : 'Stays in your balance and counts as income'}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Reason for cancellation (optional)</label>
             <textarea

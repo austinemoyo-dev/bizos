@@ -12,6 +12,11 @@ from sqlalchemy.orm import relationship
 from core.database import Base
 
 
+class DepositResolution(str, enum.Enum):
+    refunded = "refunded"  # money returned to customer — excluded from balance
+    kept     = "kept"      # kept as cancellation fee — stays in balance + counts as income
+
+
 class RepairStatus(str, enum.Enum):
     received = "received"
     diagnosed = "diagnosed"
@@ -58,6 +63,7 @@ class RepairJob(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)
     cancel_reason = Column(Text, nullable=True)
+    deposit_resolution = Column(SAEnum(DepositResolution), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

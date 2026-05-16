@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from models.expense import Expense
 from models.inventory import Item
-from models.repair import RepairJob, RepairStatus
+from models.repair import RepairJob, RepairStatus, DepositResolution
 from models.sales import Sale
 from models.tithe import TitheRecord, TitheScope
 from schemas.analytics import BusinessSummary, ExpenseBreakdown
@@ -41,13 +41,30 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    total_revenue = repair_revenue + sale_revenue
+    # Kept cancellation deposits count as earned income for the period.
+    kept_deposits = (
+        db.query(func.sum(RepairJob.amount_paid))
+        .filter(
+            RepairJob.status == RepairStatus.cancelled,
+            RepairJob.deposit_resolution == DepositResolution.kept,
+            func.date(RepairJob.received_at) >= period_start,
+            func.date(RepairJob.received_at) <= period_end,
+        )
+        .scalar()
+        or Decimal("0")
+    )
 
+    total_revenue = repair_revenue + sale_revenue + kept_deposits
+
+    # Only count cash from non-cancelled jobs, plus cancelled jobs where the deposit
+    # was explicitly kept (not refunded). Unresolved cancellations are liabilities.
     cash_from_repairs = (
         db.query(func.sum(RepairJob.amount_paid))
         .filter(
             func.date(RepairJob.received_at) >= period_start,
             func.date(RepairJob.received_at) <= period_end,
+            (RepairJob.status != RepairStatus.cancelled) |
+            (RepairJob.deposit_resolution == DepositResolution.kept),
         )
         .scalar()
         or Decimal("0")
@@ -118,8 +135,17 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    # available_balance is all-time cumulative cash
-    all_time_cash_repairs = db.query(func.sum(RepairJob.amount_paid)).scalar() or Decimal("0")
+    # available_balance is all-time cumulative cash.
+    # Exclude cancelled jobs unless deposit was explicitly kept — those are liabilities until resolved.
+    all_time_cash_repairs = (
+        db.query(func.sum(RepairJob.amount_paid))
+        .filter(
+            (RepairJob.status != RepairStatus.cancelled) |
+            (RepairJob.deposit_resolution == DepositResolution.kept),
+        )
+        .scalar()
+        or Decimal("0")
+    )
     all_time_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
     all_time_expenses = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
 

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import UUID4, BaseModel, Field
 
-from models.repair import DeviceType, RepairStatus
+from models.repair import DeviceType, DepositResolution, RepairStatus
 
 
 class JobPartCreate(BaseModel):
@@ -31,6 +31,10 @@ class JobPartOut(BaseModel):
 
 class CancelJobRequest(BaseModel):
     cancel_reason: Optional[str] = Field(None, max_length=500)
+
+
+class ResolveDepositRequest(BaseModel):
+    resolution: DepositResolution
 
 
 class RepairPaymentUpdate(BaseModel):
@@ -86,6 +90,7 @@ class RepairJobOut(BaseModel):
     delivered_at: Optional[datetime]
     notes: Optional[str]
     cancel_reason: Optional[str] = None
+    deposit_resolution: Optional[DepositResolution] = None
     parts: List[JobPartOut] = []
     created_at: datetime
     updated_at: Optional[datetime] = None

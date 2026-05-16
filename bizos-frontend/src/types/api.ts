@@ -78,6 +78,7 @@ export interface RepairJob {
   profit: number;
   notes?: string;
   cancel_reason?: string;
+  deposit_resolution?: DepositResolution;
   received_at: string;
   completed_at?: string;
   delivered_at?: string;
@@ -135,6 +136,8 @@ export interface AddPartPayload {
 export interface CancelJobPayload {
   cancel_reason?: string;
 }
+
+export type DepositResolution = 'refunded' | 'kept';
 
 // Sales
 export interface Sale {

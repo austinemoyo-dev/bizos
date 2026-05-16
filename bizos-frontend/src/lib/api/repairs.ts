@@ -1,6 +1,6 @@
 import { api, toPage } from './client';
 import { withOfflineCache } from '@/lib/db/offlineCache';
-import { RepairJob, RepairJobCreate, RepairJobUpdate, AddPartPayload, RepairStatus, CancelJobPayload, CsvImportResult, PaginatedResponse } from '@/types/api';
+import { RepairJob, RepairJobCreate, RepairJobUpdate, AddPartPayload, RepairStatus, CancelJobPayload, DepositResolution, CsvImportResult, PaginatedResponse } from '@/types/api';
 
 export const repairsApi = {
   list: (params?: { status?: string; q?: string; page?: number; size?: number; date_from?: string; date_to?: string }): Promise<PaginatedResponse<RepairJob>> =>
@@ -28,6 +28,8 @@ export const repairsApi = {
     api.post<RepairJob>(`/repairs/${id}/cancel`, data),
   updatePayment: (id: string, amount_paid: number) =>
     api.patch<RepairJob>(`/repairs/${id}/payment`, { amount_paid }),
+  resolveDeposit: (id: string, resolution: DepositResolution) =>
+    api.post<RepairJob>(`/repairs/${id}/resolve-deposit`, { resolution }),
   importCsv: (file: File) => {
     const fd = new FormData();
     fd.append('file', file);

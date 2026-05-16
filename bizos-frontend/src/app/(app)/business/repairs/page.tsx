@@ -80,18 +80,29 @@ export default function RepairsPage() {
   const [cancelTarget, setCancelTarget] = useState<RepairJob | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [depositResolution, setDepositResolution] = useState<'refunded' | 'kept' | null>(null);
 
   const handleQuickCancel = (job: RepairJob) => {
     setCancelReason('');
+    setDepositResolution(null);
     setCancelTarget(job);
   };
 
   const handleConfirmCancel = async () => {
     if (!cancelTarget) return;
+    const hasDeposit = Number(cancelTarget.amount_paid) > 0;
+    if (hasDeposit && !depositResolution) {
+      addToast({ type: 'error', title: 'Select what happened to the deposit' });
+      return;
+    }
     setCancelling(true);
     try {
       await repairsApi.cancelJob(cancelTarget.id, { cancel_reason: cancelReason || undefined });
+      if (hasDeposit && depositResolution) {
+        await repairsApi.resolveDeposit(cancelTarget.id, depositResolution);
+      }
       qc.invalidateQueries({ queryKey: ['repairs'] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
       addToast({ type: 'success', title: 'Job cancelled', message: 'Parts returned to inventory' });
       setCancelTarget(null);
     } catch (err) {
@@ -340,6 +351,54 @@ export default function RepairsPage() {
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             Cancelling this job will return all attached parts back to inventory. This action cannot be undone.
           </p>
+
+          {/* Deposit resolution — only shown when the customer already paid something */}
+          {cancelTarget && Number(cancelTarget.amount_paid) > 0 && (
+            <div style={{
+              background: 'rgba(245,158,11,0.07)',
+              border: '1px solid rgba(245,158,11,0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-4)',
+            }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-amber)', marginBottom: 'var(--space-3)' }}>
+                ₦{Number(cancelTarget.amount_paid).toLocaleString()} was already paid — what happened to it?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {(['refunded', 'kept'] as const).map((opt) => (
+                  <label
+                    key={opt}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                      padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)',
+                      border: `1px solid ${depositResolution === opt ? 'var(--accent-amber)' : 'var(--border-default)'}`,
+                      background: depositResolution === opt ? 'rgba(245,158,11,0.1)' : 'var(--bg-overlay)',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="deposit_resolution"
+                      value={opt}
+                      checked={depositResolution === opt}
+                      onChange={() => setDepositResolution(opt)}
+                      style={{ accentColor: 'var(--accent-amber)' }}
+                    />
+                    <div>
+                      <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {opt === 'refunded' ? 'Refunded to customer' : 'Kept as cancellation fee'}
+                      </p>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {opt === 'refunded'
+                          ? 'Removes the amount from your balance'
+                          : 'Amount stays in your balance and counts as income'}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Reason for cancellation (optional)</label>
             <textarea

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from models.expense import Expense, ExpenseCategory
 from models.inventory import Item, MovementType, StockMovement
-from models.repair import JobPart, RepairJob, RepairStatus
+from models.repair import JobPart, RepairJob, RepairStatus, DepositResolution
 from schemas.repair import RepairProfitOut
 
 
@@ -174,6 +174,33 @@ def cancel_job(db: Session, job_id: UUID, cancel_reason: str | None = None) -> R
 
     job.status = RepairStatus.cancelled
     job.cancel_reason = cancel_reason
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def resolve_deposit(
+    db: Session,
+    job_id: UUID,
+    resolution: DepositResolution,
+) -> RepairJob:
+    job = db.query(RepairJob).filter_by(id=job_id).first()
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.status != RepairStatus.cancelled:
+        raise HTTPException(400, "Deposit resolution only applies to cancelled jobs")
+    if job.amount_paid <= 0:
+        raise HTTPException(400, "This job has no recorded deposit to resolve")
+    if job.deposit_resolution is not None:
+        raise HTTPException(400, "Deposit has already been resolved")
+
+    job.deposit_resolution = resolution
+    # No expense is created for either resolution:
+    # - 'refunded': the analytics query already excludes unresolved/refunded cancelled deposits
+    #   from cash_collected, so the balance drops automatically. Creating an expense would
+    #   double-subtract and incorrectly penalise profit even though the money was never revenue.
+    # - 'kept': the analytics query re-includes the deposit in cash_collected AND adds it to
+    #   kept_deposits revenue, so it correctly appears in both balance and profit.
     db.commit()
     db.refresh(job)
     return job
