@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/shared/Skeleton';
 import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairStatus } from '@/types/api';
 import { Search, Phone, ChevronDown, ChevronUp, Users } from 'lucide-react';
-import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
+import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface CustomerProfile {
@@ -59,6 +59,8 @@ export default function CustomersPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('lastSeen');
+
+  useBottomBar({ placeholder: 'Search customer, phone…', onSearch: setSearch });
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const debouncedSearch = useDebounce(search, 300);
@@ -290,11 +292,6 @@ export default function CustomersPage() {
       )}
 
       <div className="bsb-spacer" />
-      <BottomSearchBar
-        value={search}
-        onChange={setSearch}
-        placeholder="Search customer, phone…"
-      />
     </div>
   );
 }

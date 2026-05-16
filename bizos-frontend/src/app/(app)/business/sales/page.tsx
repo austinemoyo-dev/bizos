@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api/sales';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
+import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { DataTable, Column } from '@/components/shared/DataTable';
 import { Modal } from '@/components/shared/Modal';
 import { SaleForm } from '@/components/business/SaleForm';
@@ -24,6 +24,8 @@ export default function SalesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const searchParams = useSearchParams();
   useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
+
+  useBottomBar({ onAdd: () => setShowAdd(true) });
 
   const handleDelete = async (sale: Sale) => {
     if (!confirm(`Are you sure you want to cancel the sale of ${sale.quantity}x ${sale.item_name}? This will return the items to inventory.`)) return;
@@ -193,9 +195,6 @@ export default function SalesPage() {
       </div>
 
       <div className="bsb-spacer" />
-      <IfRole minRole="staff">
-        <BottomSearchBar value="" onChange={() => {}} placeholder="Sales" onAdd={() => setShowAdd(true)} />
-      </IfRole>
 
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Record Sale">
         <SaleForm onSubmit={handleCreate} onCancel={() => setShowAdd(false)} />

@@ -1792,18 +1792,22 @@ input[type=number]::-webkit-inner-spin-button {
     gap: 4px;
   }
 
-  /* ── Sticky bottom CTA on detail pages (One UI) ── */
-  .mobile-sticky-action {
+  /* ── Sticky bottom CTA on detail pages (rendered at AppShell level) ── */
+  .bottom-cta-wrap {
     position: fixed;
     bottom: calc(88px + env(safe-area-inset-bottom));
     left: 12px;
     right: 12px;
     z-index: 950;
-    padding: 0;
   }
 
   /* ── Hide desktop-only buttons on mobile ── */
   .desktop-only-action {
+    display: none !important;
+  }
+
+  /* ── Hide old in-page sticky action (rendered by AppShell now) ── */
+  .mobile-sticky-action {
     display: none !important;
   }
 }

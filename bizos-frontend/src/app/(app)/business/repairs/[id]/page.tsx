@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { generateRepairReceipt } from '@/lib/pdfReports';
 import { IfRole } from '@/components/shared/IfRole';
 import { useUndoDelete } from '@/lib/hooks/useUndoDelete';
+import { useBottomCta } from '@/lib/hooks/useBottomCta';
 
 const STATUS_TRANSITIONS: Record<RepairStatus, RepairStatus | null> = {
   received:    'diagnosed',
@@ -214,6 +215,14 @@ export default function RepairDetailPage() {
   const profitInfo = formatProfit(job.profit);
   const tithe = calcTithe(job.profit);
   const currentStepIndex = STATUS_ORDER.indexOf(job.status);
+
+  // Sticky bottom CTA — advance status (rendered at AppShell level, never broken by transforms)
+  useBottomCta({
+    label: nextStatus ? STATUS_LABELS[job.status] : '',
+    enabled: !!nextStatus,
+    loading: transitioning,
+    onClick: handleStatusChange,
+  });
 
   return (
     <>
@@ -742,25 +751,6 @@ export default function RepairDetailPage() {
           </div>
         </div>
       </Modal>
-
-      {/* Mobile sticky advance-status bar */}
-      {nextStatus && (
-        <IfRole minRole="technician">
-          <div className="mobile-sticky-action no-print">
-            <button
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', gap: 8, height: 50, fontSize: 'var(--text-sm)', borderRadius: 16 }}
-              onClick={handleStatusChange}
-              disabled={transitioning}
-            >
-              {transitioning
-                ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                : <ChevronRight size={16} />}
-              {STATUS_LABELS[job.status]}
-            </button>
-          </div>
-        </IfRole>
-      )}
 
       <Modal isOpen={editingJob} onClose={() => setEditingJob(false)} title="Edit Repair Job">
         <RepairJobForm

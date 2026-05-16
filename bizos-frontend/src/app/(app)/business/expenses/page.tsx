@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { expensesApi } from '@/lib/api/expenses';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
+import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { StatWidget } from '@/components/shared/StatWidget';
@@ -77,6 +77,8 @@ export default function ExpensesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const searchParams = useSearchParams();
   useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
+
+  useBottomBar({ onAdd: () => setShowAdd(true) });
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
@@ -404,9 +406,6 @@ export default function ExpensesPage() {
       )}
 
       <div className="bsb-spacer" />
-      <IfRole minRole="accountant">
-        <BottomSearchBar value="" onChange={() => {}} placeholder="Expenses" onAdd={() => setShowAdd(true)} />
-      </IfRole>
 
       {/* Add Expense Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Expense"

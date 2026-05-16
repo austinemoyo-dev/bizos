@@ -16,7 +16,7 @@ import { formatNaira } from '@/lib/format';
 import { Item, ItemCreate, RestockPayload } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package, Trash2 } from 'lucide-react';
-import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
+import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
@@ -49,6 +49,8 @@ export default function InventoryPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'all' | 'low'>('all');
   const [showAdd, setShowAdd] = useState(false);
+
+  useBottomBar({ placeholder: 'Search items…', onSearch: setSearch, onAdd: () => setShowAdd(true) });
   const searchParams = useSearchParams();
   useEffect(() => {
     if (searchParams.get('new') === '1') setShowAdd(true);
@@ -284,16 +286,7 @@ export default function InventoryPage() {
         />
       </div>
 
-      {/* Mobile spacer + bottom search bar */}
       <div className="bsb-spacer" />
-      <IfRole minRole="technician">
-        <BottomSearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search items…"
-          onAdd={() => setShowAdd(true)}
-        />
-      </IfRole>
 
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Inventory Item">

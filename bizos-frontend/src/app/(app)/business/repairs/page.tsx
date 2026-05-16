@@ -14,7 +14,7 @@ import { formatNaira, formatDate } from '@/lib/format';
 import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Plus, Search, ExternalLink, Download, Upload, Loader2, Trash, Wrench, Calendar } from 'lucide-react';
-import { BottomSearchBar } from '@/components/shared/BottomSearchBar';
+import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
@@ -70,6 +70,12 @@ export default function RepairsPage() {
   const [search, setSearch] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showNewJob, setShowNewJob] = useState(false);
+
+  useBottomBar({
+    placeholder: 'Search customer, device…',
+    onSearch: setSearch,
+    onAdd: () => setShowNewJob(true),
+  });
   const searchParams = useSearchParams();
   useEffect(() => {
     if (searchParams.get('new') === '1') setShowNewJob(true);
@@ -332,20 +338,8 @@ export default function RepairsPage() {
         />
       </div>
 
-      {/* Spacer so content clears the bottom search bar on mobile */}
       <div className="bsb-spacer" />
-
       <JobDetailPanel jobId={selectedJobId} onClose={() => setSelectedJobId(null)} />
-
-      {/* Mobile bottom search + FAB (One UI style) */}
-      <IfRole minRole="technician">
-        <BottomSearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search customer, device…"
-          onAdd={() => setShowNewJob(true)}
-        />
-      </IfRole>
 
       {/* Cancel job confirmation */}
       <Modal

@@ -1,83 +1,95 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Search, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Search, Plus, X, ChevronRight, Loader2 } from 'lucide-react';
+import { useBottomUIStore } from '@/lib/stores/bottomUIStore';
 
-interface BottomSearchBarProps {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  onAdd?: () => void;
-  addLabel?: string;
-  onFilter?: () => void;
-  filterActive?: boolean;
-}
+// ── Bottom search bar ─────────────────────────────────────────────────────────
 
-export function BottomSearchBar({
-  value,
-  onChange,
-  placeholder = 'Search…',
-  onAdd,
-  onFilter,
-  filterActive,
-}: BottomSearchBarProps) {
+export function BottomSearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { barVisible, barSearch, barPlaceholder, _barOnAdd, setBarSearch } =
+    useBottomUIStore();
 
   return (
-    <motion.div
-      className="bottom-search-bar-wrap"
-      initial={{ y: 24, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.08, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-    >
-      <div className="bottom-search-bar">
-        {/* Optional filter toggle */}
-        {onFilter && (
+    <AnimatePresence>
+      {barVisible && (
+        <motion.div
+          className="bottom-search-bar-wrap"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="bottom-search-bar">
+            {/* Search input */}
+            <div className="bsb-input-wrap" onClick={() => inputRef.current?.focus()}>
+              <Search size={15} className="bsb-icon" />
+              <input
+                ref={inputRef}
+                type="search"
+                value={barSearch}
+                onChange={e => setBarSearch(e.target.value)}
+                placeholder={barPlaceholder}
+                className="bsb-input"
+                autoComplete="off"
+              />
+              {barSearch && (
+                <button
+                  className="bsb-clear"
+                  onClick={() => { setBarSearch(''); inputRef.current?.focus(); }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* FAB */}
+            {_barOnAdd && (
+              <button className="bsb-fab" onClick={_barOnAdd} aria-label="Add new">
+                <Plus size={21} color="white" strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── Sticky bottom CTA (detail pages) ─────────────────────────────────────────
+
+export function BottomCta() {
+  const { ctaVisible, ctaLabel, ctaLoading, _ctaOnClick } = useBottomUIStore();
+
+  return (
+    <AnimatePresence>
+      {ctaVisible && (
+        <motion.div
+          className="bottom-cta-wrap"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        >
           <button
-            className="bsb-filter-btn"
-            onClick={onFilter}
+            className="btn-primary"
             style={{
-              background: filterActive ? 'rgba(200,16,46,0.1)' : undefined,
-              borderColor: filterActive ? 'rgba(200,16,46,0.3)' : undefined,
+              width: '100%', justifyContent: 'center',
+              height: 50, fontSize: 'var(--text-sm)',
+              borderRadius: 16, gap: 8,
             }}
+            onClick={() => _ctaOnClick?.()}
+            disabled={ctaLoading}
           >
-            <SlidersHorizontal
-              size={15}
-              style={{ color: filterActive ? '#C8102E' : 'var(--text-secondary)' }}
-            />
+            {ctaLoading
+              ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              : <ChevronRight size={16} />}
+            {ctaLabel}
           </button>
-        )}
-
-        {/* Search input */}
-        <div className="bsb-input-wrap" onClick={() => inputRef.current?.focus()}>
-          <Search size={15} className="bsb-icon" />
-          <input
-            ref={inputRef}
-            type="search"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            className="bsb-input"
-            autoComplete="off"
-          />
-          {value && (
-            <button
-              className="bsb-clear"
-              onClick={() => { onChange(''); inputRef.current?.focus(); }}
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* FAB — primary action */}
-        {onAdd && (
-          <button className="bsb-fab" onClick={onAdd} aria-label="Add new">
-            <Plus size={21} color="white" strokeWidth={2.5} />
-          </button>
-        )}
-      </div>
-    </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

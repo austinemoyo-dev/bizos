@@ -7,6 +7,7 @@ import { TopBar } from './TopBar';
 import { ToastContainer } from '../shared/Toast';
 import { OfflineBanner } from '../shared/OfflineBanner';
 import { InstallPrompt } from '../shared/InstallPrompt';
+import { BottomSearchBar, BottomCta } from '../shared/BottomSearchBar';
 import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 import { useSync } from '@/lib/hooks/useSync';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,8 +86,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile bottom tab bar — fixed, rendered at root so it's never clipped */}
+      {/* All fixed-position mobile overlays rendered here — outside the
+          animated motion.div — so position:fixed is never broken by transforms */}
       <MobileTabBar />
+      <BottomSearchBar />
+      <BottomCta />
       <ToastContainer />
       <InstallPrompt />
     </div>
