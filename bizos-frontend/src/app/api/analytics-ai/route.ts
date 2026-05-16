@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!GROQ_API_KEY) {
-    return NextResponse.json({ error: 'AI analytics not configured — add GROQ_API_KEY to .env.local' }, { status: 503 });
+    return NextResponse.json(
+      { error: 'AI analytics not configured — add GROQ_API_KEY to .env.local' },
+      { status: 503 },
+    );
   }
 
   const body = await req.json();
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
     prevPeriodLabel,
   } = body;
 
-  // ── Build a rich data context ──────────────────────────────────────────────
+  // ── Build rich data context ──────────────────────────────────────────────
   const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
   const pct = (cur: number, prev: number) => {
     if (!prev) return 'N/A';
@@ -32,57 +35,63 @@ export async function POST(req: NextRequest) {
     return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
   };
 
-  const curRev  = Number(summary?.total_revenue ?? 0);
-  const curExp  = Number(summary?.total_expenses ?? 0);
-  const curProfit = Number(summary?.net_profit ?? 0);
-  const prevRev = Number(prevSummary?.total_revenue ?? 0);
-  const prevExp = Number(prevSummary?.total_expenses ?? 0);
-  const prevProfit = Number(prevSummary?.net_profit ?? 0);
+  const curRev    = Number(summary?.total_revenue    ?? 0);
+  const curExp    = Number(summary?.total_expenses   ?? 0);
+  const curProfit = Number(summary?.net_profit       ?? 0);
+  const prevRev   = Number(prevSummary?.total_revenue    ?? 0);
+  const prevExp   = Number(prevSummary?.total_expenses   ?? 0);
+  const prevProfit= Number(prevSummary?.net_profit       ?? 0);
+  const cashBal   = Number(summary?.available_balance ?? 0);
+  const titheDue  = Number(summary?.tithe_due         ?? 0);
+  const pending   = Number(summary?.pending_jobs      ?? 0);
+  const lowStock  = Number(summary?.low_stock_count   ?? 0);
 
   const topExpenses = (expenseBreakdown ?? [])
-    .sort((a: any, b: any) => b.amount - a.amount)
+    .sort((a: { amount: number }, b: { amount: number }) => b.amount - a.amount)
     .slice(0, 5)
-    .map((e: any) => `${e.category.replace('_', ' ')} (${fmt(e.amount)}, ${e.percentage?.toFixed(1) ?? '?'}%)`)
+    .map((e: { category: string; amount: number; percentage?: number }) =>
+      `${e.category.replace(/_/g, ' ')} (${fmt(e.amount)}, ${e.percentage?.toFixed(1) ?? '?'}%)`)
     .join(', ');
 
   const topItemsStr = (topItems ?? [])
     .slice(0, 5)
-    .map((i: any) => `${i.item_name}: ${fmt(i.total_revenue)} revenue, qty ${i.total_quantity}`)
+    .map((i: { item_name: string; total_revenue: number; total_quantity: number }) =>
+      `${i.item_name}: ${fmt(i.total_revenue)} revenue, qty ${i.total_quantity}`)
     .join('; ');
 
   const repairStatsStr = (repairStats ?? [])
-    .sort((a: any, b: any) => b.job_count - a.job_count)
-    .map((r: any) => `${r.device_type}: ${r.job_count} jobs, ${fmt(r.total_revenue)}`)
+    .sort((a: { job_count: number }, b: { job_count: number }) => b.job_count - a.job_count)
+    .map((r: { device_type: string; job_count: number; total_revenue: number }) =>
+      `${r.device_type}: ${r.job_count} jobs, ${fmt(r.total_revenue)}`)
     .join('; ');
 
-  const pendingJobs = Number(summary?.pending_jobs ?? 0);
-  const lowStock    = Number(summary?.low_stock_count ?? 0);
-  const titheDue    = Number(summary?.tithe_due ?? 0);
-  const cashBalance = Number(summary?.available_balance ?? 0);
+  const marginPct = curRev > 0 ? ((curProfit / curRev) * 100).toFixed(1) : '0';
+  const prevMarginPct = prevRev > 0 ? ((prevProfit / prevRev) * 100).toFixed(1) : '0';
 
   const dataContext = `
 PERIOD: ${periodLabel} vs ${prevPeriodLabel}
 
 REVENUE
-  Current: ${fmt(curRev)} (${pct(curRev, prevRev)} vs prior)
+  Current:  ${fmt(curRev)} (${pct(curRev, prevRev)} vs prior)
   Previous: ${fmt(prevRev)}
 
 EXPENSES
-  Current: ${fmt(curExp)} (${pct(curExp, prevExp)} vs prior)
+  Current:  ${fmt(curExp)} (${pct(curExp, prevExp)} vs prior)
   Previous: ${fmt(prevExp)}
   Top categories: ${topExpenses || 'none'}
 
 PROFIT
-  Current: ${fmt(curProfit)} (${curProfit >= 0 ? 'profit' : 'LOSS'}) (${pct(curProfit, prevProfit)} vs prior)
-  Previous: ${fmt(prevProfit)} (${prevProfit >= 0 ? 'profit' : 'loss'})
+  Current:  ${fmt(curProfit)} — ${curProfit >= 0 ? 'PROFIT' : 'LOSS'} (${pct(curProfit, prevProfit)} vs prior)
+  Previous: ${fmt(prevProfit)} — ${prevProfit >= 0 ? 'profit' : 'loss'}
+  Margin:   ${marginPct}% current vs ${prevMarginPct}% previous
 
-CASH
-  Available balance: ${fmt(cashBalance)}
+CASH POSITION
+  Available balance:  ${fmt(cashBal)}
   Tithe due (unpaid): ${fmt(titheDue)}
 
-OPERATIONAL
-  Pending repair jobs: ${pendingJobs}
-  Low stock items: ${lowStock}
+OPERATIONS
+  Pending repair jobs: ${pending}
+  Low stock items:     ${lowStock}
 
 TOP SELLING ITEMS
   ${topItemsStr || 'No data'}
@@ -91,47 +100,53 @@ REPAIR JOBS BY DEVICE
   ${repairStatsStr || 'No data'}
 `.trim();
 
-  const systemPrompt = `You are a sharp, direct business analyst for Dash & Co., a phone repair and hardware shop in Nigeria.
-You analyze real business data and give specific, numbers-driven insights.
+  const systemPrompt = `You are Dash AI, the business intelligence engine for Dash & Co., a phone repair and electronics shop in Nigeria. You analyze real financial data and speak directly to the owner.
 
-Respond in EXACTLY this format (use these section headers, nothing else):
+Respond in EXACTLY this format — use ONLY these section headers, in this order:
 
 ## Health
-One sentence: overall business health for this period in plain English. Include a score out of 10.
+Score: X/10. [One clear sentence on overall business health for this period. Be direct.]
 
 ## Wins
-- [3 bullet points of what went well, specific to the numbers. Start each bullet with an emoji.]
+- [emoji] [What went well, specific to the data — name exact amounts]
+- [emoji] [Second win]
+- [emoji] [Third win]
 
 ## Warnings
-- [3 bullet points of concerns or risks, specific to the numbers. Start each bullet with an emoji.]
+- [emoji] [Risk or concern, tied to actual numbers]
+- [emoji] [Second warning]
+- [emoji] [Third warning]
 
 ## Expenses
-One sentence about the biggest expense pattern and whether it's concerning or expected.
+[One or two sentences on the biggest expense pattern. Name the category and amount. Say whether it's alarming or expected.]
+
+## Forecast
+[2-3 sentences predicting next period based on the current trend. Be specific — project an approximate revenue and profit figure. Use the margin % and growth rate to reason forward. If data is insufficient, say so and give a range.]
 
 ## Next Actions
-1. [First action item — specific, actionable, references actual data]
-2. [Second action item]
-3. [Third action item]
+1. [Specific action tied to the numbers — name items, amounts, categories]
+2. [Second action]
+3. [Third action]
 
 Rules:
-- Every number you mention must come from the data provided.
-- Be specific: name items, categories, and amounts.
-- If profit is negative, treat it seriously — this is a real business.
-- Nigerian Naira context: ₦50,000 is a typical day. ₦500,000+ month is strong.
-- No generic advice like "review your expenses" — say WHICH expenses and WHY.
-- If a prior period is N/A, note the lack of comparison data and focus on absolute performance.`;
+- Every number you cite must come from the provided data
+- Nigerian Naira context: ₦50k is a typical day, ₦500k+ month is strong, ₦1M+ is excellent
+- If profit is negative, treat it as a crisis — be blunt
+- For forecast: extrapolate from current trend vs prior period. If this week is up 20%, project next week will be in a similar range unless you see a reason otherwise
+- No generic advice ("review your expenses") — always say WHICH and WHY
+- If prior period data is missing (N/A), note it and focus on absolute performance`;
 
   const groqRes = await fetch(GROQ_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      Authorization: `Bearer ${GROQ_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       stream: true,
-      max_tokens: 700,
-      temperature: 0.6,
+      max_tokens: 900,
+      temperature: 0.55,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Analyze this business data:\n\n${dataContext}` },
@@ -144,7 +159,6 @@ Rules:
     return NextResponse.json({ error: err }, { status: groqRes.status });
   }
 
-  // Proxy SSE stream to client
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
@@ -162,7 +176,7 @@ Rules:
             const parsed = JSON.parse(data);
             const text = parsed.choices?.[0]?.delta?.content;
             if (text) controller.enqueue(encoder.encode(text));
-          } catch { /* skip malformed */ }
+          } catch { /* skip malformed chunks */ }
         }
       }
       controller.close();

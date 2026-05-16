@@ -16,7 +16,7 @@ import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Wrench, Fl
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { AIAnalyticsPanel } from '@/components/shared/AIAnalyticsPanel';
+import { AIAnalyticsDashboard } from '@/components/shared/AIAnalyticsDashboard';
 import { fadeUp, stagger } from '@/lib/motion-variants';
 
 // ── Period definitions ──────────────────────────────────────────────────────
@@ -358,8 +358,8 @@ export default function AnalyticsPage() {
         </motion.div>
       )}
 
-      {/* ── AI Analytics Report ──────────────────────────────────── */}
-      <AIAnalyticsPanel
+      {/* ── AI Analytics Dashboard ───────────────────────────────── */}
+      <AIAnalyticsDashboard
         summary={curSummary ?? null}
         prevSummary={prevSummary ?? null}
         expenseBreakdown={expBreakdown ?? []}
@@ -367,6 +367,7 @@ export default function AnalyticsPage() {
         repairStats={repairStats ?? []}
         periodLabel={current.label}
         prevPeriodLabel={previous.label}
+        periodCacheKey={`${current.start}-${current.end}`}
       />
 
       {/* ── Hero: Revenue as primary ─────────────────────────────── */}
