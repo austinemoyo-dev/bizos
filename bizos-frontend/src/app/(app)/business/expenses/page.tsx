@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, subWeeks } from 'date-fns';
 import { expensesApi } from '@/lib/api/expenses';
@@ -73,6 +74,8 @@ export default function ExpensesPage() {
   const qc = useQueryClient();
 
   const [showAdd, setShowAdd] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');

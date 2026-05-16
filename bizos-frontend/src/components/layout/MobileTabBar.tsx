@@ -9,8 +9,9 @@ import {
   LineChart, Users, ShoppingCart, ScrollText, Calculator,
   Receipt, TrendingUp, Banknote, HandCoins, ShoppingBag,
   Printer, Wallet, Utensils, PiggyBank, Settings, X,
-  ChevronRight,
+  ChevronRight, Plus, DollarSign, ClipboardList,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const TAB_ITEMS = [
   { href: '/business/dashboard', icon: Home,       label: 'Home'     },
@@ -48,34 +49,91 @@ function isPathActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
+const QUICK_CREATE_BIZ = [
+  { label: 'New Repair Job', href: null, icon: Wrench,       action: 'new-job'     },
+  { label: 'Add Inventory',  href: null, icon: Package,      action: 'new-item'    },
+  { label: 'Record Sale',    href: null, icon: DollarSign,   action: 'new-sale'    },
+  { label: 'Add Expense',    href: null, icon: Receipt,      action: 'new-expense' },
+];
+
+const QUICK_CREATE_PERSONAL = [
+  { label: 'Add Transaction', href: null, icon: Wallet,      action: 'new-tx'      },
+  { label: 'Food Credit',     href: null, icon: Utensils,    action: 'new-food'    },
+];
+
 export function MobileTabBar() {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const pathname   = usePathname();
+  const router     = useRouter();
+  const [open, setOpen]   = useState(false);
+  const [create, setCreate] = useState(false);
+
+  const isPersonal = pathname.startsWith('/personal');
+
+  const handleQuickCreate = (action: string) => {
+    setCreate(false);
+    switch (action) {
+      case 'new-job':     router.push('/business/repairs?new=1');    break;
+      case 'new-item':    router.push('/business/inventory?new=1');  break;
+      case 'new-sale':    router.push('/business/sales?new=1');      break;
+      case 'new-expense': router.push('/business/expenses?new=1');   break;
+      case 'new-tx':      router.push('/personal/transactions?new=1'); break;
+      case 'new-food':    router.push('/personal/food-vendor?new=1'); break;
+    }
+  };
 
   const isMoreActive = MORE_HREFS.some(href => isPathActive(pathname, href));
+
+  const quickItems = isPersonal ? QUICK_CREATE_PERSONAL : QUICK_CREATE_BIZ;
 
   return (
     <>
       {/* ── Bottom tab bar ──────────────────────────────────────── */}
       <nav className="mobile-bottom-nav">
-        {TAB_ITEMS.map((item) => {
+        {/* Home + Jobs */}
+        {TAB_ITEMS.slice(0, 2).map((item) => {
           const active = isPathActive(pathname, item.href);
           const Icon = item.icon;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`mobile-nav-item${active ? ' active' : ''}`}
-            >
-              <div className="mobile-nav-icon">
-                <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
-              </div>
+            <Link key={item.href} href={item.href} className={`mobile-nav-item${active ? ' active' : ''}`}>
+              <div className="mobile-nav-icon"><Icon size={20} strokeWidth={active ? 2.4 : 1.8} /></div>
               <span>{item.label}</span>
             </Link>
           );
         })}
 
-        {/* More button */}
+        {/* Center + create button */}
+        <button
+          onClick={() => setCreate(true)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 0, padding: '4px 0',
+          }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 14,
+            background: 'linear-gradient(135deg, #C8102E, #9B0D22)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(200,16,46,0.5)',
+            transition: 'transform 0.15s, box-shadow 0.15s',
+          }}>
+            <Plus size={22} color="white" strokeWidth={2.5} />
+          </div>
+        </button>
+
+        {/* Stock + Personal */}
+        {TAB_ITEMS.slice(2).map((item) => {
+          const active = isPathActive(pathname, item.href);
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className={`mobile-nav-item${active ? ' active' : ''}`}>
+              <div className="mobile-nav-icon"><Icon size={20} strokeWidth={active ? 2.4 : 1.8} /></div>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+
+        {/* More */}
         <button
           className={`mobile-nav-item${isMoreActive || open ? ' more-active' : ''}`}
           onClick={() => setOpen(true)}
@@ -87,6 +145,72 @@ export function MobileTabBar() {
           <span>More</span>
         </button>
       </nav>
+
+      {/* ── Quick Create sheet ─────────────────────────────────── */}
+      <AnimatePresence>
+        {create && (
+          <>
+            <motion.div
+              key="create-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setCreate(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+            />
+            <motion.div
+              key="create-sheet"
+              initial={{ y: '100%', opacity: 0.6 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1101,
+                background: 'var(--glass-bg-strong)', backdropFilter: 'var(--glass-blur-strong)', WebkitBackdropFilter: 'var(--glass-blur-strong)',
+                borderRadius: '28px 28px 0 0', border: '1px solid var(--glass-border)', borderBottom: 'none',
+                paddingBottom: 'calc(var(--space-8) + env(safe-area-inset-bottom))',
+                boxShadow: '0 -8px 48px rgba(0,0,0,0.5)',
+              }}
+            >
+              {/* Drag handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 6px' }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border-default)' }} />
+              </div>
+
+              <div style={{ padding: '4px var(--space-5) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', marginBottom: 'var(--space-4)' }}>
+                <p style={{ fontSize: 'var(--text-md)', fontWeight: 800, fontFamily: 'var(--font-display)' }}>
+                  Quick Create
+                </p>
+                <button onClick={() => setCreate(false)} style={{ width: 34, height: 34, borderRadius: 11, border: 'none', cursor: 'pointer', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, padding: '0 var(--space-5)' }}>
+                {quickItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.action}
+                      onClick={() => handleQuickCreate(item.action)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: 'var(--space-4)', borderRadius: 16,
+                        background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
+                        cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s',
+                      }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,16,46,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={18} style={{ color: '#C8102E' }} />
+                      </div>
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ── More sheet ─────────────────────────────────────────── */}
       <AnimatePresence>

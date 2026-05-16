@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { foodVendorApi, FoodVendorAnalytics } from '@/lib/api/food-vendor';
@@ -32,6 +33,8 @@ export default function FoodVendorPage() {
   const [tab, setTab]       = useState<Tab>('overview');
   const [dir, setDir]       = useState(0);          // slide direction: +1 right, -1 left
   const [showAdd, setShowAdd]         = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [paying, setPaying]           = useState(false);
 

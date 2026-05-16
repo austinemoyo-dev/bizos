@@ -1481,6 +1481,17 @@ input[type=number]::-webkit-inner-spin-button {
   }
 }
 
+/* ── Detail grid base (desktop: 2 col; mobile: 1 col via media query) ── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-5);
+  align-items: start;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
 /* ── Floating pill bottom nav ─────────────────────────────────── */
 .mobile-bottom-nav {
   display: none;

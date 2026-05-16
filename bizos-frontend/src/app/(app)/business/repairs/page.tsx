@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { repairsApi } from '@/lib/api/repairs';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -68,6 +69,10 @@ export default function RepairsPage() {
   const [search, setSearch] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showNewJob, setShowNewJob] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') === '1') setShowNewJob(true);
+  }, [searchParams]);
   const [importing, setImporting] = useState(false);
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [customFrom, setCustomFrom] = useState('');

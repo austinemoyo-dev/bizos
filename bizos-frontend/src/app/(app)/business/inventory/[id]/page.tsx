@@ -190,7 +190,7 @@ export default function InventoryDetailPage() {
       </div>
 
       {/* Main grid */}
-      <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-5)', alignItems: 'start' }}>
+      <div className="detail-grid">
 
         {/* Left — Details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>

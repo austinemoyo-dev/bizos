@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { inventoryApi } from '@/lib/api/inventory';
@@ -47,6 +48,10 @@ export default function InventoryPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'all' | 'low'>('all');
   const [showAdd, setShowAdd] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') === '1') setShowAdd(true);
+  }, [searchParams]);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [restockItem, setRestockItem] = useState<Item | null>(null);
   const [restockQty, setRestockQty] = useState(0);
@@ -306,17 +311,6 @@ export default function InventoryPage() {
           )}
         />
       </div>
-
-      {/* Mobile FAB — always reachable even when header scrolls out of view */}
-      <IfRole minRole="technician">
-        <button
-          onClick={() => setShowAdd(true)}
-          className="mobile-fab"
-          aria-label="Add inventory item"
-        >
-          <Plus size={22} />
-        </button>
-      </IfRole>
 
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Inventory Item">

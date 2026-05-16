@@ -395,7 +395,7 @@ export default function RepairDetailPage() {
       )}
 
       {/* Main Grid */}
-      <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-5)', alignItems: 'start' }}>
+      <div className="detail-grid">
 
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -429,7 +429,7 @@ export default function RepairDetailPage() {
                 {job.fault_description}
               </p>
             )}
-            <div style={{ display: 'flex', gap: 'var(--space-6)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-4)', flexWrap: 'wrap', rowGap: 'var(--space-3)' }}>
               <div>
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>Received</p>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{formatDate(job.received_at)}</p>
@@ -590,9 +590,9 @@ export default function RepairDetailPage() {
               { label: 'Labor Charge', value: formatNaira(job.labor_charge), color: 'var(--text-secondary)' },
               { label: 'Parts Cost', value: `−${formatNaira(job.parts_cost)}`, color: 'var(--accent-red)' },
             ].map(({ label, value, color, bold }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color, fontWeight: bold ? 600 : 400 }}>
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', gap: 'var(--space-3)', minWidth: 0 }}>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flexShrink: 0 }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color, fontWeight: bold ? 600 : 400, whiteSpace: 'nowrap' }}>
                   {value}
                 </span>
               </div>

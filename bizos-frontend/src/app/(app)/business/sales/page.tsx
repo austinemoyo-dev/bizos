@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api/sales';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -20,6 +21,8 @@ export default function SalesPage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
 
   const handleDelete = async (sale: Sale) => {
     if (!confirm(`Are you sure you want to cancel the sale of ${sale.quantity}x ${sale.item_name}? This will return the items to inventory.`)) return;
