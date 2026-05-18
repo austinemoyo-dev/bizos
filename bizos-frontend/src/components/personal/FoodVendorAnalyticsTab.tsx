@@ -1,7 +1,9 @@
 'use client';
 import { useMemo } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { FoodTrendPoint, VendorSpendingSummary } from '@/lib/api/food-vendor';
+import { FoodTrendPoint, VendorSpendingSummary, FoodVendorAnalytics } from '@/lib/api/food-vendor';
+import { FoodVendorPayment } from '@/types/api';
+import { FoodVendorInsights } from '@/components/personal/FoodVendorInsights';
 import { formatNaira, formatCompact } from '@/lib/format';
 import { format } from 'date-fns';
 
@@ -26,9 +28,13 @@ interface Props {
   trend: FoodTrendPoint[];
   vendors: VendorSpendingSummary[];
   loading: boolean;
+  analytics?: FoodVendorAnalytics;
+  payments?: FoodVendorPayment[];
+  budget?: number;
+  monthlySpent?: number;
 }
 
-export function FoodVendorAnalyticsTab({ trend, vendors, loading }: Props) {
+export function FoodVendorAnalyticsTab({ trend, vendors, loading, analytics, payments = [], budget = 0, monthlySpent = 0 }: Props) {
   const chartData = useMemo(() => trend.map((t) => ({
     label: format(new Date(t.date + 'T00:00:00'), 'dd MMM'),
     amount: toNum(t.total),
@@ -65,6 +71,17 @@ export function FoodVendorAnalyticsTab({ trend, vendors, loading }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+
+      {/* AI Insights panel — always at top of analytics */}
+      <FoodVendorInsights
+        analytics={analytics}
+        trend={trend}
+        vendors={vendors}
+        payments={payments}
+        budget={budget}
+        monthlySpent={monthlySpent}
+      />
+
 
       {/* 30-day Spending Trend */}
       <div className="liquid-card" style={{ padding: 'var(--space-5)' }}>

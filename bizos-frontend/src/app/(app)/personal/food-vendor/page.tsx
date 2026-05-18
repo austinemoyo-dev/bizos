@@ -279,6 +279,10 @@ export default function FoodVendorPage() {
                 trend={trend}
                 vendors={vendors}
                 loading={loadingTrend}
+                analytics={analytics}
+                payments={payments}
+                budget={budget}
+                monthlySpent={monthlySpent}
               />
             )}
             {tab === 'insights' && (
@@ -287,6 +291,8 @@ export default function FoodVendorPage() {
                 trend={trend}
                 vendors={vendors}
                 payments={payments}
+                budget={budget}
+                monthlySpent={monthlySpent}
               />
             )}
             {tab === 'credits' && (
