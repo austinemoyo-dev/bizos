@@ -3,9 +3,8 @@
 import { useState, useMemo } from 'react';
 import { FoodCredit, MealType } from '@/types/api';
 import { formatNaira, formatDate } from '@/lib/format';
-import { Pencil, Trash2, Download, Search, X, Filter } from 'lucide-react';
+import { Pencil, Trash2, Download, Search, X, Filter, Utensils } from 'lucide-react';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Utensils } from 'lucide-react';
 
 const MEAL_EMOJI: Record<MealType, string> = {
   breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍿',

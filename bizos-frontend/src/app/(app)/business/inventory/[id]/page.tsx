@@ -256,14 +256,19 @@ export default function InventoryDetailPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 {movements.slice(0, 20).map((m) => {
-                  const config: Record<StockMovementType, { label: string; color: string; icon: React.ReactNode; sign: string }> = {
-                    purchase:   { label: 'Restock',      color: 'var(--accent-green)',  icon: <ArrowUpCircle size={14} />,      sign: '+' },
+                  const MOVEMENT_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; sign: string }> = {
+                    purchase:   { label: 'Restock',      color: 'var(--accent-green)',   icon: <ArrowUpCircle size={14} />,      sign: '+' },
                     sale:       { label: 'Sale',         color: 'var(--accent-primary)', icon: <ArrowDownCircle size={14} />,   sign: '−' },
                     repair_use: { label: 'Repair Use',   color: 'var(--accent-amber)',   icon: <Wrench size={14} />,            sign: '−' },
                     damage:     { label: 'Damage',       color: 'var(--accent-red)',     icon: <ShieldAlert size={14} />,       sign: '−' },
                     adjustment: { label: 'Adjustment',   color: 'var(--text-secondary)', icon: <SlidersHorizontal size={14} />, sign: '±' },
                   };
-                  const c = config[m.type];
+                  const c = MOVEMENT_CONFIG[m.type] ?? {
+                    label: m.type,
+                    color: 'var(--text-muted)',
+                    icon:  <Package size={14} />,
+                    sign:  '±',
+                  };
                   return (
                     <div key={m.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
