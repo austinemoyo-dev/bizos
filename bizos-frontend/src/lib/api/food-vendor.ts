@@ -33,7 +33,13 @@ export const foodVendorApi = {
       return withOfflineCache(`food-credits-${params?.paid ?? 'all'}`, () =>
         api.get<FoodCredit[]>(`/food-vendor/credits?${qs}`));
     },
+    listAll: (): Promise<FoodCredit[]> =>
+      withOfflineCache('food-credits-all', () =>
+        api.get<FoodCredit[]>('/food-vendor/credits')),
     create: (data: FoodCreditCreate) => api.post<FoodCredit>('/food-vendor/credits', data),
+    update: (id: string, data: Partial<FoodCreditCreate>) =>
+      api.patch<FoodCredit>(`/food-vendor/credits/${id}`, data),
+    delete: (id: string) => api.delete<void>(`/food-vendor/credits/${id}`),
   },
   pay: (credit_ids: string[], vendor_name: string = 'Food Vendor') =>
     api.post<FoodVendorPayment>('/food-vendor/pay', { credit_ids, vendor_name }),

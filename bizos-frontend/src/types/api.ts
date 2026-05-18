@@ -271,6 +271,8 @@ export interface MonthlyGoal {
 }
 
 // Food Vendor
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
 export interface FoodCredit {
   id: string;
   vendor_name: string;
@@ -280,6 +282,7 @@ export interface FoodCredit {
   paid: boolean;
   paid_at?: string;
   created_at: string;
+  meal_type?: MealType;
 }
 
 export interface FoodCreditCreate {
@@ -287,6 +290,7 @@ export interface FoodCreditCreate {
   meal_description?: string;
   amount: number;
   purchase_date: string;
+  meal_type?: MealType;
 }
 
 export interface FoodVendorPayment {
@@ -295,6 +299,7 @@ export interface FoodVendorPayment {
   amount_paid: number;
   paid_at: string;
   note?: string;
+  credit_ids?: string[];
 }
 
 // Savings
