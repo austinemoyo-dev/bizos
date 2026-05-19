@@ -145,13 +145,12 @@ export default function PersonalDashboard() {
   // ── Computed values ────────────────────────────────────────────
   const totalIncome     = Number(summary?.total_income   ?? 0);
   const totalExpenses   = Number(summary?.total_expenses ?? 0);
-  const netSavings      = Number(summary?.net_savings    ?? 0);
   const paidTitheAmount = (paidTitheData?.items ?? []).reduce((s, t) => s + Number(t.tithe_amount), 0);
   const titheDue        = Number(summary?.tithe_due ?? 0);
   const foodDebt        = (unpaidCredits ?? []).reduce((s, c) => s + Number(c.amount), 0);
 
-  // ✅ Correct available balance: net savings minus already-paid tithe
-  const availableBalance = netSavings - paidTitheAmount;
+  // ✅ Compute directly from income/expenses (net_savings from backend is unreliable)
+  const availableBalance = totalIncome - totalExpenses - paidTitheAmount;
   const isPositive       = availableBalance >= 0;
   const periodLabel      = PERIOD_LABELS[period];
 
