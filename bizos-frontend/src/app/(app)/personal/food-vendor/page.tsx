@@ -358,6 +358,8 @@ export default function FoodVendorPage() {
   const [showBudget,   setShowBudget]   = useState(false);
   const [budgetInput,  setBudgetInput]  = useState(budget);
   const [paying,       setPaying]       = useState(false);
+  const [payingVendor, setPayingVendor] = useState<string | null>(null);
+  const [showDayPay,   setShowDayPay]   = useState(false);
 
   useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
 
@@ -389,6 +391,24 @@ export default function FoodVendorPage() {
     });
     return map;
   }, [dayCredits]);
+
+  // Unpaid credits for the selected day
+  const dayUnpaid = useMemo(
+    () => dayCredits.filter((c) => !c.paid),
+    [dayCredits],
+  );
+
+  // Per-vendor unpaid credit IDs (for targeted payment)
+  const vendorUnpaidMap = useMemo(() => {
+    const map: Record<string, { ids: string[]; amount: number; credits: FoodCredit[] }> = {};
+    unpaid.forEach((c) => {
+      if (!map[c.vendor_name]) map[c.vendor_name] = { ids: [], amount: 0, credits: [] };
+      map[c.vendor_name].ids.push(c.id);
+      map[c.vendor_name].amount += Number(c.amount);
+      map[c.vendor_name].credits.push(c);
+    });
+    return map;
+  }, [unpaid]);
 
   const monthlySpent = useMemo(() => {
     const ms = format(startOfMonth(new Date()), 'yyyy-MM-dd');
@@ -422,6 +442,18 @@ export default function FoodVendorPage() {
   };
 
   const handlePayAll = () => runPay(unpaid.map((c) => c.id), unpaid.map((c) => c.vendor_name).filter((v, i, a) => a.indexOf(v) === i).join(', '), unpaid);
+
+  const handlePayDay = () => {
+    if (!dayUnpaid.length) return;
+    runPay(dayUnpaid.map((c) => c.id), `Day: ${selectedDate}`, dayUnpaid).then(() => setShowDayPay(false));
+  };
+
+  const handlePayVendor = (vendorName: string) => {
+    const entry = vendorUnpaidMap[vendorName];
+    if (!entry) return;
+    setPayingVendor(vendorName);
+    runPay(entry.ids, vendorName, entry.credits).finally(() => setPayingVendor(null));
+  };
 
   const handleCreate = async (data: FoodCreditCreate) => {
     await foodVendorApi.credits.create(data);
@@ -566,12 +598,26 @@ export default function FoodVendorPage() {
       {/* ── Today Meals list ────────────────────────────────────── */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1A1A1A' }}>
-            {isToday ? 'Today\'s Meals' : `Meals on ${format(new Date(selectedDate + 'T00:00:00'), 'd MMM')}`}
-          </h2>
-          <span style={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>
-            {dayCredits.length} item{dayCredits.length !== 1 ? 's' : ''}
-          </span>
+          <div>
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1A1A1A' }}>
+              {isToday ? 'Today\'s Meals' : `Meals on ${format(new Date(selectedDate + 'T00:00:00'), 'd MMM')}`}
+            </h2>
+            <span style={{ fontSize: '0.62rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>
+              {dayCredits.length} item{dayCredits.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {dayUnpaid.length > 0 && (
+            <button
+              onClick={() => setShowDayPay(true)}
+              style={{
+                padding: '7px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                background: '#1A1A1A', fontSize: '0.68rem', fontWeight: 700, color: '#fff',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              Pay Day · ₦{dayUnpaid.reduce((s, c) => s + Number(c.amount), 0).toLocaleString()}
+            </button>
+          )}
         </div>
 
         {dayCredits.length === 0 && (
@@ -665,6 +711,106 @@ export default function FoodVendorPage() {
         </div>
       )}
 
+      {/* ── Vendor breakdown ───────────────────────────────────── */}
+      {vendors.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1A1A1A' }}>Vendor Spending</h2>
+            <span style={{ fontSize: '0.62rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>
+              {vendors.length} vendor{vendors.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {vendors
+              .slice()
+              .sort((a, b) => b.total_spent - a.total_spent)
+              .map((v) => {
+                const unpaidEntry  = vendorUnpaidMap[v.vendor_name];
+                const unpaidAmt    = unpaidEntry?.amount ?? 0;
+                const isPayingThis = payingVendor === v.vendor_name;
+
+                return (
+                  <div
+                    key={v.vendor_name}
+                    style={{
+                      background: '#fff',
+                      borderRadius: 18,
+                      padding: '14px 16px',
+                      boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    {/* Top row: name + pay button */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 13, flexShrink: 0,
+                          background: GB,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Utensils size={17} style={{ color: G }} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1A1A1A' }}>{v.vendor_name}</p>
+                          <p style={{ fontSize: '0.6rem', color: 'rgba(0,0,0,0.38)', marginTop: 1 }}>
+                            {v.total_meals} meal{v.total_meals !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      {unpaidAmt > 0 ? (
+                        <button
+                          onClick={() => handlePayVendor(v.vendor_name)}
+                          disabled={isPayingThis || paying}
+                          style={{
+                            padding: '7px 14px', borderRadius: 14, border: 'none', cursor: 'pointer',
+                            background: '#EF4444', color: '#fff', fontSize: '0.68rem', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            opacity: isPayingThis ? 0.7 : 1,
+                          }}
+                        >
+                          {isPayingThis
+                            ? <><Loader2 size={12} className="doc-spin" /> Paying…</>
+                            : <>Pay ₦{unpaidAmt.toLocaleString()}</>
+                          }
+                        </button>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', color: G, fontWeight: 700 }}>
+                          <CheckCircle2 size={13} /> Settled
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats row */}
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: 8, paddingTop: 10,
+                      borderTop: '1px solid rgba(0,0,0,0.05)',
+                    }}>
+                      {[
+                        { label: 'Total Spent', value: v.total_spent, color: '#1A1A1A' },
+                        { label: 'Outstanding', value: unpaidAmt,     color: unpaidAmt > 0 ? '#EF4444' : 'rgba(0,0,0,0.35)' },
+                        { label: 'Total Paid',  value: v.total_spent - unpaidAmt, color: G },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} style={{ textAlign: 'center' }}>
+                          <p style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.78rem', fontWeight: 800,
+                            color, lineHeight: 1, marginBottom: 3,
+                          }}>
+                            {value >= 1000 ? `₦${(value / 1000).toFixed(1)}k` : `₦${value}`}
+                          </p>
+                          <p style={{ fontSize: '0.56rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* ── FAB ────────────────────────────────────────────────── */}
       <motion.button
         whileTap={{ scale: 0.93 }}
@@ -682,6 +828,50 @@ export default function FoodVendorPage() {
       >
         <Plus size={24} color="#fff" strokeWidth={2.5} />
       </motion.button>
+
+      {/* ── Pay Day Confirm Modal ──────────────────────────────── */}
+      <AnimatePresence>
+        {showDayPay && (
+          <Modal isOpen={showDayPay} title="Pay This Day" onClose={() => setShowDayPay(false)}>
+            <div style={{ padding: '8px 0' }}>
+              <div style={{ padding: '16px', borderRadius: 16, background: GB, border: `1px solid rgba(164,207,86,0.3)`, marginBottom: 16 }}>
+                <p style={{ fontSize: '0.72rem', color: '#374151', marginBottom: 4 }}>
+                  {format(new Date(selectedDate + 'T00:00:00'), 'EEEE, d MMMM')}
+                </p>
+                <p style={{ fontSize: '0.78rem', color: '#6B7280', marginBottom: 10 }}>
+                  Paying {dayUnpaid.length} unpaid credit{dayUnpaid.length !== 1 ? 's' : ''} from:
+                </p>
+                {/* Per-vendor breakdown for this day */}
+                {Object.entries(
+                  dayUnpaid.reduce((acc, c) => {
+                    acc[c.vendor_name] = (acc[c.vendor_name] ?? 0) + Number(c.amount);
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).map(([vendor, amt]) => (
+                  <div key={vendor} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#374151', fontWeight: 600 }}>{vendor}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700, color: '#1A1A1A' }}>
+                      ₦{amt.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(164,207,86,0.4)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1A1A1A' }}>Total</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 800, color: '#1A1A1A' }}>
+                    ₦{dayUnpaid.reduce((s, c) => s + Number(c.amount), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setShowDayPay(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: '1.5px solid #E5E7EB', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handlePayDay} disabled={paying} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: G, color: '#fff', fontWeight: 800, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: paying ? 0.7 : 1 }}>
+                  {paying ? <><Loader2 size={16} className="doc-spin" /> Processing…</> : 'Confirm Payment'}
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
 
       {/* ── AI Doctor Sheet ─────────────────────────────────────── */}
       <AIDoctorSheet open={showDoctor} onClose={() => setShowDoctor(false)} payload={doctorPayload} />
