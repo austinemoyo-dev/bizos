@@ -1841,37 +1841,16 @@ input[type=number]::-webkit-inner-spin-button {
   }
 }
 
-/* ── Page header: hide the text (TopBar already shows it) ─────── */
-@media (max-width: 768px) {
-  .page-header-info {
+/* ── Mobile: TopBar hidden, page-header replaced by ph-mobile ─── */
+@media (max-width: 767px) {
+  /* Desktop page-header is hidden — ph-mobile in PageHeader handles it */
+  .ph-desktop {
     display: none !important;
   }
 
-  .page-header {
-    justify-content: flex-end;
-    margin-bottom: var(--space-3);
-    min-height: 0;
-    flex-wrap: nowrap;
-  }
-
-  /* Full-width action buttons in page header */
-  .page-header .btn-primary,
-  .page-header .btn-ghost {
-    flex: 1;
-    justify-content: center;
-  }
-
-  /* Title already shows in TopBar — shrink its top margin everywhere */
-  .page-title {
-    font-size: var(--text-xl) !important;
-  }
-}
-
-/* ── TopBar mobile polish ─────────────────────────────────────── */
-@media (max-width: 768px) {
-  /* TopBar uses --header-height; keep at 52px on mobile */
+  /* TopBar is not rendered on mobile, so header-height is 0 */
   :root {
-    --header-height: 52px;
+    --header-height: 0px;
   }
 }
 

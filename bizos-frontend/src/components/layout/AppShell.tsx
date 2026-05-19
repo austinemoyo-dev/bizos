@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }}
       >
         <OfflineBanner />
-        <TopBar />
+        {!isMobile && <TopBar />}
 
         <main
           className="main-content"
