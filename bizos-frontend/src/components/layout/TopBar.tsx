@@ -43,8 +43,8 @@ export function TopBar() {
 
   const meta       = PAGE_META[pathname] ?? { title: 'BizOS' };
   const isPersonal = pathname.startsWith('/personal');
-  const accentColor = isPersonal ? '#D4A535' : '#C8102E';
-  const accentGlow  = isPersonal ? 'rgba(212,165,53,0.32)' : 'rgba(200,16,46,0.32)';
+  const accentColor = isPersonal ? '#D4A535' : '#800000';
+  const accentGlow  = isPersonal ? 'rgba(212,165,53,0.32)' : 'rgba(128,0,0,0.32)';
 
   return (
     <header style={{

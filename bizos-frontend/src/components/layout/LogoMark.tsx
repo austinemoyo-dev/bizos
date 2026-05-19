@@ -1,20 +1,42 @@
 'use client';
 
+// Brand color from DASH & Co. brand guide
+export const BRAND_COLOR = '#800000';
+
 interface LogoMarkProps {
   size?: number;
   color?: string;
 }
 
-export function LogoMark({ size = 28, color = '#C8102E' }: LogoMarkProps) {
+export function LogoMark({ size = 28, color = BRAND_COLOR }: LogoMarkProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      {/* Speed lines */}
-      <rect x="1" y="8"  width="10" height="3" rx="1.5" fill={color} />
-      <rect x="1" y="14.5" width="7"  height="3" rx="1.5" fill={color} />
-      <rect x="1" y="21" width="10" height="3" rx="1.5" fill={color} />
-      {/* Letter d */}
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Speed lines — 3 horizontal dashes, left portion */}
+      <rect x="1"   y="8.2"  width="10.5" height="2.8" rx="1.4" fill={color} />
+      <rect x="1"   y="14.6" width="7"    height="2.8" rx="1.4" fill={color} />
+      <rect x="1"   y="21"   width="10.5" height="2.8" rx="1.4" fill={color} />
+
+      {/* "d" letterform — bowl on left, ascender/stem extends up on right.
+          fillRule="evenodd" punches out the inner counter. */}
       <path
-        d="M14 4 L14 28 L20.5 28 C26 28 30 23.5 30 16 C30 8.5 26 4 20.5 4 Z"
+        fillRule="evenodd"
+        d={[
+          // Outer boundary (clockwise)
+          'M 27,3',
+          'L 27,29',
+          'C 26,31 21,32 16,30',
+          'C 10,28 9,23 9,19',
+          'C 9,12 12,6 17,5',
+          'C 21,4 27,5 27,3',
+          'Z',
+          // Inner counter / hole (creates the bowl opening)
+          'M 22,19',
+          'C 22,23 19,25 16,24',
+          'C 13,23 12,21 12,19',
+          'C 12,15 15,12 18,13',
+          'C 21,14 22,16 22,19',
+          'Z',
+        ].join(' ')}
         fill={color}
       />
     </svg>
@@ -27,24 +49,29 @@ interface LogoWordmarkProps {
 }
 
 export function LogoWordmark({ collapsed, scope = 'business' }: LogoWordmarkProps) {
-  const color = scope === 'personal' ? '#D4A535' : '#C8102E';
+  const color = scope === 'personal' ? '#D4A535' : BRAND_COLOR;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
       <LogoMark size={26} color={color} />
       {!collapsed && (
-        <div style={{ lineHeight: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, lineHeight: 1 }}>
           <span style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800,
-            fontSize: '1.05rem', letterSpacing: '-0.01em',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: '1rem',
+            letterSpacing: '-0.01em',
             color: 'var(--text-primary)',
           }}>
-            <span style={{ color }}>d</span>-ash
+            DASH &amp; Co.
           </span>
           <span style={{
-            fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.15em',
-            color: 'var(--text-muted)', textTransform: 'uppercase',
+            fontSize: '0.44rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color: 'var(--text-muted)',
+            textTransform: 'uppercase',
           }}>
-            Dash & Co.
+            Digital &amp; Hardware Solutions
           </span>
         </div>
       )}
