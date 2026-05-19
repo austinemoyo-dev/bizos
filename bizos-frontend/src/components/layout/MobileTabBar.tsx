@@ -9,17 +9,17 @@ import {
   LineChart, Users, ShoppingCart, ScrollText, Calculator,
   Receipt, TrendingUp, Banknote, HandCoins, ShoppingBag,
   Printer, Wallet, Utensils, PiggyBank, Settings, X,
-  ChevronRight, Plus, DollarSign,
+  ChevronRight, Plus, DollarSign, BarChart2, User, CreditCard,
 } from 'lucide-react';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const BAR_H      = 64;
-const BUBBLE_D   = 54;   // bubble circle diameter
-const NOTCH_D    = 24;   // how deep the wave dips
-const CORNER_R   = 22;   // bar corner radius
+const BUBBLE_D   = 54;
+const NOTCH_D    = 24;
+const CORNER_R   = 22;
 
-// Slot layout (index 0–5): Home | Jobs | [+] | Stock | Personal | More
+// Business nav: 6 slots
 const SLOTS = [
   { key: 'home',     href: '/business/dashboard', Icon: Home,       label: 'Home'     },
   { key: 'jobs',     href: '/business/repairs',   Icon: Wrench,     label: 'Jobs'     },
@@ -27,6 +27,14 @@ const SLOTS = [
   { key: 'stock',    href: '/business/inventory', Icon: Package,    label: 'Stock'    },
   { key: 'personal', href: '/personal/dashboard', Icon: UserCircle, label: 'Personal' },
   { key: 'more',     href: null,                  Icon: LayoutGrid, label: 'More'     },
+] as const;
+
+// Personal nav: 4 slots (matches the wallet-app picture)
+const PERSONAL_SLOTS = [
+  { key: 'home',         href: '/personal/dashboard',    Icon: Home,        label: 'Home'     },
+  { key: 'wallet',       href: '/personal/transactions', Icon: CreditCard,  label: 'Wallet'   },
+  { key: 'analytics',    href: '/personal/analytics',    Icon: BarChart2,   label: 'Analytics'},
+  { key: 'profile',      href: '/settings',              Icon: User,        label: 'Profile'  },
 ] as const;
 
 const BIZ_MORE = [
@@ -73,11 +81,19 @@ function isPathActive(pathname: string, href: string) {
 }
 
 function getActiveSlot(pathname: string): number {
-  if (pathname === '/business/dashboard')            return 0;
-  if (pathname.startsWith('/business/repairs'))      return 1;
-  if (pathname.startsWith('/business/inventory'))    return 3;
-  if (pathname === '/personal/dashboard')            return 4;
+  if (pathname === '/business/dashboard')               return 0;
+  if (pathname.startsWith('/business/repairs'))         return 1;
+  if (pathname.startsWith('/business/inventory'))       return 3;
+  if (pathname === '/personal/dashboard')               return 4;
   if (MORE_HREFS.some(h => isPathActive(pathname, h))) return 5;
+  return 0;
+}
+
+function getPersonalActiveSlot(pathname: string): number {
+  if (pathname === '/personal/dashboard')                                           return 0;
+  if (pathname.startsWith('/personal/transactions') || pathname.startsWith('/personal/food-vendor') || pathname.startsWith('/personal/savings') || pathname.startsWith('/personal/tithe')) return 1;
+  if (pathname.startsWith('/personal/analytics'))                                  return 2;
+  if (pathname === '/settings')                                                     return 3;
   return 0;
 }
 
@@ -134,16 +150,17 @@ export function MobileTabBar() {
     return () => obs.disconnect();
   }, []);
 
-  const isPersonal  = pathname.startsWith('/personal');
-  const activeSlot  = getActiveSlot(pathname);
-  const slotW       = navW / 6;
-  const bubbleCx    = slotW * activeSlot + slotW / 2;
-  const bubbleLeft  = bubbleCx - BUBBLE_D / 2;
-  // Bubble center sits at bar top — top half pops above, bottom half in notch
-  const bubbleTop   = -(BUBBLE_D / 2) + NOTCH_D * 0.55;
+  const isPersonal   = pathname.startsWith('/personal');
+  const slotCount    = isPersonal ? 4 : 6;
+  const activeSlot   = isPersonal ? getPersonalActiveSlot(pathname) : getActiveSlot(pathname);
+  const slotW        = navW / slotCount;
+  const bubbleCx     = slotW * activeSlot + slotW / 2;
+  const bubbleLeft   = bubbleCx - BUBBLE_D / 2;
+  const bubbleTop    = -(BUBBLE_D / 2) + NOTCH_D * 0.55;
 
-  const barPath  = navW > 0 ? buildBarPath(navW, BAR_H, bubbleCx, NOTCH_D) : '';
-  const ActiveSlotIcon = SLOTS[activeSlot]?.Icon;
+  const barPath        = navW > 0 ? buildBarPath(navW, BAR_H, bubbleCx, NOTCH_D) : '';
+  const activeSlots    = isPersonal ? PERSONAL_SLOTS : SLOTS;
+  const ActiveSlotIcon = activeSlots[activeSlot]?.Icon;
 
   // Theme-aware colors
   const barFill    = isDark ? 'rgba(10,12,20,0.92)'      : 'rgba(250,247,243,0.90)';
@@ -251,8 +268,8 @@ export function MobileTabBar() {
 
         {/* Slot touch targets (flex row, fills bar) */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'stretch' }}>
-          {SLOTS.map((slot, i) => {
-            // Center action button
+          {activeSlots.map((slot, i) => {
+            // Plus action button (business only)
             if ('action' in slot) {
               return (
                 <button
@@ -276,7 +293,7 @@ export function MobileTabBar() {
               );
             }
 
-            // More button
+            // More button (business only)
             if (slot.key === 'more') {
               const Icon = slot.Icon;
               return (
@@ -306,7 +323,8 @@ export function MobileTabBar() {
                 key={slot.key}
                 href={slot.href as string}
                 style={{
-                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flex: 1, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: 3,
                   textDecoration: 'none', WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -315,6 +333,15 @@ export function MobileTabBar() {
                   color={isActive ? 'transparent' : iconColor}
                   strokeWidth={1.8}
                 />
+                {isPersonal && (
+                  <span style={{
+                    fontSize: '0.55rem', fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'transparent' : iconColor,
+                    lineHeight: 1,
+                  }}>
+                    {slot.label}
+                  </span>
+                )}
               </Link>
             );
           })}
