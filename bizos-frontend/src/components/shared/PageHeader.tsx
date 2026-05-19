@@ -109,42 +109,48 @@ export function PageHeader({
         )}
       </motion.div>
 
-      {/* ── Mobile wallet-app header ──────────────────────────────── */}
+      {/* ── Mobile header (dark-navy on personal, plain on business) ── */}
       <motion.div
         className="ph-mobile"
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         style={{
-          alignItems: 'center', justifyContent: 'space-between',
+          alignItems: 'center', justifyContent: 'space-between', gap: 10,
           marginBottom: actions ? 10 : 'var(--space-5)',
-          gap: 10,
+          ...(isPersonal ? {
+            background: 'linear-gradient(160deg, #1a1b6e 0%, #2e3fa0 55%, #1e2878 100%)',
+            borderRadius: 20,
+            padding: '16px 16px',
+            marginBottom: actions ? 10 : 16,
+          } : {}),
         }}
       >
         <button
           onClick={() => setMenuOpen(true)}
           style={{
             width: 40, height: 40, borderRadius: 13, flexShrink: 0,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--glass-border)',
+            background: isPersonal ? 'rgba(255,255,255,0.12)' : 'var(--bg-elevated)',
+            border: isPersonal ? 'none' : '1px solid var(--glass-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
           }}
         >
-          <Menu size={18} style={{ color: 'var(--text-secondary)' }} />
+          <Menu size={18} style={{ color: isPersonal ? '#fff' : 'var(--text-secondary)' }} />
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{
             fontSize: 'clamp(1.2rem, 5vw, 1.5rem)',
-            fontWeight: 800, color: 'var(--text-primary)',
+            fontWeight: 800,
+            color: isPersonal ? '#fff' : 'var(--text-primary)',
             lineHeight: 1.1, letterSpacing: '-0.02em',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {title}
           </h1>
           {subtitle && (
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2, fontWeight: 500 }}>
+            <p style={{ fontSize: '0.65rem', color: isPersonal ? 'rgba(255,255,255,0.55)' : 'var(--text-muted)', marginTop: 2, fontWeight: 500 }}>
               {subtitle}
             </p>
           )}
@@ -153,12 +159,12 @@ export function PageHeader({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <button style={{
             width: 38, height: 38, borderRadius: 19,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--glass-border)',
+            background: isPersonal ? 'rgba(255,255,255,0.12)' : 'var(--bg-elevated)',
+            border: isPersonal ? 'none' : '1px solid var(--glass-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
           }}>
-            <Bell size={16} style={{ color: 'var(--text-secondary)' }} />
+            <Bell size={16} style={{ color: isPersonal ? '#fff' : 'var(--text-secondary)' }} />
           </button>
           <div style={{
             width: 38, height: 38, borderRadius: 19, flexShrink: 0,
