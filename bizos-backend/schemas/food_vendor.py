@@ -70,3 +70,11 @@ class VendorSpendingSummary(BaseModel):
     total_spent: Decimal
     total_meals: int
     unpaid_amount: Decimal
+
+
+class FoodMonthSummary(BaseModel):
+    month: str          # "YYYY-MM"
+    total_spent: Decimal
+    total_paid: Decimal
+    total_credits: int
+    payment_count: int

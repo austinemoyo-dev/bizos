@@ -62,7 +62,7 @@ export default function PersonalTithePage() {
     try {
       const now = new Date();
       const targetPeriod = period === 'last_month' ? subMonths(now, 1) : now;
-      await titheApi.generate(targetPeriod.getFullYear(), targetPeriod.getMonth() + 1);
+      await titheApi.generate(targetPeriod.getFullYear(), targetPeriod.getMonth() + 1, 'personal');
       qc.invalidateQueries({ queryKey: ['tithe'] });
       addToast({ type: 'success', title: 'Personal tithe recalculated' });
     } catch (err) {
@@ -73,9 +73,13 @@ export default function PersonalTithePage() {
   };
 
   const handleMarkPaid = async (id: string) => {
-    await titheApi.markPaid(id);
-    qc.invalidateQueries({ queryKey: ['tithe'] });
-    addToast({ type: 'success', title: 'Tithe marked as paid' });
+    try {
+      await titheApi.markPaid(id);
+      qc.invalidateQueries({ queryKey: ['tithe'] });
+      addToast({ type: 'success', title: 'Tithe marked as paid' });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Failed to mark tithe as paid', message: err instanceof Error ? err.message : '' });
+    }
   };
 
   const totalDue  = (unpaidData?.items ?? []).reduce((s, t) => s + Number(t.tithe_amount), 0);

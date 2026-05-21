@@ -14,6 +14,7 @@ from models.user import User, UserRole
 from schemas.food_vendor import (
     FoodCreditCreate,
     FoodCreditOut,
+    FoodMonthSummary,
     FoodVendorAnalytics,
     FoodVendorPaymentOut,
     FoodVendorPayRequest,
@@ -216,6 +217,60 @@ def spending_trend(
             count=r.count if r else 0,
         ))
     return result
+
+
+@router.get("/monthly-summary", response_model=List[FoodMonthSummary])
+def monthly_summary(
+    months: int = 6,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    from sqlalchemy import case as sa_case
+    today = date.today()
+    # Walk back to the first day of `months` months ago
+    start = today.replace(day=1)
+    for _ in range(months - 1):
+        from datetime import timedelta
+        start = (start - timedelta(days=1)).replace(day=1)
+
+    paid_case = sa_case(
+        (FoodVendorCredit.paid == True, FoodVendorCredit.amount),
+        else_=Decimal("0"),
+    )
+    rows = (
+        db.query(
+            func.to_char(FoodVendorCredit.purchase_date, "YYYY-MM").label("month"),
+            func.sum(FoodVendorCredit.amount).label("total_spent"),
+            func.coalesce(func.sum(paid_case), Decimal("0")).label("total_paid"),
+            func.count(FoodVendorCredit.id).label("total_credits"),
+        )
+        .filter(FoodVendorCredit.purchase_date >= start)
+        .group_by(func.to_char(FoodVendorCredit.purchase_date, "YYYY-MM"))
+        .order_by(func.to_char(FoodVendorCredit.purchase_date, "YYYY-MM").asc())
+        .all()
+    )
+
+    pay_rows = (
+        db.query(
+            func.to_char(func.date(FoodVendorPayment.paid_at), "YYYY-MM").label("month"),
+            func.count(FoodVendorPayment.id).label("count"),
+        )
+        .filter(func.date(FoodVendorPayment.paid_at) >= start)
+        .group_by(func.to_char(func.date(FoodVendorPayment.paid_at), "YYYY-MM"))
+        .all()
+    )
+    pay_count_map = {r.month: r.count for r in pay_rows}
+
+    return [
+        FoodMonthSummary(
+            month=r.month,
+            total_spent=r.total_spent,
+            total_paid=r.total_paid,
+            total_credits=r.total_credits,
+            payment_count=pay_count_map.get(r.month, 0),
+        )
+        for r in rows
+    ]
 
 
 @router.get("/vendor-breakdown", response_model=List[VendorSpendingSummary])

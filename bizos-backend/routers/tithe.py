@@ -61,11 +61,12 @@ def unpaid_total(
 def generate(
     year: int,
     month: int,
+    scope: str = TitheScope.business,
     db: Session = Depends(get_db),
     _: User = Depends(role_required(UserRole.owner, UserRole.super_admin, UserRole.accountant)),
 ):
-    """Calculate 10 % of net profit for the given month and create/refresh a tithe record."""
-    record = generate_monthly_tithe(db, year, month)
+    """Calculate 10 % of net profit/income for the given month and create/refresh a tithe record."""
+    record = generate_monthly_tithe(db, year, month, scope=scope)
     return record
 
 

@@ -14,9 +14,10 @@ import { useFoodBudget } from '@/lib/hooks/useFoodBudget';
 import { useFoodPaymentCache } from '@/lib/hooks/useFoodPaymentCache';
 import {
   Plus, Coffee, Utensils, Moon, Apple, CheckCircle2,
-  Sparkles, X, ChevronRight, Loader2, Target, TrendingUp,
+  Sparkles, X, ChevronRight, Loader2, Target, TrendingUp, History, CalendarDays,
 } from 'lucide-react';
-import { format, startOfMonth, subDays, addDays } from 'date-fns';
+import { format, startOfMonth, subDays, subMonths, endOfMonth } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const G  = '#A4CF56';          // primary lime-green
@@ -338,6 +339,7 @@ function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['food-vendors'] });
   qc.invalidateQueries({ queryKey: ['food-payments'] });
   qc.invalidateQueries({ queryKey: ['food-trend'] });
+  qc.invalidateQueries({ queryKey: ['food-monthly'] });
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -357,9 +359,10 @@ export default function FoodVendorPage() {
   const [showConfirm,  setShowConfirm]  = useState(false);
   const [showBudget,   setShowBudget]   = useState(false);
   const [budgetInput,  setBudgetInput]  = useState(budget);
-  const [paying,       setPaying]       = useState(false);
-  const [payingVendor, setPayingVendor] = useState<string | null>(null);
-  const [showDayPay,   setShowDayPay]   = useState(false);
+  const [paying,              setPaying]              = useState(false);
+  const [payingVendor,        setPayingVendor]        = useState<string | null>(null);
+  const [showDayPay,          setShowDayPay]          = useState(false);
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState('all');
 
   useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
 
@@ -368,8 +371,9 @@ export default function FoodVendorPage() {
   const { data: allCredits= [] } = useQuery({ queryKey: ['food-credits','all'],     queryFn: () => foodVendorApi.credits.listAll() });
   const { data: payments  = [] } = useQuery({ queryKey: ['food-payments'],          queryFn: () => foodVendorApi.payments() });
   const { data: analytics }      = useQuery({ queryKey: ['food-analytics'],         queryFn: () => foodVendorApi.analytics() });
-  const { data: trend     = [] } = useQuery({ queryKey: ['food-trend'],             queryFn: () => foodVendorApi.trend(30) });
-  const { data: vendors   = [] } = useQuery({ queryKey: ['food-vendors'],           queryFn: () => foodVendorApi.vendorBreakdown() });
+  const { data: trend          = [] } = useQuery({ queryKey: ['food-trend'],          queryFn: () => foodVendorApi.trend(30) });
+  const { data: vendors        = [] } = useQuery({ queryKey: ['food-vendors'],        queryFn: () => foodVendorApi.vendorBreakdown() });
+  const { data: monthlySummary = [] } = useQuery({ queryKey: ['food-monthly'],        queryFn: () => foodVendorApi.monthlySummary(6) });
 
   // ── Derived values ─────────────────────────────────────────────
   const dailyBudget = budget > 0 ? Math.round(budget / 30) : 0;
@@ -414,6 +418,35 @@ export default function FoodVendorPage() {
     const ms = format(startOfMonth(new Date()), 'yyyy-MM-dd');
     return allCredits.filter((c) => c.purchase_date >= ms).reduce((s, c) => s + Number(c.amount), 0);
   }, [allCredits]);
+
+  // Month pills for payment history (All + last 6 months, newest first)
+  const historyMonthOptions = useMemo(() => {
+    const opts: { key: string; label: string }[] = [{ key: 'all', label: 'All Time' }];
+    for (let i = 0; i < 6; i++) {
+      const d = subMonths(new Date(), i);
+      opts.push({ key: format(d, 'yyyy-MM'), label: format(d, 'MMM yyyy') });
+    }
+    return opts;
+  }, []);
+
+  const filteredPayments = useMemo(() => {
+    if (selectedHistoryMonth === 'all') return payments;
+    return payments.filter((p) => p.paid_at.slice(0, 7) === selectedHistoryMonth);
+  }, [payments, selectedHistoryMonth]);
+
+  const historyStats = useMemo(() => ({
+    total: filteredPayments.reduce((s, p) => s + Number(p.amount_paid), 0),
+    count: filteredPayments.length,
+  }), [filteredPayments]);
+
+  // Bar chart data from monthly summary (oldest → newest)
+  const monthlyChartData = useMemo(() =>
+    monthlySummary.map((m) => ({
+      label: format(new Date(m.month + '-01'), 'MMM'),
+      spent: Number(m.total_spent),
+      paid:  Number(m.total_paid),
+    })),
+  [monthlySummary]);
 
   // AI doctor payload
   const doctorPayload = useMemo(() => ({
@@ -810,6 +843,172 @@ export default function FoodVendorPage() {
           </div>
         </div>
       )}
+
+      {/* ── Monthly Analytics ──────────────────────────────────── */}
+      {monthlyChartData.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 11, background: GB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={15} style={{ color: G }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1A1A1A' }}>Monthly Spending</h2>
+              <p style={{ fontSize: '0.6rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>Last {monthlySummary.length} months</p>
+            </div>
+          </div>
+
+          <div style={{ background: '#fff', borderRadius: 20, padding: '16px 12px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={monthlyChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="30%">
+                <XAxis dataKey="label" tick={{ fill: 'rgba(0,0,0,0.4)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} tick={{ fill: 'rgba(0,0,0,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} width={36} />
+                <Tooltip
+                  contentStyle={{ background: '#1A1A1A', border: 'none', borderRadius: 12, padding: '8px 12px' }}
+                  labelStyle={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                  formatter={(value: number, name: string) => [
+                    `₦${Number(value).toLocaleString()}`,
+                    name === 'spent' ? 'Total Spent' : 'Total Paid',
+                  ]}
+                />
+                <Bar dataKey="spent" radius={[6, 6, 0, 0]}>
+                  {monthlyChartData.map((entry, i) => (
+                    <Cell key={i} fill={i === monthlyChartData.length - 1 ? G : 'rgba(164,207,86,0.35)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+
+            {/* Summary row below chart */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+              {[
+                { label: 'This Month',  value: monthlySummary[monthlySummary.length - 1]?.total_spent ?? 0,   color: '#1A1A1A' },
+                { label: 'Paid',        value: monthlySummary[monthlySummary.length - 1]?.total_paid ?? 0,    color: G         },
+                { label: 'Transactions', value: monthlySummary[monthlySummary.length - 1]?.payment_count ?? 0, color: '#8B5CF6', isCnt: true },
+              ].map(({ label, value, color, isCnt }) => (
+                <div key={label} style={{ textAlign: 'center' }}>
+                  <p style={{ fontFamily: isCnt ? 'var(--font-display)' : 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color, lineHeight: 1, marginBottom: 3 }}>
+                    {isCnt ? value : (Number(value) >= 1000 ? `₦${(Number(value) / 1000).toFixed(1)}k` : `₦${Number(value)}`)}
+                  </p>
+                  <p style={{ fontSize: '0.55rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Payment History ─────────────────────────────────────── */}
+      <div style={{ marginTop: 24, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 11, background: GB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <History size={15} style={{ color: G }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1A1A1A' }}>Payment History</h2>
+            <p style={{ fontSize: '0.6rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>All vendor payments made</p>
+          </div>
+        </div>
+
+        {/* Month pills */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14, paddingBottom: 2 }}>
+          {historyMonthOptions.map((opt) => {
+            const active = selectedHistoryMonth === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setSelectedHistoryMonth(opt.key)}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                  fontSize: '0.68rem', fontWeight: 700, flexShrink: 0,
+                  background: active ? '#1A1A1A' : '#fff',
+                  color: active ? '#fff' : 'rgba(0,0,0,0.5)',
+                  boxShadow: active ? '0 2px 10px rgba(0,0,0,0.2)' : '0 1px 6px rgba(0,0,0,0.06)',
+                  transition: 'all 0.18s',
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Stats */}
+        {historyStats.count > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: '12px 14px', boxShadow: '0 1px 8px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 800, color: G, lineHeight: 1, marginBottom: 4 }}>
+                ₦{historyStats.total.toLocaleString()}
+              </p>
+              <p style={{ fontSize: '0.58rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>Total Paid</p>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 16, padding: '12px 14px', boxShadow: '0 1px 8px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, color: '#1A1A1A', lineHeight: 1, marginBottom: 4 }}>
+                {historyStats.count}
+              </p>
+              <p style={{ fontSize: '0.58rem', color: 'rgba(0,0,0,0.38)', fontWeight: 600 }}>Payments</p>
+            </div>
+          </div>
+        )}
+
+        {/* Payment list */}
+        {filteredPayments.length === 0 ? (
+          <div style={{ padding: '28px 16px', textAlign: 'center', background: '#fff', borderRadius: 18, boxShadow: '0 1px 8px rgba(0,0,0,0.04)' }}>
+            <CalendarDays size={36} style={{ color: 'rgba(0,0,0,0.2)', marginBottom: 8 }} />
+            <p style={{ fontSize: '0.78rem', color: 'rgba(0,0,0,0.35)', fontWeight: 500 }}>
+              No payments {selectedHistoryMonth === 'all' ? 'yet' : `in ${historyMonthOptions.find(o => o.key === selectedHistoryMonth)?.label}`}
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filteredPayments.map((payment) => {
+              const d = new Date(payment.paid_at);
+              return (
+                <div
+                  key={payment.id}
+                  style={{
+                    background: '#fff', borderRadius: 18, padding: '13px 14px',
+                    boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}
+                >
+                  {/* Date badge */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                    background: GB, display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: G, lineHeight: 1 }}>
+                      {format(d, 'd')}
+                    </span>
+                    <span style={{ fontSize: '0.5rem', fontWeight: 700, color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' }}>
+                      {format(d, 'MMM')}
+                    </span>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1A1A1A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {payment.vendor_name}
+                    </p>
+                    <p style={{ fontSize: '0.6rem', color: 'rgba(0,0,0,0.38)', marginTop: 2 }}>
+                      {format(d, 'EEEE, d MMMM yyyy')}
+                    </p>
+                    {payment.note && (
+                      <p style={{ fontSize: '0.6rem', color: 'rgba(0,0,0,0.5)', marginTop: 2, fontStyle: 'italic' }}>{payment.note}</p>
+                    )}
+                  </div>
+
+                  <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', fontWeight: 800, color: G }}>
+                      ₦{Number(payment.amount_paid).toLocaleString()}
+                    </p>
+                    <p style={{ fontSize: '0.55rem', color: 'rgba(0,0,0,0.35)', fontWeight: 600, marginTop: 2 }}>PAID</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── FAB ────────────────────────────────────────────────── */}
       <motion.button

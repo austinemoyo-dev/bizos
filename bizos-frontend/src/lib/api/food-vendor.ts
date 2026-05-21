@@ -25,6 +25,14 @@ export interface VendorSpendingSummary {
   unpaid_amount: number;
 }
 
+export interface FoodMonthSummary {
+  month: string;        // "YYYY-MM"
+  total_spent: number;
+  total_paid: number;
+  total_credits: number;
+  payment_count: number;
+}
+
 export const foodVendorApi = {
   credits: {
     list: (params?: { paid?: boolean }): Promise<FoodCredit[]> => {
@@ -51,4 +59,6 @@ export const foodVendorApi = {
     withOfflineCache(`food-trend-${days}`, () => api.get<FoodTrendPoint[]>(`/food-vendor/trend?days=${days}`)),
   vendorBreakdown: (): Promise<VendorSpendingSummary[]> =>
     withOfflineCache('food-vendor-breakdown', () => api.get<VendorSpendingSummary[]>('/food-vendor/vendor-breakdown')),
+  monthlySummary: (months = 6): Promise<FoodMonthSummary[]> =>
+    withOfflineCache(`food-monthly-${months}`, () => api.get<FoodMonthSummary[]>(`/food-vendor/monthly-summary?months=${months}`)),
 };
