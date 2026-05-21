@@ -245,23 +245,40 @@ export default function PersonalDashboard() {
               <SkeletonBar w={180} h={42} />
             ) : (
               <div>
+                {/* Status badge — clearly shows IN THE GREEN / IN THE RED */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 10px', borderRadius: 20, marginBottom: 8,
+                  background: isPositive ? 'rgba(134,239,172,0.2)' : 'rgba(252,165,165,0.2)',
+                  border: `1px solid ${isPositive ? 'rgba(134,239,172,0.4)' : 'rgba(252,165,165,0.4)'}`,
+                }}>
+                  {isPositive
+                    ? <TrendingUp size={11} color="#86EFAC" />
+                    : <TrendingDown size={11} color="#FCA5A5" />
+                  }
+                  <span style={{
+                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.06em',
+                    color: isPositive ? '#86EFAC' : '#FCA5A5',
+                    textTransform: 'uppercase',
+                  }}>
+                    {isPositive ? 'In the Green' : 'In the Red'}
+                  </span>
+                </div>
+
+                {/* Balance amount — coloured by health */}
                 <p style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 'clamp(1.55rem, 7vw, 2rem)',
-                  fontWeight: 800, color: '#fff',
-                  lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 6,
+                  fontWeight: 800,
+                  color: isPositive ? '#86EFAC' : '#FCA5A5',
+                  lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 5,
                 }}>
                   {formatNaira(Math.abs(availableBalance))}
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {isPositive
-                    ? <TrendingUp size={12} color="#86EFAC" />
-                    : <TrendingDown size={12} color="#FCA5A5" />
-                  }
-                  <span style={{ fontSize: '0.62rem', fontWeight: 600, color: isPositive ? '#86EFAC' : '#FCA5A5' }}>
-                    {isPositive ? 'Surplus' : 'Deficit'} · {periodLabel}
-                  </span>
-                </div>
+
+                <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                  {periodLabel}
+                </p>
               </div>
             )}
           </div>
@@ -406,7 +423,7 @@ export default function PersonalDashboard() {
                 { label: 'Income',            value: totalIncome,      color: '#10B981', bg: 'rgba(16,185,129,0.08)'  },
                 { label: 'Expenses',          value: totalExpenses,    color: '#EF4444', bg: 'rgba(239,68,68,0.08)'   },
                 { label: 'Paid Tithe',        value: paidTitheAmount,  color: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
-                { label: 'Available Balance', value: availableBalance,
+                { label: isPositive ? '✅ Available Balance' : '🔴 Balance Deficit', value: availableBalance,
                   color: isPositive ? '#10B981' : '#EF4444',
                   bg: isPositive ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' },
               ].map(({ label, value, color, bg }) => (

@@ -129,6 +129,37 @@ export default function BusinessDashboard() {
 
   return (
     <div>
+      {/* ── Scope switcher — mobile only ─────────────────────────── */}
+      <style>{`.biz-scope-switcher{display:none}@media(max-width:767px){.biz-scope-switcher{display:flex}}`}</style>
+      <div className="biz-scope-switcher" style={{ marginBottom: 'var(--space-4)' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 20, padding: 3,
+        }}>
+          {([
+            { label: 'Business', href: '/business/dashboard', active: true,  color: '#800000' },
+            { label: 'Personal', href: '/personal/dashboard', active: false, color: '#7C3AED' },
+          ] as const).map(({ label, href, active, color }) => (
+            <button
+              key={label}
+              onClick={() => router.push(href)}
+              style={{
+                padding: '5px 14px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap',
+                background: active ? color : 'transparent',
+                color: active ? '#fff' : 'var(--text-muted)',
+                boxShadow: active ? `0 2px 8px ${color}40` : 'none',
+                transition: 'all 0.18s',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Greeting ─────────────────────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
         style={{ marginBottom: 'var(--space-5)' }}>
