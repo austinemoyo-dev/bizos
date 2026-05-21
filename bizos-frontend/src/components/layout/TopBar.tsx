@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -36,6 +36,7 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
 
 export function TopBar() {
   const pathname  = usePathname();
+  const router    = useRouter();
   const { isOnline } = useUIStore();
   const { user }  = useAuthStore();
   const { theme, toggle } = useThemeStore();
@@ -78,10 +79,39 @@ export function TopBar() {
         />
       </div>
 
-      {/* Left: logo (mobile) + page title */}
+      {/* Left: logo (mobile) + scope switcher + page title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0, flex: 1 }}>
         <div className="mobile-logo-mark">
           <LogoMark size={26} color={accentColor} />
+        </div>
+
+        {/* ── Scope switcher pill ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 20, padding: 3, flexShrink: 0,
+        }}>
+          {([
+            { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: '#800000' },
+            { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: '#7C3AED' },
+          ] as const).map(({ label, href, active, color }) => (
+            <button
+              key={label}
+              onClick={() => router.push(href)}
+              style={{
+                padding: '5px 13px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                fontSize: '0.68rem', fontWeight: 700,
+                background: active ? color : 'transparent',
+                color: active ? '#fff' : 'var(--text-muted)',
+                transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+                boxShadow: active ? `0 2px 8px ${color}40` : 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <AnimatePresence mode="wait">
@@ -93,14 +123,6 @@ export function TopBar() {
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             style={{ minWidth: 0 }}
           >
-            {meta.subtitle && (
-              <p style={{
-                fontSize: '0.56rem', fontWeight: 800, textTransform: 'uppercase',
-                letterSpacing: '0.14em', color: accentColor, lineHeight: 1, marginBottom: 2,
-              }}>
-                {meta.subtitle}
-              </p>
-            )}
             <h1 style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'var(--text-lg)',

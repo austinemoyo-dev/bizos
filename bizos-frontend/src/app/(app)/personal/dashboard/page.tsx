@@ -183,12 +183,43 @@ export default function PersonalDashboard() {
 
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, position: 'relative', zIndex: 1 }}>
-          <button
-            onClick={() => setMenuOpen(true)}
-            style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Menu size={18} color="#fff" />
-          </button>
+          {/* Left: hamburger + scope switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              onClick={() => setMenuOpen(true)}
+              style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            >
+              <Menu size={18} color="#fff" />
+            </button>
+
+            {/* Scope switcher pill */}
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: 20, padding: 3,
+            }}>
+              {([
+                { label: 'Business', href: '/business/dashboard', active: false, color: '#800000' },
+                { label: 'Personal', href: '/personal/dashboard', active: true,  color: '#7C3AED' },
+              ] as const).map(({ label, href, active, color }) => (
+                <button
+                  key={label}
+                  onClick={() => router.push(href)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                    fontSize: '0.65rem', fontWeight: 700, whiteSpace: 'nowrap',
+                    background: active ? 'rgba(255,255,255,0.2)' : 'transparent',
+                    color: active ? '#fff' : 'rgba(255,255,255,0.55)',
+                    transition: 'all 0.18s',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: bell + avatar */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button style={{ width: 38, height: 38, borderRadius: 19, background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               <Bell size={16} color="#fff" />

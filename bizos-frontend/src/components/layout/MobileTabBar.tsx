@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, Wrench, BarChart2, User, CreditCard } from 'lucide-react';
+import { Home, Wrench, Package, User, CreditCard, BarChart2 } from 'lucide-react';
 
 // ── Nav slots ─────────────────────────────────────────────────────────────────
 
 const BUSINESS_SLOTS = [
-  { key: 'home',      href: '/business/dashboard',  Icon: Home,      label: 'Home'      },
-  { key: 'jobs',      href: '/business/repairs',    Icon: Wrench,    label: 'Jobs'      },
-  { key: 'analytics', href: '/business/analytics',  Icon: BarChart2, label: 'Analytics' },
-  { key: 'profile',   href: '/settings',            Icon: User,      label: 'Profile'   },
+  { key: 'home',      href: '/business/dashboard',  Icon: Home,    label: 'Home'      },
+  { key: 'jobs',      href: '/business/repairs',    Icon: Wrench,  label: 'Jobs'      },
+  { key: 'inventory', href: '/business/inventory',  Icon: Package, label: 'Inventory' },
+  { key: 'profile',   href: '/settings',            Icon: User,    label: 'Profile'   },
 ] as const;
 
 const PERSONAL_SLOTS = [
@@ -25,10 +25,10 @@ const PERSONAL_SLOTS = [
 // ── Active slot helpers ───────────────────────────────────────────────────────
 
 function getBusinessActive(p: string): number {
-  if (p === '/business/dashboard')         return 0;
-  if (p.startsWith('/business/repairs'))   return 1;
-  if (p.startsWith('/business/analytics')) return 2;
-  if (p === '/settings')                   return 3;
+  if (p === '/business/dashboard')          return 0;
+  if (p.startsWith('/business/repairs'))    return 1;
+  if (p.startsWith('/business/inventory'))  return 2;
+  if (p === '/settings')                    return 3;
   return 0;
 }
 

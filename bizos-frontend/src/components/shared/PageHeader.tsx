@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { LucideIcon, Menu, Bell, X, ChevronRight, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   LineChart, ShoppingCart, Users, Receipt, Package, ScrollText,
@@ -59,10 +59,11 @@ export function PageHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const user        = useAuthStore((s) => s.user);
   const pathname    = usePathname();
+  const router      = useRouter();
   const isPersonal  = pathname.startsWith('/personal');
   const initial     = user?.name?.charAt(0)?.toUpperCase() ?? 'U';
   const menuLinks   = isPersonal ? PERSONAL_MENU : BUSINESS_MENU;
-  const scopeAccent = isPersonal ? '#7C3AED' : '#C8102E';
+  const scopeAccent = isPersonal ? '#7C3AED' : '#800000';
 
   return (
     <>
@@ -176,6 +177,40 @@ export function PageHeader({
           </div>
         </div>
       </motion.div>
+
+      {/* ── Scope switcher — mobile only ────────────────────────── */}
+      <div className="ph-mobile" style={{
+        marginBottom: actions ? 8 : 'var(--space-4)',
+        justifyContent: 'flex-start',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 20, padding: 3,
+        }}>
+          {([
+            { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: '#800000' },
+            { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: '#7C3AED' },
+          ] as const).map(({ label, href, active, color }) => (
+            <button
+              key={label}
+              onClick={() => router.push(href)}
+              style={{
+                padding: '5px 14px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                fontSize: '0.68rem', fontWeight: 700,
+                background: active ? color : 'transparent',
+                color: active ? '#fff' : 'var(--text-muted)',
+                transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+                boxShadow: active ? `0 2px 8px ${color}40` : 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Mobile actions row */}
       {actions && (
