@@ -41,63 +41,84 @@ function groupByCategory(items: Item[]): GroupedCategory[] {
     .map(([category, data]) => ({ category, ...data }));
 }
 
-function ItemCard({ item, onEdit, onRestock, onDelete, onView }: {
+function ItemCard({ item, onEdit, onRestock, onDelete, onView, variant = 'default' }: {
   item: Item;
   onEdit: (i: Item) => void;
   onRestock: (i: Item) => void;
   onDelete: (i: Item) => void;
   onView: (i: Item) => void;
+  variant?: 'default' | 'out-of-stock';
 }) {
   const isLow = item.quantity_in_stock <= item.reorder_level;
-  const isOut = item.quantity_in_stock === 0;
+  const isOut = variant === 'out-of-stock';
 
   return (
     <div
-      className="mobile-txn-card"
-      style={{ cursor: 'pointer' }}
       onClick={() => onView(item)}
+      style={{
+        cursor: 'pointer',
+        padding: 'var(--space-3) var(--space-4)',
+        borderRadius: 'var(--badge-radius)',
+        background: isOut ? 'transparent' : 'var(--glass-bg-light)',
+        border: isOut ? '1px dashed rgba(239, 68, 68, 0.25)' : '1px solid var(--glass-border)',
+        opacity: isOut ? 0.85 : 1,
+        transition: 'transform 0.15s, border-color 0.2s',
+      }}
     >
-      <div className="mobile-txn-row">
-        <div className="mobile-txn-icon" style={{
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           background: isOut ? 'var(--accent-red-glow)' : isLow ? 'var(--accent-amber-glow)' : 'var(--accent-green-glow)',
         }}>
           {isOut
-            ? <PackageX size={18} style={{ color: 'var(--accent-red)' }} />
-            : <Package size={18} style={{ color: isLow ? 'var(--accent-amber)' : 'var(--accent-green)' }} />
+            ? <PackageX size={16} style={{ color: 'var(--accent-red)' }} />
+            : <Package size={16} style={{ color: isLow ? 'var(--accent-amber)' : 'var(--accent-green)' }} />
           }
         </div>
-        <div className="mobile-txn-info">
-          <div className="mobile-txn-primary">{item.name}</div>
-          <div className="mobile-txn-secondary">
-            {item.sku ? `${item.sku} · ` : ''}{item.supplier || ''}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 'var(--text-sm)', fontWeight: 600, color: isOut ? 'var(--text-secondary)' : 'var(--text-primary)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {item.name}
+          </div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 1 }}>
+            {item.sku ? `${item.sku}` : ''}{item.sku && item.supplier ? ' · ' : ''}{item.supplier || ''}
           </div>
         </div>
-        <div className="mobile-txn-amount" style={{ color: 'var(--text-primary)' }}>
-          {formatNaira(item.selling_price ?? item.purchase_price)}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color: isOut ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+            {formatNaira(item.selling_price ?? item.purchase_price)}
+          </div>
+          <div style={{
+            fontSize: '0.6rem', fontWeight: 700, marginTop: 2,
+            color: isOut ? 'var(--accent-red)' : isLow ? 'var(--accent-amber)' : 'var(--accent-green)',
+          }}>
+            {isOut ? 'OUT' : `${item.quantity_in_stock} pcs`}
+            {isLow && !isOut && <AlertTriangle size={8} style={{ marginLeft: 3, verticalAlign: 'middle' }} />}
+          </div>
         </div>
       </div>
-      <div className="mobile-txn-meta">
-        <span className="mobile-txn-chip" style={{
-          background: isOut ? 'var(--accent-red-glow)' : isLow ? 'var(--accent-amber-glow)' : 'var(--accent-green-glow)',
-          color: isOut ? 'var(--accent-red)' : isLow ? 'var(--accent-amber)' : 'var(--accent-green)',
-        }}>
-          {isOut ? 'Out of stock' : `${item.quantity_in_stock} in stock`}
-          {isLow && !isOut && <AlertTriangle size={9} style={{ marginLeft: 4 }} />}
-        </span>
-        <div className="mobile-txn-actions" onClick={(e) => e.stopPropagation()}>
-          <IfRole minRole="technician">
-            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-              onClick={() => onRestock(item)}>Restock</button>
-            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-              onClick={() => onEdit(item)}>Edit</button>
-          </IfRole>
-          <IfRole minRole="owner">
-            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
-              onClick={() => onDelete(item)}>
-              <Trash2 size={13} />
-            </button>
-          </IfRole>
-        </div>
+      {/* Action row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        gap: 'var(--space-2)', marginTop: 'var(--space-2)', paddingTop: 'var(--space-2)',
+        borderTop: `1px solid ${isOut ? 'rgba(239, 68, 68, 0.1)' : 'var(--glass-border)'}`,
+      }} onClick={(e) => e.stopPropagation()}>
+        <IfRole minRole="technician">
+          <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '3px 10px' }}
+            onClick={() => onRestock(item)}>
+            <Upload size={11} style={{ marginRight: 3 }} />{isOut ? 'Restock Now' : 'Restock'}
+          </button>
+          <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '3px 10px' }}
+            onClick={() => onEdit(item)}>Edit</button>
+        </IfRole>
+        <IfRole minRole="owner">
+          <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '3px 8px', color: 'var(--accent-red)' }}
+            onClick={() => onDelete(item)}>
+            <Trash2 size={12} />
+          </button>
+        </IfRole>
       </div>
     </div>
   );
@@ -116,44 +137,37 @@ function CategorySection({ group, collapsed, onToggle, onEdit, onRestock, onDele
 
   return (
     <div className="liquid-card" style={{ padding: 0, overflow: 'hidden' }}>
-      {/* Category header */}
+      {/* Category header — touch-friendly 48px min height */}
       <button
         onClick={onToggle}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: 'var(--space-4) var(--space-5)', background: 'none', border: 'none',
+          padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none',
           cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)',
+          minHeight: 52,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div style={{
-            width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--accent-primary-glow)',
+            width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--accent-primary-glow)', flexShrink: 0,
           }}>
-            <Package size={18} style={{ color: 'var(--accent-primary)' }} />
+            <Package size={16} style={{ color: 'var(--accent-primary)' }} />
           </div>
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{group.category}</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              {total} item{total !== 1 ? 's' : ''}
-              {group.outOfStock.length > 0 && (
-                <span style={{ color: 'var(--accent-red)', marginLeft: 6 }}>
-                  · {group.outOfStock.length} out
-                </span>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, lineHeight: 1.2 }}>{group.category}</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 1 }}>
+              {group.inStock.length} in stock{group.outOfStock.length > 0 && (
+                <span style={{ color: 'var(--accent-red)' }}> · {group.outOfStock.length} out</span>
               )}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {group.outOfStock.length > 0 && (
-            <span style={{
-              fontSize: '0.6rem', fontWeight: 700, padding: '3px 8px', borderRadius: 50,
-              background: 'var(--accent-red-glow)', color: 'var(--accent-red)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>
-              {group.outOfStock.length} out
-            </span>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700,
+            color: 'var(--text-muted)', minWidth: 20, textAlign: 'right',
+          }}>{total}</span>
           <ChevronDown size={16} style={{
             color: 'var(--text-muted)',
             transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -164,7 +178,7 @@ function CategorySection({ group, collapsed, onToggle, onEdit, onRestock, onDele
 
       {/* Collapsible content */}
       {!collapsed && (
-        <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
+        <div style={{ padding: '0 var(--space-3) var(--space-3)' }}>
           {/* In Stock section */}
           {group.inStock.length > 0 && (
             <div>
@@ -172,8 +186,8 @@ function CategorySection({ group, collapsed, onToggle, onEdit, onRestock, onDele
                 display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
                 padding: 'var(--space-2) var(--space-1)', marginBottom: 'var(--space-2)',
               }}>
-                <PackageCheck size={13} style={{ color: 'var(--accent-green)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <PackageCheck size={12} style={{ color: 'var(--accent-green)' }} />
+                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   In Stock ({group.inStock.length})
                 </span>
               </div>
@@ -185,21 +199,34 @@ function CategorySection({ group, collapsed, onToggle, onEdit, onRestock, onDele
             </div>
           )}
 
-          {/* Out of Stock section */}
+          {/* Out of Stock section — visually distinct */}
           {group.outOfStock.length > 0 && (
-            <div style={{ marginTop: group.inStock.length > 0 ? 'var(--space-4)' : 0 }}>
+            <div style={{
+              marginTop: group.inStock.length > 0 ? 'var(--space-4)' : 0,
+              background: 'rgba(239, 68, 68, 0.04)',
+              border: '1px dashed rgba(239, 68, 68, 0.2)',
+              borderRadius: 'var(--badge-radius)',
+              padding: 'var(--space-3)',
+            }}>
+              {/* Out of stock header banner */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                padding: 'var(--space-2) var(--space-1)', marginBottom: 'var(--space-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: 'var(--space-2) var(--space-3)',
+                marginBottom: 'var(--space-3)',
+                background: 'rgba(239, 68, 68, 0.08)',
+                borderRadius: 8,
               }}>
-                <PackageX size={13} style={{ color: 'var(--accent-red)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-red)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Out of Stock ({group.outOfStock.length})
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <PackageX size={14} style={{ color: 'var(--accent-red)' }} />
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--accent-red)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Out of Stock ({group.outOfStock.length})
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.55rem', color: 'var(--accent-red)', opacity: 0.7 }}>Needs restock</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 {group.outOfStock.map(item => (
-                  <ItemCard key={item.id} item={item} onEdit={onEdit} onRestock={onRestock} onDelete={onDelete} onView={onView} />
+                  <ItemCard key={item.id} item={item} variant="out-of-stock" onEdit={onEdit} onRestock={onRestock} onDelete={onDelete} onView={onView} />
                 ))}
               </div>
             </div>
@@ -372,7 +399,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }} className="stat-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }} className="stat-grid stat-grid-4">
         <StatWidget label="Total Items" value={String(totalItems)} numericValue={totalItems} numericFormat="number" accent="neutral" />
         <StatWidget label="Stock Value" value={formatNaira(totalValue)} numericValue={totalValue} numericFormat="currency" accent="neutral" />
         <StatWidget label="Low Stock" value={String(lowCount)} numericValue={lowCount} numericFormat="number" accent={lowCount > 5 ? 'loss' : 'warning'} />
