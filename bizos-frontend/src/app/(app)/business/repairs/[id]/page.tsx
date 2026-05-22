@@ -236,7 +236,7 @@ export default function RepairDetailPage() {
         <button
           className="btn-ghost"
           onClick={() => router.back()}
-          style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', fontSize: 'var(--text-sm)' }}
+          style={{ gap: 'var(--space-2)', marginBottom: 'var(--space-3)', fontSize: 'var(--text-sm)', minHeight: 36 }}
         >
           <ArrowLeft size={14} /> Back
         </button>
@@ -249,27 +249,27 @@ export default function RepairDetailPage() {
           <Badge variant={job.status} />
         </div>
 
-        {/* Action buttons — horizontal scroll on mobile */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
-          <button className="btn-ghost" onClick={handlePrint} style={{ gap: 6, flexShrink: 0 }}>
-            <Printer size={14} /> Print
+        {/* Action buttons — horizontal scroll, touch-optimized */}
+        <div className="repair-action-btns" style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+          <button className="btn-ghost" onClick={handlePrint} style={{ gap: 6, flexShrink: 0, minHeight: 40, padding: '0 12px' }}>
+            <Printer size={15} /> Print
           </button>
-          <button className="btn-ghost" onClick={handleReceipt} style={{ gap: 6, flexShrink: 0 }}>
-            <FileText size={14} /> Receipt
+          <button className="btn-ghost" onClick={handleReceipt} style={{ gap: 6, flexShrink: 0, minHeight: 40, padding: '0 12px' }}>
+            <FileText size={15} /> Receipt
           </button>
           <IfRole minRole="technician">
             {canModify && (
-              <button className="btn-ghost" onClick={() => setEditingJob(true)} style={{ gap: 6, flexShrink: 0 }}>
-                <Pencil size={14} /> Edit
+              <button className="btn-ghost" onClick={() => setEditingJob(true)} style={{ gap: 6, flexShrink: 0, minHeight: 40, padding: '0 12px' }}>
+                <Pencil size={15} /> Edit
               </button>
             )}
             {job.status !== 'cancelled' && job.status !== 'delivered' && (
               <button
                 className="btn-ghost"
                 onClick={() => { setCancelReason(''); setCancelDepositResolution(null); setShowCancel(true); }}
-                style={{ gap: 6, color: 'var(--accent-red)', flexShrink: 0 }}
+                style={{ gap: 6, color: 'var(--accent-red)', flexShrink: 0, minHeight: 40, padding: '0 12px' }}
               >
-                <XCircle size={14} /> Cancel
+                <XCircle size={15} /> Cancel
               </button>
             )}
           </IfRole>
@@ -283,28 +283,28 @@ export default function RepairDetailPage() {
         <hr />
       </div>
 
-      {/* Status Progress Bar — horizontally scrollable on mobile */}
-      <div className="card no-print" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', minWidth: 'max-content', gap: 0 }}>
+      {/* Status Progress Bar — responsive */}
+      <div className="card no-print" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' as 'touch' }}>
+        <div className="status-progress-row" style={{ display: 'flex', alignItems: 'center', minWidth: 'min-content', gap: 0 }}>
           {STATUS_ORDER.map((s, i) => {
             const done = i <= currentStepIndex;
             const isCurrent = i === currentStepIndex;
             const isLast = i === STATUS_ORDER.length - 1;
             return (
-              <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+              <div key={s} style={{ display: 'flex', alignItems: 'center', flex: isLast ? '0 0 auto' : '1 1 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
                   <div style={{
-                    width: 28, height: 28, borderRadius: '50%',
+                    width: 24, height: 24, borderRadius: '50%',
                     background: done ? 'var(--accent-primary)' : 'var(--bg-overlay)',
                     border: `2px solid ${done ? 'var(--accent-primary)' : 'var(--border-default)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, color: done ? 'white' : 'var(--text-muted)',
+                    fontSize: 10, color: done ? 'white' : 'var(--text-muted)',
                     fontWeight: 700, flexShrink: 0,
                   }}>
                     {i + 1}
                   </div>
                   <span style={{
-                    whiteSpace: 'nowrap', fontSize: '0.65rem',
+                    whiteSpace: 'nowrap', fontSize: '0.6rem',
                     color: done ? 'var(--accent-primary)' : 'var(--text-muted)',
                     fontWeight: isCurrent ? 700 : 400,
                   }}>
@@ -313,7 +313,7 @@ export default function RepairDetailPage() {
                 </div>
                 {!isLast && (
                   <div style={{
-                    width: 32, height: 2, marginBottom: 18, marginLeft: 4, marginRight: 4, flexShrink: 0,
+                    flex: 1, minWidth: 12, height: 2, marginBottom: 16, marginLeft: 3, marginRight: 3,
                     background: i < currentStepIndex ? 'var(--accent-primary)' : 'var(--border-default)',
                   }} />
                 )}
@@ -491,9 +491,9 @@ export default function RepairDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
               <p className="section-label" style={{ marginBottom: 0 }}>Parts Used</p>
               {canModify && (
-                <button className="btn-ghost" style={{ gap: 'var(--space-2)', fontSize: 'var(--text-xs)', padding: 'var(--space-1) var(--space-3)' }}
+                <button className="btn-ghost" style={{ gap: 'var(--space-2)', fontSize: 'var(--text-xs)', padding: 'var(--space-2) var(--space-3)', minHeight: 36 }}
                   onClick={() => setAddingPart(true)}>
-                  <Plus size={12} /> Add Part
+                  <Plus size={13} /> Add Part
                 </button>
               )}
             </div>
@@ -503,67 +503,127 @@ export default function RepairDetailPage() {
                 No parts added yet.
               </p>
             ) : (
-              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as 'touch' }}>
-                <table className="data-table" style={{ minWidth: 420 }}>
-                  <thead>
-                    <tr>
-                      <th>Part</th>
-                      <th className="numeric">Qty</th>
-                      <th className="numeric">Unit Cost</th>
-                      <th className="numeric">Total</th>
-                      <th>Flag</th>
-                      {canModify && <th />}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {job.parts.map((part) => (
-                      <tr key={part.id}>
-                        <td style={{ fontWeight: 500, minWidth: 100 }}>{part.item_name ?? '—'}</td>
-                        <td className="numeric" style={{ whiteSpace: 'nowrap' }}>×{part.quantity}</td>
-                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
-                          {formatNaira(part.unit_cost)}
-                        </td>
-                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
-                          {formatNaira(part.unit_cost * part.quantity)}
-                        </td>
-                        <td>
-                          {part.damaged && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)', color: 'var(--accent-amber)', fontSize: 'var(--text-xs)' }}>
-                              <AlertTriangle size={12} /> Damaged
-                            </span>
-                          )}
-                        </td>
-                        {canModify && (
-                          <td>
-                            <button
-                              className="btn-ghost no-print"
-                              style={{ padding: 'var(--space-1)', color: 'var(--accent-red)' }}
-                              onClick={() => handleRemovePart(part.id)}
-                              disabled={removingPartId === part.id}
-                            >
-                              {removingPartId === part.id
-                                ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                                : <Trash2 size={13} />
-                              }
-                            </button>
-                          </td>
-                        )}
+              <>
+                {/* Desktop table */}
+                <div className="parts-table-desktop" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as 'touch' }}>
+                  <table className="data-table" style={{ minWidth: 420 }}>
+                    <thead>
+                      <tr>
+                        <th>Part</th>
+                        <th className="numeric">Qty</th>
+                        <th className="numeric">Unit Cost</th>
+                        <th className="numeric">Total</th>
+                        <th>Flag</th>
+                        {canModify && <th />}
                       </tr>
+                    </thead>
+                    <tbody>
+                      {job.parts.map((part) => (
+                        <tr key={part.id}>
+                          <td style={{ fontWeight: 500, minWidth: 100 }}>{part.item_name ?? '—'}</td>
+                          <td className="numeric" style={{ whiteSpace: 'nowrap' }}>×{part.quantity}</td>
+                          <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                            {formatNaira(part.unit_cost)}
+                          </td>
+                          <td className="numeric" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                            {formatNaira(part.unit_cost * part.quantity)}
+                          </td>
+                          <td>
+                            {part.damaged && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)', color: 'var(--accent-amber)', fontSize: 'var(--text-xs)' }}>
+                                <AlertTriangle size={12} /> Damaged
+                              </span>
+                            )}
+                          </td>
+                          {canModify && (
+                            <td>
+                              <button
+                                className="btn-ghost no-print"
+                                style={{ padding: 'var(--space-1)', color: 'var(--accent-red)' }}
+                                onClick={() => handleRemovePart(part.id)}
+                                disabled={removingPartId === part.id}
+                              >
+                                {removingPartId === part.id
+                                  ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                                  : <Trash2 size={13} />
+                                }
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={canModify ? 3 : 3} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                          Total Parts Cost
+                        </td>
+                        <td className="numeric" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          {formatNaira(job.parts_cost)}
+                        </td>
+                        <td colSpan={canModify ? 2 : 1} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="parts-cards-mobile" style={{ display: 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {job.parts.map((part) => (
+                      <div key={part.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                        padding: 'var(--space-3)', borderRadius: 12,
+                        background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)',
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {part.item_name ?? '—'}
+                          </p>
+                          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>×{part.quantity}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                              @ {formatNaira(part.unit_cost)}
+                            </span>
+                            {part.damaged && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--accent-amber)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+                                <AlertTriangle size={11} /> Damaged
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {formatNaira(part.unit_cost * part.quantity)}
+                        </span>
+                        {canModify && (
+                          <button
+                            className="btn-ghost no-print"
+                            style={{ padding: 6, color: 'var(--accent-red)', flexShrink: 0, minHeight: 36, minWidth: 36, justifyContent: 'center' }}
+                            onClick={() => handleRemovePart(part.id)}
+                            disabled={removingPartId === part.id}
+                          >
+                            {removingPartId === part.id
+                              ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                              : <Trash2 size={14} />
+                            }
+                          </button>
+                        )}
+                      </div>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colSpan={canModify ? 3 : 3} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                        Total Parts Cost
-                      </td>
-                      <td className="numeric" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                        {formatNaira(job.parts_cost)}
-                      </td>
-                      <td colSpan={canModify ? 2 : 1} />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                  </div>
+                  {/* Total row */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: 'var(--space-3) var(--space-1)', marginTop: 'var(--space-2)',
+                    borderTop: '1px solid var(--border-subtle)',
+                  }}>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Total Parts Cost</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {formatNaira(job.parts_cost)}
+                    </span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -760,6 +820,20 @@ export default function RepairDetailPage() {
             labor_charge: job.labor_charge,
             total_charge: job.total_charge,
           }}
+          onAddPart={async (data) => {
+            await repairsApi.addPart(job.id, data);
+            qc.invalidateQueries({ queryKey: ['repair', id] });
+            qc.invalidateQueries({ queryKey: ['repairs'] });
+            addToast({ type: 'success', title: 'Part added' });
+          }}
+          existingParts={job.parts.map(p => ({
+            item_id: p.item_id as string,
+            item_name: p.item_name ?? 'Unknown',
+            quantity: p.quantity,
+            unit_cost: Number(p.unit_cost),
+            selling_price: p.selling_price ? Number(p.selling_price) : null,
+            damaged: p.damaged,
+          }))}
         />
       </Modal>
     </>

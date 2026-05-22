@@ -2268,6 +2268,33 @@ select.input option {
 
   .repair-detail-actions::-webkit-scrollbar { display: none; }
 
+  /* ── Parts: table on desktop, cards on mobile ── */
+  .parts-table-desktop {
+    display: none !important;
+  }
+
+  .parts-cards-mobile {
+    display: block !important;
+  }
+
+  /* ── Repair action buttons: scrollable, touch-friendly ── */
+  .repair-action-btns {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .repair-action-btns::-webkit-scrollbar { display: none; }
+
+  .repair-action-btns .btn-ghost {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: var(--text-xs) !important;
+  }
+
+  /* ── Edit form charges grid: stack on narrow screens ── */
+  .repair-charges-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
   .repair-detail-actions .btn-ghost,
   .repair-detail-actions .btn-primary,
   .repair-detail-actions .btn-danger {

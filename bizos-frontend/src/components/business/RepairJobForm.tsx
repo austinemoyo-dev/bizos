@@ -13,9 +13,11 @@ interface RepairJobFormProps {
   onSubmit:     (data: RepairJobCreate) => Promise<void>;
   onCancel:     () => void;
   initialValues?: Partial<RepairJobCreate>;
+  onAddPart?:   (data: AddPartPayload) => Promise<void>;
+  existingParts?: Array<{ item_id: string; item_name: string; quantity: number; unit_cost: number; selling_price: number | null; damaged: boolean }>;
 }
 
-export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFormProps) {
+export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, existingParts }: RepairJobFormProps) {
   const { deviceOptions, customDeviceTypes, addDeviceType, removeDeviceType } = useDeviceTypes();
 
   const [form, setForm] = useState<RepairJobCreate>({
@@ -46,6 +48,8 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
   const [newDevInput, setNewDevInput]     = useState('');
   const [newDevHasModel, setNewDevHasModel] = useState(false);
   const [addDevError, setAddDevError]     = useState('');
+  const [addingPartInline, setAddingPartInline] = useState(false);
+  const [recentlyAddedParts, setRecentlyAddedParts] = useState<Array<{ item_id: string; name: string; quantity: number; selling_price: number }>>([]);
 
   const { data: inventoryData } = useQuery({
     queryKey: ['inventory', 'active'],
@@ -83,10 +87,40 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
     });
   };
 
-  const handleAddPart = (itemId: string) => {
+  const handleAddPart = async (itemId: string) => {
     if (!itemId) return;
     const item = inventoryItems.find(i => i.id === itemId);
     if (!item) return;
+
+    // In edit mode, add parts via the API directly
+    if (initialValues && onAddPart) {
+      // Check if already in existing or recently added parts
+      if (existingParts?.some(p => p.item_id === itemId)) return;
+      if (recentlyAddedParts.some(p => p.item_id === itemId)) return;
+      setAddingPartInline(true);
+      try {
+        await onAddPart({
+          item_id:       item.id,
+          quantity:      1,
+          unit_cost:     item.purchase_price,
+          selling_price: item.selling_price || item.purchase_price,
+          damaged:       false,
+        });
+        setRecentlyAddedParts(prev => [...prev, {
+          item_id: item.id,
+          name: item.name,
+          quantity: 1,
+          selling_price: item.selling_price || item.purchase_price,
+        }]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to add part');
+      } finally {
+        setAddingPartInline(false);
+      }
+      return;
+    }
+
+    // In create mode, collect parts locally
     if (form.parts?.some((p: any) => p.item_id === itemId)) return;
     const newPart: AddPartPayload & { _name: string } = {
       item_id:       item.id,
@@ -353,18 +387,23 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
       )}
 
       {/* Parts picker (for phone/tablet/laptop/computer and custom with hasModel) */}
-      {showModel && !initialValues && (
+      {showModel && (
         <div style={{
           background: 'var(--bg-elevated)', padding: 'var(--space-3)',
           borderRadius: 14, marginBottom: 'var(--space-4)',
           border: '1px solid var(--border-subtle)',
         }}>
-          <label className="form-label">Device Issue / Model (from Inventory) *</label>
+          <label className="form-label">
+            {initialValues ? 'Add Parts / Items from Inventory' : 'Device Issue / Model (from Inventory) *'}
+          </label>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>
-            Select part(s) — this sets the model and automatically deducts stock.
+            {initialValues
+              ? 'Select new parts to add to this job — stock will be deducted automatically.'
+              : 'Select part(s) — this sets the model and automatically deducts stock.'}
           </p>
           <select className="input" value=""
             onChange={(e) => handleAddPart(e.target.value)}
+            disabled={addingPartInline}
             style={{ marginBottom: 'var(--space-3)' }}
           >
             <option value="" disabled>+ Select issue / part from inventory...</option>
@@ -375,7 +414,60 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
             ))}
           </select>
 
-          {form.parts && form.parts.length > 0 && (
+          {addingPartInline && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) 0' }}>
+              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Adding part...</span>
+            </div>
+          )}
+
+          {/* Show existing parts (read-only) in edit mode */}
+          {initialValues && existingParts && existingParts.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-2)' }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Current Parts</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {existingParts.map((part) => (
+                  <div key={part.item_id} style={{
+                    display: 'flex', gap: 'var(--space-2)', alignItems: 'center',
+                    padding: '6px 10px', borderRadius: 8,
+                    background: 'var(--bg-overlay)', fontSize: 'var(--text-xs)',
+                  }}>
+                    <span style={{ flex: 1, fontWeight: 500, color: 'var(--text-primary)' }}>{part.item_name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>×{part.quantity}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
+                      ₦{((part.selling_price ?? part.unit_cost) * part.quantity).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Show recently added parts in edit mode */}
+          {initialValues && recentlyAddedParts.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-2)' }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Just Added</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {recentlyAddedParts.map((part) => (
+                  <div key={part.item_id} style={{
+                    display: 'flex', gap: 'var(--space-2)', alignItems: 'center',
+                    padding: '6px 10px', borderRadius: 8,
+                    background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                    fontSize: 'var(--text-xs)',
+                  }}>
+                    <span style={{ flex: 1, fontWeight: 500, color: 'var(--text-primary)' }}>{part.name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>×{part.quantity}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
+                      ₦{(part.selling_price * part.quantity).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Create mode: editable parts list */}
+          {!initialValues && form.parts && form.parts.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {form.parts.map((part: any, idx) => (
                 <div key={part.item_id} style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -416,7 +508,7 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues }: RepairJobFo
       )}
 
       {/* Charges — auto-fit wraps to 2-col on narrow modal, 3-col on wider screens */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+      <div className="repair-charges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
         <div className="form-group">
           <CurrencyInput label="Labor Charge" value={form.labor_charge}
             onChange={(v) => {
