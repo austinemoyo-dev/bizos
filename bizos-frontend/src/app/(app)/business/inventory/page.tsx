@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { inventoryApi } from '@/lib/api/inventory';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable, Column } from '@/components/shared/DataTable';
 import { Modal } from '@/components/shared/Modal';
 import { SlidePanel } from '@/components/shared/SlidePanel';
 import { StatWidget } from '@/components/shared/StatWidget';
@@ -15,32 +14,201 @@ import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { formatNaira } from '@/lib/format';
 import { Item, ItemCreate, RestockPayload } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package, Trash2 } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Loader2, ExternalLink, Download, Upload, Package, Trash2, ChevronDown, PackageX, PackageCheck } from 'lucide-react';
 import { useBottomBar } from '@/lib/hooks/useBottomBar';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { exportCsv } from '@/lib/exportCsv';
 import { IfRole } from '@/components/shared/IfRole';
 
-const columns: Column<Item>[] = [
-  { key: 'name', label: 'Item Name' },
-  { key: 'sku', label: 'SKU', render: (r) => <span className="muted">{r.sku ?? '—'}</span> },
-  { key: 'category', label: 'Category' },
-  {
-    key: 'quantity_in_stock',
-    label: 'Stock',
-    numeric: true,
-    render: (r) => (
-      <span style={{ color: r.quantity_in_stock <= r.reorder_level ? 'var(--accent-amber)' : 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
-        {r.quantity_in_stock}
-        {r.quantity_in_stock <= r.reorder_level && <AlertTriangle size={10} style={{ marginLeft: 4 }} />}
-      </span>
-    ),
-  },
-  { key: 'reorder_level', label: 'Reorder', numeric: true },
-  { key: 'purchase_price', label: 'Purchase', numeric: true, render: (r) => formatNaira(r.purchase_price) },
-  { key: 'selling_price', label: 'Selling', numeric: true, render: (r) => r.selling_price ? formatNaira(r.selling_price) : '—' },
-];
+interface GroupedCategory {
+  category: string;
+  inStock: Item[];
+  outOfStock: Item[];
+}
+
+function groupByCategory(items: Item[]): GroupedCategory[] {
+  const map = new Map<string, { inStock: Item[]; outOfStock: Item[] }>();
+  for (const item of items) {
+    const cat = item.category || 'Uncategorized';
+    if (!map.has(cat)) map.set(cat, { inStock: [], outOfStock: [] });
+    const group = map.get(cat)!;
+    if (item.quantity_in_stock > 0) group.inStock.push(item);
+    else group.outOfStock.push(item);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([category, data]) => ({ category, ...data }));
+}
+
+function ItemCard({ item, onEdit, onRestock, onDelete, onView }: {
+  item: Item;
+  onEdit: (i: Item) => void;
+  onRestock: (i: Item) => void;
+  onDelete: (i: Item) => void;
+  onView: (i: Item) => void;
+}) {
+  const isLow = item.quantity_in_stock <= item.reorder_level;
+  const isOut = item.quantity_in_stock === 0;
+
+  return (
+    <div
+      className="mobile-txn-card"
+      style={{ cursor: 'pointer' }}
+      onClick={() => onView(item)}
+    >
+      <div className="mobile-txn-row">
+        <div className="mobile-txn-icon" style={{
+          background: isOut ? 'var(--accent-red-glow)' : isLow ? 'var(--accent-amber-glow)' : 'var(--accent-green-glow)',
+        }}>
+          {isOut
+            ? <PackageX size={18} style={{ color: 'var(--accent-red)' }} />
+            : <Package size={18} style={{ color: isLow ? 'var(--accent-amber)' : 'var(--accent-green)' }} />
+          }
+        </div>
+        <div className="mobile-txn-info">
+          <div className="mobile-txn-primary">{item.name}</div>
+          <div className="mobile-txn-secondary">
+            {item.sku ? `${item.sku} · ` : ''}{item.supplier || ''}
+          </div>
+        </div>
+        <div className="mobile-txn-amount" style={{ color: 'var(--text-primary)' }}>
+          {formatNaira(item.selling_price ?? item.purchase_price)}
+        </div>
+      </div>
+      <div className="mobile-txn-meta">
+        <span className="mobile-txn-chip" style={{
+          background: isOut ? 'var(--accent-red-glow)' : isLow ? 'var(--accent-amber-glow)' : 'var(--accent-green-glow)',
+          color: isOut ? 'var(--accent-red)' : isLow ? 'var(--accent-amber)' : 'var(--accent-green)',
+        }}>
+          {isOut ? 'Out of stock' : `${item.quantity_in_stock} in stock`}
+          {isLow && !isOut && <AlertTriangle size={9} style={{ marginLeft: 4 }} />}
+        </span>
+        <div className="mobile-txn-actions" onClick={(e) => e.stopPropagation()}>
+          <IfRole minRole="technician">
+            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
+              onClick={() => onRestock(item)}>Restock</button>
+            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
+              onClick={() => onEdit(item)}>Edit</button>
+          </IfRole>
+          <IfRole minRole="owner">
+            <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
+              onClick={() => onDelete(item)}>
+              <Trash2 size={13} />
+            </button>
+          </IfRole>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategorySection({ group, collapsed, onToggle, onEdit, onRestock, onDelete, onView }: {
+  group: GroupedCategory;
+  collapsed: boolean;
+  onToggle: () => void;
+  onEdit: (i: Item) => void;
+  onRestock: (i: Item) => void;
+  onDelete: (i: Item) => void;
+  onView: (i: Item) => void;
+}) {
+  const total = group.inStock.length + group.outOfStock.length;
+
+  return (
+    <div className="liquid-card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Category header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 'var(--space-4) var(--space-5)', background: 'none', border: 'none',
+          cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--accent-primary-glow)',
+          }}>
+            <Package size={18} style={{ color: 'var(--accent-primary)' }} />
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{group.category}</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              {total} item{total !== 1 ? 's' : ''}
+              {group.outOfStock.length > 0 && (
+                <span style={{ color: 'var(--accent-red)', marginLeft: 6 }}>
+                  · {group.outOfStock.length} out
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {group.outOfStock.length > 0 && (
+            <span style={{
+              fontSize: '0.6rem', fontWeight: 700, padding: '3px 8px', borderRadius: 50,
+              background: 'var(--accent-red-glow)', color: 'var(--accent-red)',
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+            }}>
+              {group.outOfStock.length} out
+            </span>
+          )}
+          <ChevronDown size={16} style={{
+            color: 'var(--text-muted)',
+            transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          }} />
+        </div>
+      </button>
+
+      {/* Collapsible content */}
+      {!collapsed && (
+        <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
+          {/* In Stock section */}
+          {group.inStock.length > 0 && (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-1)', marginBottom: 'var(--space-2)',
+              }}>
+                <PackageCheck size={13} style={{ color: 'var(--accent-green)' }} />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  In Stock ({group.inStock.length})
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {group.inStock.map(item => (
+                  <ItemCard key={item.id} item={item} onEdit={onEdit} onRestock={onRestock} onDelete={onDelete} onView={onView} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Out of Stock section */}
+          {group.outOfStock.length > 0 && (
+            <div style={{ marginTop: group.inStock.length > 0 ? 'var(--space-4)' : 0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-1)', marginBottom: 'var(--space-2)',
+              }}>
+                <PackageX size={13} style={{ color: 'var(--accent-red)' }} />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-red)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Out of Stock ({group.outOfStock.length})
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {group.outOfStock.map(item => (
+                  <ItemCard key={item.id} item={item} onEdit={onEdit} onRestock={onRestock} onDelete={onDelete} onView={onView} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function InventoryPage() {
   const { addToast } = useUIStore();
@@ -66,6 +234,7 @@ export default function InventoryPage() {
   const [deleting, setDeleting] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearch = useDebounce(search, 300);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ['inventory', debouncedSearch],
@@ -81,6 +250,17 @@ export default function InventoryPage() {
   const totalItems = data?.total ?? 0;
   const totalValue = (data?.items ?? []).reduce((s, i) => s + Number(i.purchase_price) * Number(i.quantity_in_stock), 0);
   const lowCount = lowStockData?.length ?? 0;
+  const outOfStockCount = useMemo(() => (data?.items ?? []).filter(i => i.quantity_in_stock === 0).length, [data]);
+
+  const groupedItems = useMemo(() => groupByCategory(items), [items]);
+
+  const toggleCategory = (cat: string) => {
+    setCollapsedCategories(prev => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
 
   const handleCreate = async (formData: ItemCreate) => {
     await inventoryApi.create(formData);
@@ -163,6 +343,8 @@ export default function InventoryPage() {
     }
   };
 
+  const handleViewItem = (item: Item) => router.push(`/business/inventory/${item.id}`);
+
   return (
     <div>
       {/* Desktop header */}
@@ -190,10 +372,11 @@ export default function InventoryPage() {
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }} className="stat-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }} className="stat-grid">
         <StatWidget label="Total Items" value={String(totalItems)} numericValue={totalItems} numericFormat="number" accent="neutral" />
         <StatWidget label="Stock Value" value={formatNaira(totalValue)} numericValue={totalValue} numericFormat="currency" accent="neutral" />
         <StatWidget label="Low Stock" value={String(lowCount)} numericValue={lowCount} numericFormat="number" accent={lowCount > 5 ? 'loss' : 'warning'} />
+        <StatWidget label="Out of Stock" value={String(outOfStockCount)} numericValue={outOfStockCount} numericFormat="number" accent={outOfStockCount > 0 ? 'loss' : 'profit'} />
       </div>
 
       {/* Tabs */}
@@ -206,85 +389,51 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Desktop-only search */}
+      {/* Search */}
       <div className="desktop-search" style={{ position: 'relative', marginBottom: 'var(--space-4)', maxWidth: 360 }}>
         <Search size={14} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
         <input className="input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items..." style={{ paddingLeft: 'calc(var(--space-3) + 14px + var(--space-2))' }} />
       </div>
 
-      {/* Table with action column */}
-      <div className="liquid-card-flush" style={{ padding: 0 }}>
-        <DataTable
-          columns={[
-            ...columns,
-            {
-              key: 'id',
-              label: 'Actions',
-              render: (item) => (
-                <div style={{ display: 'flex', gap: 'var(--space-2)' }} onClick={(e) => e.stopPropagation()}>
-                  <IfRole minRole="technician">
-                    <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-                      onClick={() => setEditItem(item)}>Edit</button>
-                    <button className="btn-primary" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-                      onClick={() => setRestockItem(item)}>Restock</button>
-                  </IfRole>
-                  <IfRole minRole="owner">
-                    <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
-                      onClick={() => setDeleteItem(item)} title="Delete item">
-                      <Trash2 size={13} />
-                    </button>
-                  </IfRole>
-                  <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px' }}
-                    onClick={() => router.push(`/business/inventory/${item.id}`)}>
-                    <ExternalLink size={12} />
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-          data={items}
-          loading={isLoading}
-          emptyMessage="No inventory items found"
-          emptyAction={{ label: 'Add first item', onClick: () => setShowAdd(true) }}
-          keyExtractor={(r) => r.id}
-          mobileRender={(r) => (
-            <div className="mobile-txn-card" onClick={() => router.push(`/business/inventory/${r.id}`)}>
-              <div className="mobile-txn-row">
-                <div className="mobile-txn-icon" style={{ background: r.quantity_in_stock <= r.reorder_level ? 'var(--accent-red-glow)' : 'var(--accent-green-glow)' }}>
-                  <Package size={18} style={{ color: r.quantity_in_stock <= r.reorder_level ? 'var(--accent-red)' : 'var(--accent-green)' }} />
-                </div>
-                <div className="mobile-txn-info">
-                  <div className="mobile-txn-primary">{r.name}</div>
-                  <div className="mobile-txn-secondary">{r.category}{r.supplier ? ` · ${r.supplier}` : ''}</div>
-                </div>
-                <div className="mobile-txn-amount" style={{ color: 'var(--text-primary)' }}>
-                  {formatNaira(r.selling_price ?? r.purchase_price)}
-                </div>
-              </div>
-              <div className="mobile-txn-meta">
-                <span className="mobile-txn-chip" style={{
-                  background: r.quantity_in_stock <= r.reorder_level ? 'var(--accent-red-glow)' : 'var(--accent-green-glow)',
-                  color: r.quantity_in_stock <= r.reorder_level ? 'var(--accent-red)' : 'var(--accent-green)',
-                }}>
-                  {r.quantity_in_stock} in stock
-                </span>
-                <div className="mobile-txn-actions" onClick={(e) => e.stopPropagation()}>
-                  <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-                    onClick={() => setRestockItem(r)}>Restock</button>
-                  <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 10px' }}
-                    onClick={() => setEditItem(r)}>Edit</button>
-                  <IfRole minRole="owner">
-                    <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 8px', color: 'var(--accent-red)' }}
-                      onClick={() => setDeleteItem(r)}>
-                      <Trash2 size={13} />
-                    </button>
-                  </IfRole>
+      {/* Grouped inventory */}
+      {isLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="liquid-card" style={{ padding: 'var(--space-5)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <div className="skeleton" style={{ width: 36, height: 36, borderRadius: 12 }} />
+                <div>
+                  <div className="skeleton" style={{ width: 120, height: 14, marginBottom: 6 }} />
+                  <div className="skeleton" style={{ width: 80, height: 10 }} />
                 </div>
               </div>
             </div>
-          )}
-        />
-      </div>
+          ))}
+        </div>
+      ) : groupedItems.length === 0 ? (
+        <div className="liquid-card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+          <PackageX size={40} style={{ color: 'var(--text-muted)', margin: '0 auto var(--space-4)' }} />
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>No inventory items found</p>
+          <button className="btn-primary" onClick={() => setShowAdd(true)}>
+            <Plus size={16} /> Add first item
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {groupedItems.map(group => (
+            <CategorySection
+              key={group.category}
+              group={group}
+              collapsed={collapsedCategories.has(group.category)}
+              onToggle={() => toggleCategory(group.category)}
+              onEdit={setEditItem}
+              onRestock={setRestockItem}
+              onDelete={setDeleteItem}
+              onView={handleViewItem}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="bsb-spacer" />
 
