@@ -175,9 +175,27 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
       };
 
       if (showModel && !initialValues) {
-        const issueNames = (form.parts || []).map((p: any) => p._name).join(', ');
-        payload.device_model      = issueNames;
-        payload.fault_description = issueNames;
+        const partNames = (form.parts || []).map((p: any) => p._name);
+        const fullIssueNames = partNames.join(', ');
+        payload.fault_description = fullIssueNames;
+
+        // device_model has a 100-char backend limit — truncate smartly
+        if (fullIssueNames.length <= 100) {
+          payload.device_model = fullIssueNames;
+        } else {
+          let truncated = '';
+          let included = 0;
+          for (const name of partNames) {
+            const next = truncated ? `${truncated}, ${name}` : name;
+            if (next.length > 90) break;          // leave room for suffix
+            truncated = next;
+            included++;
+          }
+          const remaining = partNames.length - included;
+          payload.device_model = remaining > 0
+            ? `${truncated} +${remaining} more`
+            : truncated;
+        }
       }
 
       // For custom device types, prefix the custom name into device_model
@@ -386,8 +404,8 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
         </div>
       )}
 
-      {/* Parts picker (for phone/tablet/laptop/computer and custom with hasModel) */}
-      {showModel && (
+      {/* Parts picker — always visible in edit mode, device-type dependent in create mode */}
+      {(showModel || initialValues) && (
         <div style={{
           background: 'var(--bg-elevated)', padding: 'var(--space-3)',
           borderRadius: 14, marginBottom: 'var(--space-4)',
