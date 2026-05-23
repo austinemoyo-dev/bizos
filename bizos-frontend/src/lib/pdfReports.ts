@@ -132,12 +132,13 @@ export async function generateRepairReceipt(job: {
   fault_description?: string;
   labor_charge: number;
   total_charge: number;
+  amount_paid: number;
   parts_cost: number;
   profit: number;
   status: string;
   received_at: string;
   delivered_at?: string;
-  parts: { item_name: string; quantity: number; unit_cost: number; damaged: boolean }[];
+  parts: { item_name: string; quantity: number; unit_cost: number; selling_price?: number; damaged: boolean }[];
 }) {
   const { jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
@@ -198,11 +199,11 @@ export async function generateRepairReceipt(job: {
 
     autoTable(doc, {
       startY: y,
-      head: [['Part', 'Qty', 'Cost']],
+      head: [['Part', 'Qty', 'Price']],
       body: job.parts.map(p => [
         p.damaged ? `${p.item_name} (dmg)` : p.item_name,
         `x${p.quantity}`,
-        fmt(p.unit_cost * p.quantity),
+        fmt((p.selling_price || p.unit_cost) * p.quantity),
       ]),
       styles: { fontSize: 6.5, cellPadding: 1.5 },
       headStyles: { fillColor: [60, 50, 45], textColor: [255, 255, 255], fontSize: 6.5 },
@@ -220,9 +221,11 @@ export async function generateRepairReceipt(job: {
   doc.line(6, y, 74, y);
   y += 4;
 
+  // Customer-facing: show selling prices, not purchase costs
+  const partsCharge = job.parts.reduce((sum, p) => sum + (p.selling_price || p.unit_cost) * p.quantity, 0);
   const totals = [
     { label: 'Labor Charge', value: fmt(job.labor_charge) },
-    { label: 'Parts Cost', value: fmt(job.parts_cost) },
+    { label: 'Parts', value: fmt(partsCharge) },
   ];
   totals.forEach(({ label, value }) => {
     doc.setFontSize(7.5);
@@ -242,7 +245,32 @@ export async function generateRepairReceipt(job: {
   doc.setTextColor(...RED);
   doc.text('TOTAL', 6, y);
   doc.text(fmt(job.total_charge), 74, y, { align: 'right' });
-  y += 8;
+  y += 5;
+
+  // Amount paid & balance
+  const balance = job.total_charge - (job.amount_paid || 0);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 70, 60);
+  doc.text('Amount Paid', 6, y);
+  doc.text(fmt(job.amount_paid || 0), 74, y, { align: 'right' });
+  y += 4;
+
+  if (balance > 0) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...RED);
+    doc.text('BALANCE OWING', 6, y);
+    doc.text(fmt(balance), 74, y, { align: 'right' });
+    y += 5;
+  } else {
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(6, 122, 82);
+    doc.text('PAID IN FULL', 40, y, { align: 'center' });
+    y += 5;
+  }
+  y += 3;
 
   // Footer
   doc.setFontSize(6.5);

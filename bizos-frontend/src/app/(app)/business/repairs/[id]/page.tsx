@@ -195,6 +195,7 @@ export default function RepairDetailPage() {
         item_name: p.item_name ?? '',
         quantity: p.quantity,
         unit_cost: p.unit_cost,
+        selling_price: p.selling_price ?? p.unit_cost,
         damaged: p.damaged,
       })),
     });
