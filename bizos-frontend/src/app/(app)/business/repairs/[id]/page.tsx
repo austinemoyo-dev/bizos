@@ -6,11 +6,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { repairsApi } from '@/lib/api/repairs';
 import { Badge } from '@/components/shared/Badge';
 import { Modal } from '@/components/shared/Modal';
-import { AddPartForm } from '@/components/business/AddPartForm';
+import { inventoryApi } from '@/lib/api/inventory';
 import { RepairJobForm } from '@/components/business/RepairJobForm';
 import { Skeleton } from '@/components/shared/Skeleton';
 import { formatNaira, formatDate, formatDateTime, formatProfit, calcTithe } from '@/lib/format';
-import { RepairJob, RepairJobCreate, RepairStatus } from '@/types/api';
+import { RepairJob, RepairJobCreate, RepairStatus, AddPartPayload } from '@/types/api';
 import { useUIStore } from '@/lib/stores/uiStore';
 import {
   ArrowLeft, Phone, Plus, AlertTriangle, Loader2,
@@ -726,7 +726,7 @@ export default function RepairDetailPage() {
 
       {/* Modals */}
       <Modal isOpen={addingPart} onClose={() => setAddingPart(false)} title="Add Part to Job">
-        <AddPartForm onSubmit={handleAddPart} onCancel={() => setAddingPart(false)} />
+        <AddPartDropdown onSubmit={handleAddPart} onCancel={() => setAddingPart(false)} />
       </Modal>
 
       <Modal
@@ -883,5 +883,112 @@ function RepairDetailSkeleton() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Dropdown-based part picker — matches the create-job UX */
+function AddPartDropdown({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (data: AddPartPayload) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const { data: inventoryData } = useQuery({
+    queryKey: ['inventory', 'active'],
+    queryFn: () => inventoryApi.list(),
+  });
+  const items = inventoryData?.items ?? [];
+  const inStock = items.filter(i => i.quantity_in_stock > 0);
+
+  const [selectedId, setSelectedId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const selected = items.find(i => i.id === selectedId);
+  const chargePrice = selected ? (selected.selling_price || selected.purchase_price) : 0;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) { setError('Please select an item'); return; }
+    if (quantity > selected.quantity_in_stock) { setError(`Only ${selected.quantity_in_stock} in stock`); return; }
+    setError('');
+    setLoading(true);
+    try {
+      await onSubmit({
+        item_id: selected.id,
+        quantity,
+        unit_cost: selected.purchase_price,
+        selling_price: chargePrice,
+        damaged: false,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add part');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="form-group">
+        <label className="form-label">Select Item from Inventory *</label>
+        <select
+          className="input"
+          value={selectedId}
+          onChange={(e) => { setSelectedId(e.target.value); setQuantity(1); setError(''); }}
+          style={{ marginBottom: 'var(--space-2)' }}
+        >
+          <option value="" disabled>Choose a part / item...</option>
+          {inStock.map(item => (
+            <option key={item.id} value={item.id}>
+              {item.name} — ₦{(item.selling_price || item.purchase_price).toLocaleString()} ({item.quantity_in_stock} in stock)
+            </option>
+          ))}
+        </select>
+        {inStock.length === 0 && (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>No items in stock.</p>
+        )}
+      </div>
+
+      {selected && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Quantity</label>
+            <input
+              type="number" className="input" value={quantity} min={1}
+              max={selected.quantity_in_stock}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            />
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+              {selected.quantity_in_stock} available in stock
+            </p>
+          </div>
+
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: 'var(--space-3) var(--space-4)',
+            background: 'var(--bg-overlay)', borderRadius: 'var(--radius-sm)',
+            marginBottom: 'var(--space-4)',
+          }}>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Customer charge</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--accent-green)' }}>
+              ₦{(chargePrice * quantity).toLocaleString()}
+            </span>
+          </div>
+        </>
+      )}
+
+      {error && <p className="form-error" style={{ marginBottom: 'var(--space-4)' }}>{error}</p>}
+
+      <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+        <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn-primary" disabled={loading || !selected}>
+          {loading && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+          Add Part
+        </button>
+      </div>
+    </form>
   );
 }
