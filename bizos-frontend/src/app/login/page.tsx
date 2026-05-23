@@ -5,51 +5,18 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { LoginResponse } from '@/types/api';
-import { Eye, EyeOff, Loader2, Shield, Wifi, Lock, Zap, Database, Activity } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoMark } from '@/components/layout/LogoMark';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const CYAN   = '#00D4FF';
-const PURPLE = '#7B3FE4';
-const RED    = '#C8102E';
-const GOLD   = '#D4A535';
-
-// Static particles (deterministic positions avoid hydration mismatch)
-const PARTICLES = [
-  { left: '8%',  top: '12%', s: 2,   d: '0s',   t: '9s',  c: CYAN   },
-  { left: '88%', top: '8%',  s: 1.5, d: '2.2s', t: '13s', c: PURPLE },
-  { left: '44%', top: '4%',  s: 1,   d: '1.5s', t: '11s', c: GOLD   },
-  { left: '72%', top: '86%', s: 2,   d: '0.8s', t: '8s',  c: CYAN   },
-  { left: '20%', top: '80%', s: 1.5, d: '3.1s', t: '10s', c: PURPLE },
-  { left: '93%', top: '55%', s: 1,   d: '0.4s', t: '14s', c: CYAN   },
-  { left: '4%',  top: '50%', s: 2,   d: '2.7s', t: '7s',  c: GOLD   },
-  { left: '58%', top: '93%', s: 1.5, d: '1.8s', t: '12s', c: PURPLE },
-  { left: '32%', top: '22%', s: 1,   d: '4.0s', t: '15s', c: CYAN   },
-  { left: '76%', top: '38%', s: 1.5, d: '0.6s', t: '9s',  c: GOLD   },
-  { left: '15%', top: '65%', s: 1,   d: '3.5s', t: '11s', c: PURPLE },
-  { left: '50%', top: '48%', s: 1,   d: '1.2s', t: '10s', c: CYAN   },
-];
-
-const FEATURES = [
-  { icon: Activity, label: 'Real-time P&L',      desc: 'Profit computed live, never stored'  },
-  { icon: Database, label: 'Inventory Control',   desc: 'Parts, sales & restock management'   },
-  { icon: Shield,   label: 'Role-based Access',   desc: '6-tier permission hierarchy'          },
-  { icon: Wifi,     label: 'Offline-first PWA',   desc: 'Full sync when back online'           },
-  { icon: Zap,      label: 'Repair Pipeline',      desc: 'Received → Diagnosed → Delivered'    },
-];
-
-// ── Component ─────────────────────────────────────────────────────────────────
 export default function LoginPage() {
-  const router        = useRouter();
-  const { setAuth }   = useAuthStore();
+  const router      = useRouter();
+  const { setAuth }  = useAuthStore();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [showPwd,  setShowPwd]  = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [pwdFocused,   setPwdFocused]   = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,567 +36,411 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        /* ── Keyframes ── */
-        @keyframes orb-a {
-          0%,100% { transform: translate(0,0) scale(1); }
-          33%      { transform: translate(50px,-40px) scale(1.1); }
-          66%      { transform: translate(-30px,60px) scale(0.92); }
+        /* ── Animations ── */
+        @keyframes bg-shift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25%      { transform: translate(30px, -50px) scale(1.05); }
+          50%      { transform: translate(-20px, 20px) scale(0.97); }
+          75%      { transform: translate(40px, 30px) scale(1.03); }
         }
-        @keyframes orb-b {
-          0%,100% { transform: translate(0,0) scale(1); }
-          50%      { transform: translate(-70px,50px) scale(1.15); }
+        @keyframes bg-shift-2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33%      { transform: translate(-60px, 40px) scale(1.1); }
+          66%      { transform: translate(50px, -30px) scale(0.93); }
         }
-        @keyframes orb-c {
-          0%,100% { transform: translate(0,0) scale(1); }
-          40%      { transform: translate(40px,-60px) scale(0.88); }
-          80%      { transform: translate(-50px,30px) scale(1.08); }
+        @keyframes bg-shift-3 {
+          0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+          50%      { transform: translate(20px, -40px) scale(1.08) rotate(30deg); }
         }
-        @keyframes particle-float {
-          0%,100% { transform: translateY(0px);  opacity: 0.7; }
-          50%      { transform: translateY(-20px); opacity: 0.2; }
+        @keyframes float-up {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-10px); }
         }
-        @keyframes scanline {
-          0%   { transform: translateY(-4px); opacity: 0; }
-          5%   { opacity: 1; }
-          88%  { opacity: 0.8; }
-          100% { transform: translateY(700px); opacity: 0; }
-        }
-        @keyframes pulse-ring {
-          0%   { transform: scale(1);   opacity: 0.7; }
-          100% { transform: scale(1.6); opacity: 0; }
-        }
-        @keyframes status-blink {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.25; }
+        @keyframes pulse-soft {
+          0%, 100% { opacity: 0.6; }
+          50%      { opacity: 1; }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes logo-rotate {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
+        @keyframes card-in {
+          from { opacity: 0; transform: translateY(40px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes shimmer-line {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
         }
 
         /* ── Glass input ── */
-        .gl-input {
+        .login-input {
           width: 100%;
-          background: rgba(0,212,255,0.04);
-          border: 1.5px solid rgba(0,212,255,0.14);
-          border-radius: 12px;
-          padding: 13px 16px;
+          background: rgba(255,255,255,0.06);
+          border: 1.5px solid rgba(255,255,255,0.12);
+          border-radius: 14px;
+          padding: 15px 18px;
           color: #fff;
-          font-size: 0.9rem;
+          font-size: 1rem;
           outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+          transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
           font-family: inherit;
           box-sizing: border-box;
-          caret-color: ${CYAN};
+          caret-color: #C8102E;
+          -webkit-appearance: none;
         }
-        .gl-input::placeholder { color: rgba(255,255,255,0.2); }
-        .gl-input:focus {
-          border-color: rgba(0,212,255,0.5);
-          background: rgba(0,212,255,0.07);
-          box-shadow: 0 0 0 3px rgba(0,212,255,0.1), 0 0 24px rgba(0,212,255,0.07);
+        .login-input::placeholder { color: rgba(255,255,255,0.25); }
+        .login-input:focus {
+          border-color: rgba(200,16,46,0.6);
+          background: rgba(200,16,46,0.06);
+          box-shadow: 0 0 0 3px rgba(200,16,46,0.12), 0 0 20px rgba(200,16,46,0.06);
         }
-        .gl-input.has-error:focus {
-          border-color: rgba(255,77,106,0.5);
-          box-shadow: 0 0 0 3px rgba(255,77,106,0.1);
+        .login-input.has-error:focus {
+          border-color: rgba(255,77,106,0.6);
+          box-shadow: 0 0 0 3px rgba(255,77,106,0.12);
         }
 
         /* ── Submit button ── */
-        .auth-btn {
+        .login-btn {
           width: 100%;
-          padding: 15px;
-          border: none;
-          border-radius: 13px;
-          background: linear-gradient(135deg, ${RED} 0%, ${PURPLE} 100%);
+          padding: 16px;
+          border: 1.5px solid rgba(200,16,46,0.35);
+          border-radius: 14px;
+          background: linear-gradient(135deg, rgba(200,16,46,0.5) 0%, rgba(200,16,46,0.25) 100%);
+          backdrop-filter: blur(12px);
           color: #fff;
-          font-size: 0.92rem;
-          font-weight: 800;
+          font-size: 1.05rem;
+          font-weight: 700;
           cursor: pointer;
           position: relative;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          letter-spacing: 0.03em;
-          transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
-          box-shadow:
-            0 4px 24px rgba(200,16,46,0.4),
-            0 2px 12px rgba(123,63,228,0.25),
-            inset 0 1px 0 rgba(255,255,255,0.15);
+          gap: 10px;
+          letter-spacing: 0.04em;
+          transition: transform 0.15s, box-shadow 0.25s, background 0.25s, border-color 0.25s;
+          box-shadow: 0 4px 24px rgba(200,16,46,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
         }
-        .auth-btn::before {
+        .login-btn::before {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%);
+          background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
           pointer-events: none;
         }
-        .auth-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow:
-            0 8px 36px rgba(200,16,46,0.55),
-            0 4px 20px rgba(123,63,228,0.4),
-            inset 0 1px 0 rgba(255,255,255,0.15);
+        .login-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          background: linear-gradient(135deg, rgba(200,16,46,0.65) 0%, rgba(200,16,46,0.35) 100%);
+          border-color: rgba(200,16,46,0.55);
+          box-shadow: 0 8px 40px rgba(200,16,46,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
         }
-        .auth-btn:active:not(:disabled) { transform: translateY(0); }
-        .auth-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .login-btn:active:not(:disabled) { transform: scale(0.98); }
+        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* ── Responsive ── */
-        @media (min-width: 860px) {
-          .left-panel  { display: flex !important; }
-          .mobile-logo { display: none !important; }
+        @media (max-width: 480px) {
+          .login-card { margin: 0 8px !important; padding: 32px 24px !important; }
+          .login-input { padding: 14px 16px; font-size: 16px !important; }
         }
       `}</style>
 
-      {/* ─── Full-page shell ─────────────────────────────────────── */}
+      {/* ─── Full-screen background ─── */}
       <div style={{
         minHeight: '100dvh',
-        background: 'linear-gradient(145deg, #020610 0%, #060C1E 55%, #030810 100%)',
+        background: 'linear-gradient(160deg, #0A0206 0%, #1A0810 30%, #120408 55%, #080210 100%)',
         display: 'flex',
-        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
         position: 'relative',
+        overflow: 'hidden',
+        padding: '20px',
       }}>
 
-        {/* ─── Background layer ───────────────────────────────────── */}
-        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          {/* Orb 1 – Cyan, top-left */}
+        {/* ── Animated background shapes ── */}
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+          {/* Shape 1 — large red blob top-right */}
           <div style={{
-            position: 'absolute', top: '-18%', left: '-12%',
-            width: '58vw', height: '58vw', maxWidth: 720, maxHeight: 720,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,212,255,0.13) 0%, transparent 68%)',
-            animation: 'orb-a 20s ease-in-out infinite',
+            position: 'absolute', top: '-20%', right: '-15%',
+            width: '70vw', height: '70vw', maxWidth: 800, maxHeight: 800,
+            borderRadius: '40% 60% 55% 45% / 50% 40% 60% 50%',
+            background: 'radial-gradient(ellipse, rgba(200,16,46,0.18) 0%, rgba(200,16,46,0.04) 50%, transparent 70%)',
+            animation: 'bg-shift 22s ease-in-out infinite',
+            filter: 'blur(40px)',
           }} />
-          {/* Orb 2 – Purple, bottom-right */}
+          {/* Shape 2 — dark red blob bottom-left */}
           <div style={{
-            position: 'absolute', bottom: '-22%', right: '-12%',
-            width: '52vw', height: '52vw', maxWidth: 680, maxHeight: 680,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(123,63,228,0.16) 0%, transparent 68%)',
-            animation: 'orb-b 24s ease-in-out infinite',
+            position: 'absolute', bottom: '-25%', left: '-20%',
+            width: '65vw', height: '65vw', maxWidth: 750, maxHeight: 750,
+            borderRadius: '55% 45% 40% 60% / 45% 55% 50% 50%',
+            background: 'radial-gradient(ellipse, rgba(150,10,30,0.2) 0%, rgba(100,8,20,0.05) 50%, transparent 70%)',
+            animation: 'bg-shift-2 26s ease-in-out infinite',
+            filter: 'blur(50px)',
           }} />
-          {/* Orb 3 – Red, center */}
+          {/* Shape 3 — warm accent center */}
           <div style={{
-            position: 'absolute', top: '25%', left: '30%',
-            width: '42vw', height: '42vw', maxWidth: 520, maxHeight: 520,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(200,16,46,0.07) 0%, transparent 68%)',
-            animation: 'orb-c 16s ease-in-out infinite',
+            position: 'absolute', top: '30%', left: '20%',
+            width: '45vw', height: '45vw', maxWidth: 550, maxHeight: 550,
+            borderRadius: '50% 50% 40% 60% / 60% 40% 55% 45%',
+            background: 'radial-gradient(ellipse, rgba(200,16,46,0.08) 0%, transparent 60%)',
+            animation: 'bg-shift-3 18s ease-in-out infinite',
+            filter: 'blur(35px)',
           }} />
-
-          {/* Dot-grid overlay */}
+          {/* Subtle grid */}
           <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,212,255,0.07) 1px, transparent 0)',
-            backgroundSize: '34px 34px',
+            position: 'absolute', inset: 0, opacity: 0.3,
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(200,16,46,0.04) 1px, transparent 0)',
+            backgroundSize: '40px 40px',
           }} />
-
-          {/* Floating particles */}
-          {PARTICLES.map((p, i) => (
-            <div key={i} style={{
-              position: 'absolute',
-              left: p.left, top: p.top,
-              width: p.s, height: p.s,
-              borderRadius: '50%',
-              background: p.c,
-              boxShadow: `0 0 ${p.s * 5}px ${p.c}`,
-              animation: `particle-float ${p.t} ${p.d} ease-in-out infinite`,
-            }} />
-          ))}
         </div>
 
-        {/* ─── LEFT PANEL (desktop only) ──────────────────────────── */}
-        <div
-          className="left-panel"
+        {/* ─── Glass card ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="login-card"
           style={{
-            display: 'none',
-            width: 420, flexShrink: 0,
-            flexDirection: 'column', justifyContent: 'space-between',
-            padding: '52px 44px',
             position: 'relative', zIndex: 1,
-            borderRight: '1px solid rgba(0,212,255,0.07)',
-            background: 'rgba(0,10,28,0.5)',
-            backdropFilter: 'blur(12px)',
+            width: '100%', maxWidth: 400,
+            background: 'rgba(20, 8, 12, 0.6)',
+            backdropFilter: 'blur(48px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(48px) saturate(1.6)',
+            borderRadius: 28,
+            border: '1px solid rgba(200,16,46,0.15)',
+            padding: '42px 36px',
+            boxShadow: `
+              0 0 0 1px rgba(255,255,255,0.04),
+              0 8px 60px rgba(0,0,0,0.65),
+              0 20px 100px rgba(200,16,46,0.08),
+              inset 0 1px 0 rgba(255,255,255,0.06)
+            `,
+            overflow: 'hidden',
           }}
         >
-          {/* Top section */}
-          <motion.div
-            initial={{ opacity: 0, x: -28 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* Logo + wordmark */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div style={{
-                  width: 58, height: 58, borderRadius: 19,
-                  background: `linear-gradient(135deg, ${RED}, ${PURPLE})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `0 0 28px rgba(200,16,46,0.45), 0 8px 24px rgba(0,0,0,0.5)`,
-                }}>
-                  <LogoMark size={34} color="#fff" />
-                </div>
-                {/* Pulse ring */}
-                <div style={{
-                  position: 'absolute', inset: -5, borderRadius: 24,
-                  border: `1.5px solid rgba(200,16,46,0.45)`,
-                  animation: 'pulse-ring 2.8s ease-out infinite',
-                }} />
-              </div>
-              <div>
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 800,
-                  color: '#fff', lineHeight: 1, letterSpacing: '-0.025em',
-                }}>d-ash</div>
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: '0.58rem', fontWeight: 700,
-                  color: CYAN, letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 4,
-                }}>BizOS · v2.4</div>
-              </div>
-            </div>
-
-            {/* Status badge */}
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '7px 16px', borderRadius: 24,
-              background: 'rgba(0,255,128,0.06)',
-              border: '1px solid rgba(0,255,128,0.22)',
-              marginBottom: 40,
-            }}>
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: '#00FF80',
-                boxShadow: '0 0 10px #00FF80',
-                animation: 'status-blink 2.4s ease-in-out infinite',
-              }} />
-              <span style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.6rem', fontWeight: 700,
-                color: 'rgba(0,255,128,0.85)',
-                letterSpacing: '0.14em', textTransform: 'uppercase',
-              }}>All Systems Operational</span>
-            </div>
-
-            <p style={{
-              color: 'rgba(255,255,255,0.42)', fontSize: '0.8rem', lineHeight: 1.8,
-              marginBottom: 40, maxWidth: 300,
-            }}>
-              Complete business & personal finance command centre for Dash & Co.
-            </p>
-
-            {/* Feature list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {FEATURES.map(({ icon: Icon, label, desc }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.18 + i * 0.08, duration: 0.4 }}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}
-                >
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-                    background: 'rgba(0,212,255,0.07)',
-                    border: `1px solid rgba(0,212,255,0.18)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon size={15} style={{ color: CYAN }} />
-                  </div>
-                  <div>
-                    <p style={{
-                      fontSize: '0.8rem', fontWeight: 700,
-                      color: '#fff', marginBottom: 3, lineHeight: 1,
-                    }}>{label}</p>
-                    <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>{desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Bottom – copyright */}
+          {/* Top shimmer line */}
           <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.52rem', color: 'rgba(255,255,255,0.18)',
-            letterSpacing: '0.1em', textTransform: 'uppercase',
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: 'linear-gradient(90deg, transparent, rgba(200,16,46,0.5), rgba(200,16,46,0.8), rgba(200,16,46,0.5), transparent)',
+            borderRadius: '28px 28px 0 0',
+            overflow: 'hidden',
           }}>
-            © 2024 Dash & Co. · Digital & Hardware Solutions
+            <div style={{
+              width: '60%', height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+              animation: 'shimmer-line 4s ease-in-out infinite',
+            }} />
           </div>
-        </div>
 
-        {/* ─── RIGHT FORM PANEL ────────────────────────────────────── */}
-        <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '28px 20px',
-          position: 'relative', zIndex: 1,
-        }}>
+          {/* Glass shine overlay */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0,
+            width: '100%', height: '50%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
+            borderRadius: '28px 28px 0 0',
+            pointerEvents: 'none',
+          }} />
+
+          {/* ── Logo ── */}
           <motion.div
-            initial={{ opacity: 0, y: 32 }}
+            initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', maxWidth: 420 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+            style={{ textAlign: 'center', marginBottom: 32, position: 'relative', zIndex: 1 }}
           >
-            {/* Mobile logo */}
-            <div className="mobile-logo" style={{ textAlign: 'center', marginBottom: 36 }}>
-              <div style={{ position: 'relative', display: 'inline-block', marginBottom: 18 }}>
-                <div style={{
-                  width: 76, height: 76, borderRadius: 24,
-                  background: `linear-gradient(135deg, ${RED}, ${PURPLE})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `0 0 36px rgba(200,16,46,0.45), 0 12px 32px rgba(0,0,0,0.55)`,
-                  margin: '0 auto',
-                }}>
-                  <LogoMark size={44} color="#fff" />
-                </div>
-                <div style={{
-                  position: 'absolute', inset: -6, borderRadius: 30,
-                  border: `1.5px solid rgba(200,16,46,0.4)`,
-                  animation: 'pulse-ring 2.8s ease-out infinite',
-                }} />
+            <div style={{
+              display: 'inline-flex', position: 'relative',
+              animation: 'float-up 4s ease-in-out infinite',
+            }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: 22,
+                background: 'linear-gradient(145deg, #E01535 0%, #C8102E 55%, #9B0D22 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 40px rgba(200,16,46,0.4), 0 8px 32px rgba(0,0,0,0.5)',
+              }}>
+                <LogoMark size={42} color="#fff" />
               </div>
+              {/* Glow ring */}
               <div style={{
-                fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800,
-                color: '#fff', letterSpacing: '-0.02em',
-              }}>d-ash</div>
-              <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.58rem', color: CYAN,
-                letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 5,
-              }}>BizOS Platform</div>
+                position: 'absolute', inset: -6, borderRadius: 28,
+                border: '1.5px solid rgba(200,16,46,0.3)',
+                animation: 'pulse-soft 3s ease-in-out infinite',
+              }} />
             </div>
 
-            {/* ── Glass card ────────────────────────────── */}
             <div style={{
-              position: 'relative',
-              background: 'rgba(4, 10, 28, 0.8)',
-              backdropFilter: 'blur(44px) saturate(1.8)',
-              WebkitBackdropFilter: 'blur(44px) saturate(1.8)',
-              borderRadius: 26,
-              border: '1px solid rgba(0,212,255,0.14)',
-              padding: '38px 34px',
-              boxShadow: `
-                0 0 0 1px rgba(0,212,255,0.06),
-                0 4px 48px rgba(0,0,0,0.7),
-                0 12px 100px rgba(0,0,0,0.45),
-                inset 0 1px 0 rgba(255,255,255,0.07),
-                inset 0 -1px 0 rgba(0,212,255,0.04),
-                0 0 80px rgba(0,212,255,0.03)
-              `,
-              overflow: 'hidden',
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.1rem', fontWeight: 800,
+              color: 'rgba(255,255,255,0.5)',
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              marginTop: 14,
             }}>
-              {/* Top accent gradient line */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                background: `linear-gradient(90deg, transparent, ${RED} 30%, ${GOLD} 50%, ${RED} 70%, transparent)`,
-                borderRadius: '26px 26px 0 0',
-              }} />
-
-              {/* Corner shine */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0,
-                width: '55%', height: '45%',
-                background: `radial-gradient(ellipse at top left, rgba(0,212,255,0.07) 0%, transparent 65%)`,
-                pointerEvents: 'none',
-              }} />
-
-              {/* Scanline sweep */}
-              <div style={{
-                position: 'absolute', left: 0, right: 0, top: 0,
-                height: 2,
-                background: `linear-gradient(90deg, transparent, rgba(0,212,255,0.5) 30%, rgba(0,212,255,0.7) 50%, rgba(0,212,255,0.5) 70%, transparent)`,
-                animation: 'scanline 8s ease-in-out infinite',
-                pointerEvents: 'none',
-                zIndex: 10,
-                filter: 'blur(0.5px)',
-              }} />
-
-              {/* Card header */}
-              <div style={{ position: 'relative', zIndex: 1, marginBottom: 28 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
-                }}>
-                  <div style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    background: '#00FF80',
-                    boxShadow: '0 0 10px #00FF80',
-                    animation: 'status-blink 2.5s ease-in-out infinite',
-                  }} />
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.58rem', fontWeight: 700,
-                    color: 'rgba(0,255,128,0.8)',
-                    letterSpacing: '0.16em', textTransform: 'uppercase',
-                  }}>
-                    Secure Portal · Auth Required
-                  </span>
-                </div>
-
-                <h1 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.5rem, 4vw, 1.8rem)',
-                  fontWeight: 800, color: '#fff',
-                  lineHeight: 1.1, letterSpacing: '-0.025em',
-                  marginBottom: 8,
-                }}>
-                  Welcome back
-                </h1>
-                <p style={{
-                  color: 'rgba(255,255,255,0.36)', fontSize: '0.82rem', lineHeight: 1.5,
-                }}>
-                  Sign in to your Dash & Co. account
-                </p>
-              </div>
-
-              {/* Form */}
-              <form
-                onSubmit={handleSubmit}
-                style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'relative', zIndex: 1 }}
-              >
-                {/* Email field */}
-                <div>
-                  <label
-                    htmlFor="login-email"
-                    style={{
-                      display: 'block',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.58rem', fontWeight: 700,
-                      color: emailFocused ? CYAN : 'rgba(255,255,255,0.36)',
-                      letterSpacing: '0.14em', textTransform: 'uppercase',
-                      marginBottom: 8, transition: 'color 0.2s',
-                    }}
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    id="login-email"
-                    type="email"
-                    className="gl-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                    placeholder="your@email.com"
-                    required
-                    autoComplete="email"
-                    autoFocus
-                  />
-                </div>
-
-                {/* Password field */}
-                <div>
-                  <label
-                    htmlFor="login-password"
-                    style={{
-                      display: 'block',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.58rem', fontWeight: 700,
-                      color: pwdFocused ? CYAN : 'rgba(255,255,255,0.36)',
-                      letterSpacing: '0.14em', textTransform: 'uppercase',
-                      marginBottom: 8, transition: 'color 0.2s',
-                    }}
-                  >
-                    Password
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      id="login-password"
-                      type={showPwd ? 'text' : 'password'}
-                      className={`gl-input${error ? ' has-error' : ''}`}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onFocus={() => setPwdFocused(true)}
-                      onBlur={() => setPwdFocused(false)}
-                      placeholder="••••••••"
-                      required
-                      autoComplete="current-password"
-                      style={{ paddingRight: 48 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPwd(!showPwd)}
-                      style={{
-                        position: 'absolute', right: 13, top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none', border: 'none',
-                        color: 'rgba(255,255,255,0.28)',
-                        cursor: 'pointer', padding: 4,
-                        display: 'flex', alignItems: 'center',
-                        transition: 'color 0.2s',
-                      }}
-                      aria-label={showPwd ? 'Hide password' : 'Show password'}
-                    >
-                      {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Error message */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      key="error"
-                      initial={{ opacity: 0, y: -8, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{
-                        padding: '10px 14px', borderRadius: 11,
-                        background: 'rgba(255,77,106,0.08)',
-                        border: '1px solid rgba(255,77,106,0.28)',
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: '#FF4D6A', flexShrink: 0,
-                        boxShadow: '0 0 8px rgba(255,77,106,0.6)',
-                      }} />
-                      <span style={{ color: '#FF7A8E', fontSize: '0.78rem', lineHeight: 1.4 }}>{error}</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  className="auth-btn"
-                  disabled={loading}
-                  style={{ marginTop: 4 }}
-                >
-                  {loading ? (
-                    <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Authenticating…</>
-                  ) : (
-                    <><Lock size={15} /> Sign In</>
-                  )}
-                </button>
-              </form>
-
-              {/* Card footer */}
-              <div style={{
-                marginTop: 26, paddingTop: 20,
-                borderTop: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0,
-                position: 'relative', zIndex: 1,
-              }}>
-                {['Encrypted', 'AES-256', 'JWT Auth'].map((t, i) => (
-                  <span key={t} style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.52rem', color: 'rgba(255,255,255,0.18)',
-                    letterSpacing: '0.1em', textTransform: 'uppercase',
-                    display: 'flex', alignItems: 'center',
-                  }}>
-                    {i > 0 && (
-                      <span style={{ margin: '0 10px', opacity: 0.3, fontSize: '0.6rem' }}>·</span>
-                    )}
-                    {t}
-                  </span>
-                ))}
-              </div>
+              d-ash
             </div>
           </motion.div>
-        </div>
+
+          {/* ── Welcome text ── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+            style={{ textAlign: 'center', marginBottom: 30, position: 'relative', zIndex: 1 }}
+          >
+            <h1 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.4rem, 5vw, 1.75rem)',
+              fontWeight: 700, color: '#fff',
+              lineHeight: 1.2, letterSpacing: '-0.02em',
+              marginBottom: 0,
+            }}>
+              Welcome Back
+            </h1>
+          </motion.div>
+
+          {/* ── Form ── */}
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', zIndex: 1 }}
+          >
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="login-email"
+                style={{
+                  display: 'block', fontSize: '0.78rem', fontWeight: 600,
+                  color: 'rgba(255,255,255,0.45)',
+                  marginBottom: 8,
+                }}
+              >
+                Email address
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                className="login-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="login-password"
+                style={{
+                  display: 'block', fontSize: '0.78rem', fontWeight: 600,
+                  color: 'rgba(255,255,255,0.45)',
+                  marginBottom: 8,
+                }}
+              >
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="login-password"
+                  type={showPwd ? 'text' : 'password'}
+                  className={`login-input${error ? ' has-error' : ''}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  style={{ paddingRight: 48 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  style={{
+                    position: 'absolute', right: 14, top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.3)',
+                    cursor: 'pointer', padding: 4,
+                    display: 'flex', alignItems: 'center',
+                    transition: 'color 0.2s',
+                  }}
+                  aria-label={showPwd ? 'Hide password' : 'Show password'}
+                >
+                  {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Forgot password */}
+            <div style={{ textAlign: 'right', marginTop: -6 }}>
+              <span style={{
+                fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)',
+                cursor: 'pointer', transition: 'color 0.2s',
+              }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(200,16,46,0.8)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+              >
+                Forget Password?
+              </span>
+            </div>
+
+            {/* Error */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: -8, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{
+                    padding: '12px 16px', borderRadius: 12,
+                    background: 'rgba(255,77,106,0.1)',
+                    border: '1px solid rgba(255,77,106,0.25)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span style={{ color: '#FF7A8E', fontSize: '0.82rem', lineHeight: 1.4 }}>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Login button */}
+            <button
+              type="submit"
+              className="login-btn"
+              disabled={loading}
+              style={{ marginTop: 4 }}
+            >
+              {loading ? (
+                <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> Signing in…</>
+              ) : (
+                'Login'
+              )}
+            </button>
+          </form>
+
+          {/* ── Sign up link ── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            style={{
+              textAlign: 'center', marginTop: 28,
+              position: 'relative', zIndex: 1,
+            }}
+          >
+            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)' }}>
+              Are You New Member?{' '}
+              <span
+                style={{
+                  fontWeight: 700, color: '#fff', cursor: 'pointer',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#C8102E'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#fff'}
+              >
+                Sign UP
+              </span>
+            </span>
+          </motion.div>
+        </motion.div>
       </div>
     </>
   );

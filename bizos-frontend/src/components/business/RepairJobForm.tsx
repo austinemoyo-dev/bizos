@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import { RepairJobCreate, DeviceType, AddPartPayload } from '@/types/api';
 import { inventoryApi } from '@/lib/api/inventory';
-import { Loader2, Trash2, Plus, X, Pencil } from 'lucide-react';
+import { Loader2, Trash2, Plus, X, Pencil, Check } from 'lucide-react';
 import { useDeviceTypes } from '@/lib/hooks/useCustomOptions';
 
 interface RepairJobFormProps {
@@ -50,6 +50,7 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
   const [addDevError, setAddDevError]     = useState('');
   const [addingPartInline, setAddingPartInline] = useState(false);
   const [recentlyAddedParts, setRecentlyAddedParts] = useState<Array<{ item_id: string; name: string; quantity: number; selling_price: number }>>([]);
+  const [stagedPart, setStagedPart] = useState<{ item_id: string; name: string; unit_cost: number; selling_price: number; quantity: number; max_qty: number } | null>(null);
 
   const { data: inventoryData } = useQuery({
     queryKey: ['inventory', 'active'],
@@ -92,31 +93,18 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
     const item = inventoryItems.find(i => i.id === itemId);
     if (!item) return;
 
-    // In edit mode, add parts via the API directly
+    // In edit mode, stage the part for price/qty editing before submitting
     if (initialValues && onAddPart) {
-      // Check if already in existing or recently added parts
       if (existingParts?.some(p => p.item_id === itemId)) return;
       if (recentlyAddedParts.some(p => p.item_id === itemId)) return;
-      setAddingPartInline(true);
-      try {
-        await onAddPart({
-          item_id:       item.id,
-          quantity:      1,
-          unit_cost:     item.purchase_price,
-          selling_price: item.selling_price || item.purchase_price,
-          damaged:       false,
-        });
-        setRecentlyAddedParts(prev => [...prev, {
-          item_id: item.id,
-          name: item.name,
-          quantity: 1,
-          selling_price: item.selling_price || item.purchase_price,
-        }]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to add part');
-      } finally {
-        setAddingPartInline(false);
-      }
+      setStagedPart({
+        item_id: item.id,
+        name: item.name,
+        unit_cost: item.purchase_price,
+        selling_price: item.selling_price || item.purchase_price,
+        quantity: 1,
+        max_qty: item.quantity_in_stock,
+      });
       return;
     }
 
@@ -436,6 +424,73 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) 0' }}>
               <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Adding part...</span>
+            </div>
+          )}
+
+          {/* Staged part — edit qty & price before confirming */}
+          {initialValues && stagedPart && (
+            <div style={{
+              padding: '10px 12px', borderRadius: 10, marginBottom: 'var(--space-2)',
+              background: 'rgba(200,16,46,0.06)', border: '1px solid rgba(200,16,46,0.2)',
+            }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+                {stagedPart.name}
+              </p>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ flex: '0 0 60px' }}>
+                  <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Qty</label>
+                  <input type="number" className="input"
+                    style={{ padding: '6px 8px', fontSize: 'var(--text-xs)', minHeight: 36 }}
+                    min={1} max={stagedPart.max_qty} value={stagedPart.quantity}
+                    onChange={(e) => setStagedPart(s => s ? { ...s, quantity: Math.min(parseInt(e.target.value) || 1, s.max_qty) } : null)}
+                  />
+                </div>
+                <div style={{ flex: '1 1 100px', minWidth: 100 }}>
+                  <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Charge (₦)</label>
+                  <CurrencyInput value={stagedPart.selling_price}
+                    onChange={(v) => setStagedPart(s => s ? { ...s, selling_price: v } : null)} />
+                </div>
+                <button type="button" className="btn-primary"
+                  disabled={addingPartInline}
+                  style={{ padding: '6px 14px', minHeight: 36, gap: 6, fontSize: 'var(--text-xs)', flexShrink: 0 }}
+                  onClick={async () => {
+                    if (!stagedPart || !onAddPart) return;
+                    setAddingPartInline(true);
+                    try {
+                      await onAddPart({
+                        item_id: stagedPart.item_id,
+                        quantity: stagedPart.quantity,
+                        unit_cost: stagedPart.unit_cost,
+                        selling_price: stagedPart.selling_price,
+                        damaged: false,
+                      });
+                      setRecentlyAddedParts(prev => [...prev, {
+                        item_id: stagedPart.item_id,
+                        name: stagedPart.name,
+                        quantity: stagedPart.quantity,
+                        selling_price: stagedPart.selling_price,
+                      }]);
+                      setStagedPart(null);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to add part');
+                    } finally {
+                      setAddingPartInline(false);
+                    }
+                  }}
+                >
+                  {addingPartInline ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={13} />}
+                  Add
+                </button>
+                <button type="button" className="btn-ghost"
+                  style={{ padding: '6px', minHeight: 36, color: 'var(--text-muted)', flexShrink: 0 }}
+                  onClick={() => setStagedPart(null)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                Total: ₦{(stagedPart.selling_price * stagedPart.quantity).toLocaleString()} · {stagedPart.max_qty} in stock
+              </p>
             </div>
           )}
 
