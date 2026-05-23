@@ -568,7 +568,7 @@ export default function RepairDetailPage() {
                 </div>
 
                 {/* Mobile cards */}
-                <div className="parts-cards-mobile" style={{ display: 'none' }}>
+                <div className="parts-cards-mobile">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                     {job.parts.map((part) => (
                       <div key={part.id} style={{
@@ -632,7 +632,7 @@ export default function RepairDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
           {/* Financial Summary */}
-          <div className="card" style={{ padding: 'var(--space-5)' }}>
+          <div className="card" style={{ padding: 'var(--space-5)', overflow: 'hidden' }}>
             <p className="section-label">Financial Summary</p>
 
             {[
@@ -640,9 +640,9 @@ export default function RepairDetailPage() {
               { label: 'Labor Charge', value: formatNaira(job.labor_charge), color: 'var(--text-secondary)' },
               { label: 'Parts Cost', value: `−${formatNaira(job.parts_cost)}`, color: 'var(--accent-red)' },
             ].map(({ label, value, color, bold }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', gap: 'var(--space-3)', minWidth: 0 }}>
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', minWidth: 0, overflow: 'hidden' }}>
                 <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flexShrink: 0 }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color, fontWeight: bold ? 600 : 400, whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color, fontWeight: bold ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
                   {value}
                 </span>
               </div>
@@ -653,18 +653,19 @@ export default function RepairDetailPage() {
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               background: profitInfo.bgColor, borderRadius: 'var(--radius-sm)',
-              padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-3)',
+              padding: 'var(--space-3)', marginBottom: 'var(--space-3)',
+              overflow: 'hidden', minWidth: 0,
             }}>
-              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: profitInfo.color }}>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: profitInfo.color, flexShrink: 0 }}>
                 {profitInfo.label}
               </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)', fontWeight: 700, color: profitInfo.color }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)', fontWeight: 700, color: profitInfo.color, overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
                 {profitInfo.sign}{profitInfo.formatted}
               </span>
             </div>
 
             {tithe > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-amber)' }}>Tithe (10%)</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--accent-amber)', fontWeight: 600 }}>
                   {formatNaira(tithe)}

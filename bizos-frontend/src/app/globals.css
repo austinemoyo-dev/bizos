@@ -1486,6 +1486,11 @@ input[type=number]::-webkit-inner-spin-button {
   width: 100%;
 }
 
+/* Parts: desktop table visible, mobile cards hidden by default */
+.parts-cards-mobile {
+  display: none;
+}
+
 /* Bottom nav is rendered via JS (SVG + inline styles) — no global styles needed */
 
 @media (max-width: 767px) {
@@ -2274,7 +2279,8 @@ select.input option {
   }
 
   .parts-cards-mobile {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
   }
 
   /* ── Repair action buttons: scrollable, touch-friendly ── */
@@ -2293,6 +2299,26 @@ select.input option {
   /* ── Edit form charges grid: stack on narrow screens ── */
   .repair-charges-grid {
     grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* ── Detail page cards: prevent overflow on mobile ── */
+  .detail-grid .card {
+    overflow: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-4) !important;
+  }
+
+  .detail-grid {
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  /* Ensure all flex children in detail grid don't overflow */
+  .detail-grid > div {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .repair-detail-actions .btn-ghost,
