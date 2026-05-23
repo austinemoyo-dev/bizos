@@ -64,6 +64,11 @@ def add_part_to_job(
         damaged=damaged,
     )
     db.add(part)
+
+    # Auto-increase total_charge by the customer-facing selling price
+    charge_add = (selling_price or unit_cost) * quantity
+    job.total_charge = (job.total_charge or Decimal("0")) + charge_add
+
     db.commit()
     db.refresh(part)
     return part
@@ -92,6 +97,10 @@ def remove_part_from_job(db: Session, job_id: UUID, part_id: UUID) -> None:
             note=f"Part removed from job #{job.job_number}",
         )
         db.add(reversal)
+
+    # Decrease total_charge by the selling price that was added
+    charge_sub = (part.selling_price or part.unit_cost) * part.quantity
+    job.total_charge = max(Decimal("0"), (job.total_charge or Decimal("0")) - charge_sub)
 
     db.delete(part)
     db.commit()
