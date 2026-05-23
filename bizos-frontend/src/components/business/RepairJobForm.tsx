@@ -430,29 +430,58 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
           {/* Staged part — edit qty & price before confirming */}
           {initialValues && stagedPart && (
             <div style={{
-              padding: '10px 12px', borderRadius: 10, marginBottom: 'var(--space-2)',
+              padding: 'var(--space-3)', borderRadius: 10, marginBottom: 'var(--space-2)',
               background: 'rgba(200,16,46,0.06)', border: '1px solid rgba(200,16,46,0.2)',
             }}>
-              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>
                 {stagedPart.name}
               </p>
-              <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div style={{ flex: '0 0 60px' }}>
-                  <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Qty</label>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {/* Qty row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', flexShrink: 0 }}>Quantity</label>
                   <input type="number" className="input"
-                    style={{ padding: '6px 8px', fontSize: 'var(--text-xs)', minHeight: 36 }}
+                    style={{ width: 80, padding: '8px 10px', fontSize: 'var(--text-sm)', textAlign: 'center' }}
                     min={1} max={stagedPart.max_qty} value={stagedPart.quantity}
-                    onChange={(e) => setStagedPart(s => s ? { ...s, quantity: Math.min(parseInt(e.target.value) || 1, s.max_qty) } : null)}
+                    onChange={(e) => setStagedPart(s => s ? { ...s, quantity: Math.max(1, Math.min(parseInt(e.target.value) || 1, s.max_qty)) } : null)}
                   />
                 </div>
-                <div style={{ flex: '1 1 100px', minWidth: 100 }}>
-                  <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Charge (₦)</label>
-                  <CurrencyInput value={stagedPart.selling_price}
-                    onChange={(v) => setStagedPart(s => s ? { ...s, selling_price: v } : null)} />
+
+                {/* Price row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', flexShrink: 0 }}>Charge (₦)</label>
+                  <input type="text" inputMode="decimal" className="input"
+                    style={{ width: 120, padding: '8px 10px', fontSize: 'var(--text-sm)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}
+                    value={stagedPart.selling_price || ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, '');
+                      const num = parseFloat(raw) || 0;
+                      setStagedPart(s => s ? { ...s, selling_price: num } : null);
+                    }}
+                    placeholder="0"
+                  />
                 </div>
+
+                {/* Summary */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '6px 0', borderTop: '1px solid rgba(200,16,46,0.12)', marginTop: 2,
+                }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    Total · {stagedPart.max_qty} in stock
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent-green)' }}>
+                    ₦{(stagedPart.selling_price * stagedPart.quantity).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                 <button type="button" className="btn-primary"
-                  disabled={addingPartInline}
-                  style={{ padding: '6px 14px', minHeight: 36, gap: 6, fontSize: 'var(--text-xs)', flexShrink: 0 }}
+                  disabled={addingPartInline || stagedPart.selling_price <= 0}
+                  style={{ flex: 1, padding: '8px 14px', minHeight: 40, gap: 6, fontSize: 'var(--text-sm)', justifyContent: 'center' }}
                   onClick={async () => {
                     if (!stagedPart || !onAddPart) return;
                     setAddingPartInline(true);
@@ -478,19 +507,16 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
                     }
                   }}
                 >
-                  {addingPartInline ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={13} />}
-                  Add
+                  {addingPartInline ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={14} />}
+                  Add Part
                 </button>
                 <button type="button" className="btn-ghost"
-                  style={{ padding: '6px', minHeight: 36, color: 'var(--text-muted)', flexShrink: 0 }}
+                  style={{ padding: '8px 12px', minHeight: 40, color: 'var(--text-muted)' }}
                   onClick={() => setStagedPart(null)}
                 >
-                  <X size={14} />
+                  Cancel
                 </button>
               </div>
-              <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                Total: ₦{(stagedPart.selling_price * stagedPart.quantity).toLocaleString()} · {stagedPart.max_qty} in stock
-              </p>
             </div>
           )}
 

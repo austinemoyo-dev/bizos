@@ -903,11 +903,19 @@ function AddPartDropdown({
 
   const [selectedId, setSelectedId] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [chargePrice, setChargePrice] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const selected = items.find(i => i.id === selectedId);
-  const chargePrice = selected ? (selected.selling_price || selected.purchase_price) : 0;
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    setQuantity(1);
+    setError('');
+    const item = items.find(i => i.id === id);
+    setChargePrice(item ? (item.selling_price || item.purchase_price) : 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -937,7 +945,7 @@ function AddPartDropdown({
         <select
           className="input"
           value={selectedId}
-          onChange={(e) => { setSelectedId(e.target.value); setQuantity(1); setError(''); }}
+          onChange={(e) => handleSelect(e.target.value)}
           style={{ marginBottom: 'var(--space-2)' }}
         >
           <option value="" disabled>Choose a part / item...</option>
@@ -966,13 +974,30 @@ function AddPartDropdown({
             </p>
           </div>
 
+          <div className="form-group">
+            <label className="form-label">Charge to Customer (₦)</label>
+            <input
+              type="text" inputMode="decimal" className="input"
+              style={{ fontFamily: 'var(--font-mono)' }}
+              value={chargePrice || ''}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9.]/g, '');
+                setChargePrice(parseFloat(raw) || 0);
+              }}
+              placeholder="0"
+            />
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+              Edit to adjust price for this customer
+            </p>
+          </div>
+
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: 'var(--space-3) var(--space-4)',
             background: 'var(--bg-overlay)', borderRadius: 'var(--radius-sm)',
             marginBottom: 'var(--space-4)',
           }}>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Customer charge</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Total charge</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--accent-green)' }}>
               ₦{(chargePrice * quantity).toLocaleString()}
             </span>
