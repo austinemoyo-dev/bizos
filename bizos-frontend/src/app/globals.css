@@ -1925,7 +1925,8 @@ input[type=number]::-webkit-inner-spin-button {
 
 /* ── Stats grid: always 2 cols on mobile ──────────────────────── */
 @media (max-width: 768px) {
-  .stat-grid {
+  .stat-grid,
+  .stat-grid-4 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: var(--space-2) !important;
   }
@@ -4011,5 +4012,100 @@ header.compact {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+  }
+}
+
+/* ── DATATABLE: desktop vs mobile toggle ─────────────────────── */
+/* Desktop: show table, hide mobile cards */
+.mobile-card-list {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Mobile: hide the desktop table, show mobile card list */
+  .desktop-table-wrap {
+    display: none !important;
+  }
+  .mobile-card-list {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ── ANALYTICS: 3-col grids → stack on mobile ────────────────── */
+@media (max-width: 768px) {
+  .analytics-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inside hero panel: keep 3-col but with tighter text */
+  .glass-panel-hero .analytics-grid-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .glass-panel-hero .analytics-grid-3 > div {
+    padding: 8px 8px !important;
+  }
+}
+
+/* ── REPAIR DETAIL: parts table mobile toggle ────────────────── */
+@media (max-width: 768px) {
+  .parts-table-desktop {
+    display: none !important;
+  }
+  .parts-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+  }
+}
+
+/* ── CUSTOMERS PAGE: 6-col table → mobile cards ──────────────── */
+@media (max-width: 768px) {
+  /* Hide the desktop table header row entirely */
+  .customers-header {
+    display: none !important;
+  }
+
+  /* Convert 6-column grid rows into vertical card layout */
+  .customers-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    grid-template-columns: unset !important;
+    padding: var(--space-3) var(--space-4) !important;
+  }
+
+  /* Hide extra columns on mobile (Last Seen, Status); keep name, revenue, jobs */
+  .customers-row > div:nth-child(4),
+  .customers-row > p:nth-child(4) {
+    display: none;
+  }
+  .customers-row > div:nth-child(5) {
+    display: none;
+  }
+
+  /* Revenue + Jobs inline row */
+  .customers-row > p:nth-child(2),
+  .customers-row > div:nth-child(3) {
+    text-align: left !important;
+    display: inline;
+  }
+}
+
+/* ── CALCULATOR PAGE: repair estimator grids ─────────────────── */
+@media (max-width: 768px) {
+  /* Stack the 2-column (form + summary) layout */
+  .calc-repair-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stack the parts input row (name / cost / price / add btn) */
+  .calc-parts-input-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-3) !important;
+  }
+
+  /* Allow margin % buttons to wrap */
+  .calc-margin-btns {
+    flex-wrap: wrap;
   }
 }
