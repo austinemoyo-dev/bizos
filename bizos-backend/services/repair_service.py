@@ -19,6 +19,7 @@ def add_part_to_job(
     unit_cost: Decimal,
     damaged: bool,
     selling_price: Decimal | None = None,
+    skip_charge_update: bool = False,
 ) -> JobPart:
     job = db.query(RepairJob).filter_by(id=job_id).first()
     if not job:
@@ -66,8 +67,10 @@ def add_part_to_job(
     db.add(part)
 
     # Auto-increase total_charge by the customer-facing selling price
-    charge_add = (selling_price or unit_cost) * quantity
-    job.total_charge = (job.total_charge or Decimal("0")) + charge_add
+    # (skip during job creation — the frontend already sent the correct total)
+    if not skip_charge_update:
+        charge_add = (selling_price or unit_cost) * quantity
+        job.total_charge = (job.total_charge or Decimal("0")) + charge_add
 
     db.commit()
     db.refresh(part)

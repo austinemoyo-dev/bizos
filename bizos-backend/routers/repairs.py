@@ -209,6 +209,7 @@ def create_job(
                 unit_cost=part_data.unit_cost,
                 selling_price=part_data.selling_price,
                 damaged=part_data.damaged,
+                skip_charge_update=True,
             )
 
     db.commit()

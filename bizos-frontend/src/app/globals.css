@@ -1651,6 +1651,8 @@ input[type=number]::-webkit-inner-spin-button {
     right: 12px;
     z-index: 950;
     pointer-events: none; /* children re-enable */
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
   }
 
   .bottom-search-bar {
@@ -1668,6 +1670,9 @@ input[type=number]::-webkit-inner-spin-button {
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     pointer-events: all;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   [data-theme="light"] .bottom-search-bar {
@@ -1785,6 +1790,33 @@ input[type=number]::-webkit-inner-spin-button {
     min-height: 48px;
     font-size: 16px !important; /* prevents iOS zoom */
     border-radius: 14px;
+  }
+
+  /* Bottom search bar input should stay slim — override the global mobile input sizing */
+  .bsb-input,
+  .bsb-input[type="search"] {
+    min-height: 36px !important;
+    font-size: var(--text-sm) !important;
+    border-radius: 0 !important;
+  }
+
+  /* ── Mobile actions row: contain within viewport ── */
+  .ph-mobile-actions {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .ph-mobile-actions::-webkit-scrollbar {
+    display: none;
+  }
+  .ph-mobile-actions > button,
+  .ph-mobile-actions > * > button {
+    flex-shrink: 0;
+    font-size: 0.68rem !important;
+    padding: 6px 10px !important;
+    white-space: nowrap;
   }
 
   /* ── Larger list items (min thumb target) ── */
