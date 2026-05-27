@@ -16,10 +16,11 @@ import {
   startOfYear, endOfYear, subMonths,
 } from 'date-fns';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useUIStore } from '@/lib/stores/uiStore';
 import {
   ChevronRight, Wrench, Target, AlertTriangle,
   HandCoins, Package, TrendingDown, LineChart,
-  Bell, ShoppingCart, Users, BarChart2, MoreHorizontal,
+  Bell, ShoppingCart, Users, BarChart2, Briefcase, User,
 } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
@@ -68,6 +69,7 @@ function getInitials(name: string) {
 
 export default function BusinessDashboard() {
   const { user } = useAuthStore();
+  const { activeScope, setActiveScope } = useUIStore();
   const router   = useRouter();
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getPeriodDates(period);
@@ -159,16 +161,53 @@ export default function BusinessDashboard() {
             </p>
           </div>
         </div>
-        <button style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'var(--bg-surface)', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--text-secondary)',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        }}>
-          <Bell size={16} />
-        </button>
+        {/* Scope switcher + bell */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Mobile scope pill */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 50, padding: 3, gap: 2,
+          }}>
+            {([
+              { key: 'business' as const, label: 'Biz',     Icon: Briefcase, color: '#8B0018', glow: 'rgba(139,0,24,0.35)' },
+              { key: 'personal' as const, label: 'Personal', Icon: User,      color: '#D4A535', glow: 'rgba(212,165,53,0.35)' },
+            ]).map(({ key, label, Icon, color, glow }) => {
+              const active = activeScope === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setActiveScope(key); router.push(key === 'business' ? '/business/dashboard' : '/personal/dashboard'); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '4px 10px', borderRadius: 50,
+                    fontSize: '0.6rem', fontWeight: 700,
+                    background: active ? color : 'transparent',
+                    color: active ? '#fff' : 'var(--text-muted)',
+                    border: 'none', cursor: 'pointer',
+                    transition: 'all 0.18s',
+                    whiteSpace: 'nowrap',
+                    boxShadow: active ? `0 2px 6px ${glow}` : 'none',
+                  }}
+                >
+                  <Icon size={10} strokeWidth={active ? 2.5 : 1.8} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <button style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'var(--bg-surface)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+            <Bell size={16} />
+          </button>
+        </div>
       </div>
 
       {/* ── Desktop greeting ─────────────────────────────────── */}
@@ -430,7 +469,13 @@ export default function BusinessDashboard() {
               const firstName = name.split(' ')[0];
               return (
                 <div key={job.id} className="contact-item"
-                  onClick={() => router.push(`/business/repairs/${job.id}`)}>
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                      router.push(`/business/repairs?job=${job.id}`);
+                    } else {
+                      router.push(`/business/repairs/${job.id}`);
+                    }
+                  }}>
                   <div className="contact-avatar-circle" style={{
                     background: `linear-gradient(135deg, ${color}, ${color}cc)`,
                     boxShadow: `0 4px 12px ${color}45`,
@@ -459,7 +504,13 @@ export default function BusinessDashboard() {
               const initials = getInitials(job.customer_name);
               return (
                 <div key={job.id} className="scheduled-card"
-                  onClick={() => router.push(`/business/repairs/${job.id}`)}>
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                      router.push(`/business/repairs?job=${job.id}`);
+                    } else {
+                      router.push(`/business/repairs/${job.id}`);
+                    }
+                  }}>
                   <div className="scheduled-card-icon" style={{
                     background: `linear-gradient(135deg, ${color}, ${color}bb)`,
                     boxShadow: `0 4px 10px ${color}40`,

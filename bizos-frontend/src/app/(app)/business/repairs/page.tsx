@@ -80,6 +80,8 @@ export default function RepairsPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     if (searchParams.get('new') === '1') setShowNewJob(true);
+    const jobId = searchParams.get('job');
+    if (jobId) setSelectedJobId(jobId);
   }, [searchParams]);
   const [importing, setImporting] = useState(false);
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
@@ -304,7 +306,13 @@ export default function RepairsPage() {
         <DataTable
           columns={columns}
           data={data?.items ?? []}
-          onRowClick={(job) => router.push(`/business/repairs/${job.id}`)}
+          onRowClick={(job) => {
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              setSelectedJobId(job.id);
+            } else {
+              router.push(`/business/repairs/${job.id}`);
+            }
+          }}
           loading={isLoading}
           emptyMessage="No repair jobs found"
           emptyAction={{ label: 'Create first job', onClick: () => setShowNewJob(true) }}

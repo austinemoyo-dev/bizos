@@ -1,23 +1,61 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { AppShell } from '@/components/layout/AppShell';
+import { authenticateWithBiometric } from '@/lib/capacitor/biometric';
+import { initDeepLinks } from '@/lib/capacitor/deepLinks';
+
+// How long (ms) the app can be backgrounded before requiring biometric again
+const BIO_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { loadFromStorage } = useAuthStore();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const lastActiveRef = useRef<number>(Date.now());
 
   useEffect(() => {
     const ok = loadFromStorage();
     if (!ok) {
       router.replace('/login');
-    } else {
-      setReady(true);
+      return;
     }
+
+    // Feature 1 — Biometric gate on first app open
+    authenticateWithBiometric().then((passed) => {
+      if (!passed) {
+        router.replace('/login');
+      } else {
+        setReady(true);
+      }
+    });
+
+    // Feature 17 — Deep link routing
+    initDeepLinks((path) => router.push(path));
   }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    // Feature 1 — Re-prompt biometric after app resumes from background > 5 min
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        lastActiveRef.current = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const elapsed = Date.now() - lastActiveRef.current;
+        if (elapsed > BIO_TIMEOUT_MS) {
+          authenticateWithBiometric().then((passed) => {
+            if (!passed) router.replace('/login');
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [ready]);
 
   if (!ready) {
     return (

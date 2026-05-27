@@ -1,7 +1,14 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">BizOS</string>
-    <string name="title_activity_main">BizOS</string>
+    <string name="app_name">Dash &amp; Co.</string>
+    <string name="title_activity_main">Dash &amp; Co.</string>
     <string name="package_name">com.dashandco.bizos</string>
     <string name="custom_url_scheme">com.dashandco.bizos</string>
+    <!-- Feature 6: App Shortcut labels -->
+    <string name="shortcut_new_repair_short">New Repair</string>
+    <string name="shortcut_new_repair_long">New Repair Job</string>
+    <string name="shortcut_expense_short">Log Expense</string>
+    <string name="shortcut_expense_long">Log an Expense</string>
+    <string name="shortcut_dashboard_short">Dashboard</string>
+    <string name="shortcut_dashboard_long">Business Dashboard</string>
 </resources>

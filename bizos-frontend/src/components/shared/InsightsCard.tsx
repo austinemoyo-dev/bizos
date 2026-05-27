@@ -23,9 +23,16 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
     setExpanded(true);
 
     try {
+      const token = typeof window !== 'undefined'
+        ? (localStorage.getItem('access_token') ?? '')
+        : '';
+
       const res = await fetch('/api/insights', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ summary, period }),
       });
 

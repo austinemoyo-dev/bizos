@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical">
+
+    <!-- BizOS label -->
+    <TextView
+        android:text="BIZOS"
+        android:textColor="#C8102E"
+        android:textSize="9sp"
+        android:letterSpacing="0.15"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Balance label -->
+    <TextView
+        android:text="Available Balance"
+        android:textColor="#888888"
+        android:textSize="10sp"
+        android:layout_marginTop="6dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Balance value (green = profit, monospace like Space Mono) -->
+    <TextView
+        android:id="@+id/widget_balance"
+        android:text="₦0.00"
+        android:textColor="#10B981"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#22FFFFFF"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Active repairs row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_repairs"
+            android:text="0 active jobs"
+            android:textColor="#CCCCCC"
+            android:textSize="12sp"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+        <!-- Feature 5: pending-sync indicator dot -->
+        <View
+            android:id="@+id/widget_sync_dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="#EF4444"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useUIStore } from '@/lib/stores/uiStore';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Briefcase, User } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { LogoMark } from './LogoMark';
 import { useThemeStore } from '@/lib/stores/themeStore';
@@ -40,7 +40,7 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
 export function TopBar() {
   const pathname  = usePathname();
   const router    = useRouter();
-  const { isOnline } = useUIStore();
+  const { isOnline, activeScope, setActiveScope } = useUIStore();
   const { user }  = useAuthStore();
   const { theme, toggle } = useThemeStore();
   const isLight   = theme === 'light';
@@ -48,8 +48,14 @@ export function TopBar() {
   const { loadFromStorage } = useProfileStore();
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
 
+  // Keep activeScope in sync with the URL
+  useEffect(() => {
+    const derived = pathname.startsWith('/personal') ? 'personal' : 'business';
+    if (derived !== activeScope) setActiveScope(derived);
+  }, [pathname, activeScope, setActiveScope]);
+
   const meta       = PAGE_META[pathname] ?? { title: 'BizOS' };
-  const isPersonal = pathname.startsWith('/personal');
+  const isPersonal = activeScope === 'personal';
   const accentColor = isPersonal ? '#D4A535' : '#8B0018';
 
   return (
@@ -108,6 +114,45 @@ export function TopBar() {
             </h1>
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      {/* Centre: scope switcher */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 50, padding: 3, gap: 2,
+        flexShrink: 0,
+      }}>
+        {([
+          { key: 'business', label: 'Biz',      Icon: Briefcase, color: '#8B0018', glow: 'rgba(139,0,24,0.35)' },
+          { key: 'personal', label: 'Personal',  Icon: User,      color: '#D4A535', glow: 'rgba(212,165,53,0.35)' },
+        ] as const).map(({ key, label, Icon, color, glow }) => {
+          const active = activeScope === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setActiveScope(key);
+                router.push(key === 'business' ? '/business/dashboard' : '/personal/dashboard');
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 50,
+                fontSize: '0.62rem', fontWeight: 700,
+                background: active ? color : 'transparent',
+                color: active ? '#fff' : 'var(--text-muted)',
+                border: 'none', cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
+                whiteSpace: 'nowrap',
+                boxShadow: active ? `0 2px 8px ${glow}` : 'none',
+              }}
+            >
+              <Icon size={11} strokeWidth={active ? 2.5 : 1.8} />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Right: search + controls */}

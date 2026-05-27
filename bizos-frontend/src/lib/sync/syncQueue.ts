@@ -1,4 +1,13 @@
 import { db, PendingSync } from '@/lib/db/dexie';
+import { setPendingSyncFlag, showSyncNotification } from '@/lib/capacitor/nativePlugin';
+
+async function notifyNativeOfCount(count: number) {
+  await setPendingSyncFlag(count > 0);
+  await showSyncNotification(count);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('bizos-sync-count', { detail: count }));
+  }
+}
 
 export async function queueMutation(
   endpoint: string,
@@ -14,13 +23,17 @@ export async function queueMutation(
     created_at: Date.now(),
     retries: 0,
   });
-  if (typeof window !== 'undefined') window.dispatchEvent(new Event('bizos-sync-queue-changed'));
 
+  const count = await db.pendingSync.count();
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('bizos-sync-queue-changed'));
+  await notifyNativeOfCount(count);
+
+  // Web Background Sync (service worker)
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
     try {
       const reg = await navigator.serviceWorker.ready;
       await (reg as unknown as { sync: { register: (tag: string) => Promise<void> } }).sync.register('bizos-sync');
-    } catch (_) { /* background sync not supported */ }
+    } catch { /* not supported */ }
   }
 }
 
@@ -64,6 +77,10 @@ export async function flushSyncQueue(): Promise<{ synced: number; failed: number
       break;
     }
   }
+
+  // Update native state after flush
+  const remaining = await db.pendingSync.count();
+  await notifyNativeOfCount(remaining);
 
   return { synced, failed };
 }

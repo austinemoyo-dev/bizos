@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature 6: App Shortcuts — shown on long-press of the BizOS launcher icon -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="new_repair"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_repair_short"
+        android:shortcutLongLabel="@string/shortcut_new_repair_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="bizos://repairs/new"
+            android:targetPackage="com.dashandco.bizos"
+            android:targetClass="com.dashandco.bizos.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="log_expense"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_expense_short"
+        android:shortcutLongLabel="@string/shortcut_expense_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="bizos://expenses/new"
+            android:targetPackage="com.dashandco.bizos"
+            android:targetClass="com.dashandco.bizos.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="dashboard"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_dashboard_short"
+        android:shortcutLongLabel="@string/shortcut_dashboard_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="bizos://business/dashboard"
+            android:targetPackage="com.dashandco.bizos"
+            android:targetClass="com.dashandco.bizos.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+</shortcuts>

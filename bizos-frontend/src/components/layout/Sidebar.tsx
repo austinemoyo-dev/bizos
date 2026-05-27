@@ -8,9 +8,11 @@ import {
   Wallet, Utensils, PiggyBank,
   Settings, LogOut, ChevronLeft, ChevronRight,
   LineChart, Users, Banknote, ScrollText, Printer, Calculator,
+  Briefcase, User,
 } from 'lucide-react';
 import { SyncIndicator } from '../shared/SyncIndicator';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useUIStore } from '@/lib/stores/uiStore';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -153,9 +155,16 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const isPersonal = pathname.startsWith('/personal');
   const { count: lowStockCount } = useLowStock();
+  const { activeScope, setActiveScope } = useUIStore();
 
   const { loadFromStorage } = useProfileStore();
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
+
+  // Keep activeScope in sync with current URL
+  useEffect(() => {
+    const derived = pathname.startsWith('/personal') ? 'personal' : 'business';
+    if (derived !== activeScope) setActiveScope(derived);
+  }, [pathname, activeScope, setActiveScope]);
 
   const bizColor      = '#8B0018';
   const bizGlow       = 'rgba(139,0,24,0.16)';
@@ -257,6 +266,74 @@ export function Sidebar() {
         </button>
       )}
 
+
+      {/* ── Scope switcher ──────────────────────────────── */}
+      <div style={{
+        padding: collapsed ? '6px 6px' : '6px 10px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        flexShrink: 0, position: 'relative', zIndex: 1,
+      }}>
+        {collapsed ? (
+          /* Collapsed: two stacked color dots */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => { setActiveScope('business'); router.push('/business/dashboard'); }}
+              title="Business"
+              style={{
+                width: 28, height: 14, borderRadius: 7,
+                background: activeScope === 'business' ? '#8B0018' : 'rgba(255,255,255,0.07)',
+                border: 'none', cursor: 'pointer', transition: 'background 0.2s',
+                boxShadow: activeScope === 'business' ? '0 0 8px rgba(139,0,24,0.5)' : 'none',
+              }}
+            />
+            <button
+              onClick={() => { setActiveScope('personal'); router.push('/personal/dashboard'); }}
+              title="Personal"
+              style={{
+                width: 28, height: 14, borderRadius: 7,
+                background: activeScope === 'personal' ? '#D4A535' : 'rgba(255,255,255,0.07)',
+                border: 'none', cursor: 'pointer', transition: 'background 0.2s',
+                boxShadow: activeScope === 'personal' ? '0 0 8px rgba(212,165,53,0.5)' : 'none',
+              }}
+            />
+          </div>
+        ) : (
+          /* Expanded: pill toggle */
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 50, padding: 3, gap: 2,
+          }}>
+            {([
+              { key: 'business', label: 'Business', Icon: Briefcase, color: '#8B0018', glow: 'rgba(139,0,24,0.35)' },
+              { key: 'personal', label: 'Personal',  Icon: User,      color: '#D4A535', glow: 'rgba(212,165,53,0.35)' },
+            ] as const).map(({ key, label, Icon, color, glow }) => {
+              const active = activeScope === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setActiveScope(key); router.push(key === 'business' ? '/business/dashboard' : '/personal/dashboard'); }}
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    padding: '5px 8px', borderRadius: 50,
+                    fontSize: '0.6rem', fontWeight: 700,
+                    background: active ? color : 'transparent',
+                    color: active ? '#fff' : 'var(--text-muted)',
+                    border: 'none', cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
+                    whiteSpace: 'nowrap',
+                    boxShadow: active ? `0 2px 8px ${glow}` : 'none',
+                  }}
+                >
+                  <Icon size={10} strokeWidth={active ? 2.5 : 1.8} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── Navigation ──────────────────────────────────── */}
       <nav style={{

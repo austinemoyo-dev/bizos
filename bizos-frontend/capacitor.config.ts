@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.dashandco.bizos',
-  appName: 'BizOS',
+  appName: 'Dash & Co.',
   webDir: 'out',
   server: {
     androidScheme: 'https',
