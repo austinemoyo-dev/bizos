@@ -7,10 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "build:android": "cross-env BUILD_TARGET=android next build && npx cap sync android",
+    "open:android": "npx cap open android"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@tanstack/react-query": "^5",
     "autoprefixer": "^10",
     "clsx": "^2",
@@ -22,7 +27,6 @@
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.383",
     "next": "14.2.35",
-    "next-pwa": "^5.6.0",
     "nextjs-toploader": "^3.9.17",
     "postcss": "^8",
     "react": "^18",
@@ -36,6 +40,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35"
   }

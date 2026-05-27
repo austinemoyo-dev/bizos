@@ -1,0 +1,72 @@
+Step-by-step: Build the BizOS APK
+Step 1 — Install Java JDK 17
+Capacitor's Android build requires Java 17.
+
+Go to https://adoptium.net
+Download Temurin 17 (LTS) → Windows x64 .msi installer
+Run the installer — on the install options screen, enable "Set JAVA_HOME variable"
+Verify: open a new terminal and run:
+
+java -version
+Should print openjdk 17.x.x
+
+Step 2 — Install Android Studio
+Go to https://developer.android.com/studio
+Download and run the installer, keep all defaults
+On first launch, the Setup Wizard runs — click through it, it will download the Android SDK automatically (this takes a few minutes)
+Once done, you'll land on the Android Studio welcome screen — that's all you need for now
+
+Step 3 — Set your backend URL
+Open bizos-frontend/.env.local and make sure NEXT_PUBLIC_API_URL points to your real server — not localhost:
+
+
+NEXT_PUBLIC_API_URL=https://your-actual-backend.com/api/v1
+If the backend is running on your local machine and you just want to test, use your machine's local IP address instead of localhost (Android can't reach your PC's localhost):
+
+
+NEXT_PUBLIC_API_URL=http://192.168.x.x:8000/api/v1
+
+Step 4 — Build the app
+Open a terminal in bizos-frontend/ and run:
+
+
+npm run build:android
+This does two things:
+
+next build — compiles the app into the out/ folder
+npx cap sync android — copies out/ into the Android project and syncs plugins
+Wait for both to finish with no errors.
+
+Step 5 — Open in Android Studio
+
+npm run open:android
+Android Studio opens the android/ project. Wait for it to finish Gradle sync (progress bar at the bottom) — this can take 2–5 minutes the first time.
+
+Step 6 — Build the APK
+In Android Studio:
+
+Top menu → Build → Build Bundle(s) / APK(s) → Build APK(s)
+Wait for the build to finish (progress bar at the bottom)
+A popup appears: "APK(s) generated successfully" → click "locate"
+The APK is at:
+
+
+bizos-frontend/android/app/build/outputs/apk/debug/app-debug.apk
+Step 7 — Install on your phone
+Option A — USB cable:
+
+On your Android phone: Settings → About Phone → tap Build Number 7 times to enable Developer Mode
+Settings → Developer Options → enable USB Debugging
+Plug in via USB → your phone appears in Android Studio's device list
+Click the Run button (▶) in Android Studio — it installs and launches directly
+Option B — Share the file:
+
+Copy app-debug.apk to your phone (WhatsApp, Google Drive, USB, etc.)
+Open the file on your phone → tap Install
+If prompted about "Install unknown apps" → allow it for the app you used to transfer the file
+Every time you update the app
+Just run this one command and then rebuild in Android Studio:
+
+
+npm run build:android
+Then in Android Studio: Build → Build APK(s) again.

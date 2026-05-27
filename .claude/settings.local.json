@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/repairs/[id]/page.tsx\" \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/repairs/[id]/RepairDetailPage.tsx\")",
+      "Bash(cp \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/page.tsx\" \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/InventoryDetailPage.tsx\")"
+    ]
+  }
+}
