@@ -44,8 +44,8 @@ export function TopBar() {
 
   const meta       = PAGE_META[pathname] ?? { title: 'BizOS' };
   const isPersonal = pathname.startsWith('/personal');
-  const accentColor = isPersonal ? '#D4A535' : '#800000';
-  const accentGlow  = isPersonal ? 'rgba(212,165,53,0.32)' : 'rgba(128,0,0,0.32)';
+  const accentColor = isPersonal ? '#D4A535' : '#8B0018';
+  const accentGlow  = isPersonal ? 'rgba(212,165,53,0.32)' : 'rgba(139,0,24,0.32)';
 
   return (
     <header style={{
@@ -93,8 +93,8 @@ export function TopBar() {
           borderRadius: 20, padding: 3, flexShrink: 0,
         }}>
           {([
-            { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: '#800000' },
-            { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: '#7C3AED' },
+            { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: '#8B0018' },
+            { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: '#D4A535' },
           ] as const).map(({ label, href, active, color }) => (
             <button
               key={label}
@@ -183,7 +183,7 @@ export function TopBar() {
         {/* Avatar */}
         <div style={{
           width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-          background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#7B0018'})`,
+          background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#5C000F'})`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#fff', fontSize: 'var(--text-sm)', fontWeight: 800,
           boxShadow: `0 0 0 2px rgba(255,255,255,0.07), 0 0 0 3px ${accentColor}40, 0 2px 10px ${accentGlow}`,

@@ -62,11 +62,11 @@ export function MobileTabBar() {
   }, []);
 
   // Scope accent for active item
-  const accent      = isPersonal ? '#7C3AED' : '#C8102E';
-  const pillBg      = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)';
-  const barBg       = isDark ? 'rgba(10,12,20,0.94)'    : 'rgba(255,255,255,0.94)';
-  const borderColor = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.08)';
-  const inactiveColor = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.35)';
+  const accent      = isPersonal ? '#D4A535' : '#8B0018';
+  const pillBg      = isDark ? 'rgba(34,197,94,0.10)' : 'rgba(0,0,0,0.06)';
+  const barBg       = isDark ? 'rgba(5,12,5,0.95)'    : 'rgba(255,255,255,0.95)';
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const inactiveColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.32)';
 
   return (
     <div
@@ -82,8 +82,8 @@ export function MobileTabBar() {
         WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
         border: `1px solid ${borderColor}`,
         boxShadow: isDark
-          ? '0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.06) inset'
-          : '0 8px 32px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.8) inset',
+          ? '0 8px 32px rgba(0,0,0,0.6), 0 1px 0 rgba(34,197,94,0.08) inset'
+          : '0 8px 32px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.9) inset',
         display: 'flex',
         alignItems: 'center',
         padding: '0 4px',

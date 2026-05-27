@@ -151,10 +151,10 @@ export function Sidebar() {
   const isPersonal = pathname.startsWith('/personal');
   const { count: lowStockCount } = useLowStock();
 
-  const bizColor      = '#C8102E';
-  const bizGlow       = 'rgba(200,16,46,0.12)';
+  const bizColor      = '#8B0018';
+  const bizGlow       = 'rgba(139,0,24,0.16)';
   const personalColor = '#D4A535';
-  const personalGlow  = 'rgba(212,165,53,0.12)';
+  const personalGlow  = 'rgba(212,165,53,0.14)';
   const accentColor   = isPersonal ? personalColor : bizColor;
 
   const handleLogout = async () => {
@@ -345,7 +345,7 @@ export function Sidebar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <div style={{
               width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#7B0018'})`,
+              background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#5C000F'})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: '0.6rem', fontWeight: 800,
               border: `2px solid ${accentColor}30`,

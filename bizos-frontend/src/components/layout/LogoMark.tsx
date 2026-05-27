@@ -1,6 +1,6 @@
 'use client';
 
-export const BRAND_COLOR = '#800000';
+export const BRAND_COLOR = '#8B0018';
 
 interface LogoMarkProps {
   size?: number;
