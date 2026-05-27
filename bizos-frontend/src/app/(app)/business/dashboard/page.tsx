@@ -49,7 +49,7 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: 'year',       label: 'Year'       },
 ];
 
-function SectionTitle({ children, accent = '#C8102E' }: { children: React.ReactNode; accent?: string }) {
+function SectionTitle({ children, accent = '#8B0018' }: { children: React.ReactNode; accent?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
       <div style={{ width: 3, height: 14, borderRadius: 2, background: accent, flexShrink: 0 }} />
@@ -139,8 +139,8 @@ export default function BusinessDashboard() {
           borderRadius: 20, padding: 3,
         }}>
           {([
-            { label: 'Business', href: '/business/dashboard', active: true,  color: '#800000' },
-            { label: 'Personal', href: '/personal/dashboard', active: false, color: '#7C3AED' },
+            { label: 'Business', href: '/business/dashboard', active: true,  color: '#8B0018' },
+            { label: 'Personal', href: '/personal/dashboard', active: false, color: '#D4A535' },
           ] as const).map(({ label, href, active, color }) => (
             <button
               key={label}
@@ -231,9 +231,9 @@ export default function BusinessDashboard() {
                 border: period === p.key ? 'none' : '1px solid var(--border-subtle)',
                 cursor: 'pointer',
                 fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
-                background: period === p.key ? '#C8102E' : 'transparent',
+                background: period === p.key ? '#8B0018' : 'transparent',
                 color: period === p.key ? '#fff' : 'var(--text-muted)',
-                boxShadow: period === p.key ? '0 2px 10px rgba(200,16,46,0.38)' : 'none',
+                boxShadow: period === p.key ? '0 2px 10px rgba(139,0,24,0.40)' : 'none',
                 transition: 'all 0.2s', flexShrink: 0,
               }}
             >
@@ -245,11 +245,11 @@ export default function BusinessDashboard() {
         {/* Analytics quick link */}
         <Link href="/business/analytics" style={{
           display: 'flex', alignItems: 'center', gap: 5,
-          fontSize: 'var(--text-xs)', fontWeight: 700, color: '#C8102E',
+          fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8B0018',
           textDecoration: 'none', flexShrink: 0,
           padding: '6px 12px', borderRadius: 20,
-          border: '1px solid rgba(200,16,46,0.25)',
-          background: 'rgba(200,16,46,0.07)',
+          border: '1px solid rgba(139,0,24,0.25)',
+          background: 'rgba(139,0,24,0.08)',
           whiteSpace: 'nowrap',
         }}>
           <LineChart size={12} />
@@ -263,11 +263,11 @@ export default function BusinessDashboard() {
 
         <div className="atm-card" style={{
           background: isLoss
-            ? 'linear-gradient(145deg, #1a0000 0%, #3D0000 40%, #700010 100%)'
-            : 'linear-gradient(145deg, #280008 0%, #6B0016 35%, #C8102E 75%, #D62035 100%)',
+            ? 'linear-gradient(145deg, #0A0A0A 0%, #1A0000 40%, #3D0808 100%)'
+            : 'linear-gradient(145deg, #061206 0%, #0D2410 35%, #1A4020 65%, #1E5028 100%)',
           boxShadow: isLoss
-            ? '0 20px 56px rgba(239,68,68,0.32), 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
-            : '0 20px 56px rgba(200,16,46,0.42), 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18)',
+            ? '0 20px 56px rgba(239,68,68,0.25), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 20px 56px rgba(34,197,94,0.15), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
         }}>
           <div className="atm-card-shimmer" />
           <div className="atm-card-texture" />
@@ -276,13 +276,13 @@ export default function BusinessDashboard() {
           <div style={{
             position: 'absolute', top: '-35%', right: '-15%',
             width: '55%', height: '100%',
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.14) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, transparent 60%)',
             pointerEvents: 'none', zIndex: 1,
           }} />
           <div style={{
             position: 'absolute', bottom: '-20%', left: '-5%',
             width: '35%', height: '60%',
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, rgba(212,165,53,0.07) 0%, transparent 70%)',
             pointerEvents: 'none', zIndex: 1,
           }} />
 
@@ -401,7 +401,7 @@ export default function BusinessDashboard() {
           background: 'var(--bg-surface)', borderRadius: 14,
           border: '1px solid var(--border-subtle)',
           textDecoration: 'none', fontSize: 'var(--text-xs)',
-          fontWeight: 700, color: '#C8102E',
+          fontWeight: 700, color: '#8B0018',
           transition: 'background 0.15s',
         }}>
           <LineChart size={13} />
@@ -492,7 +492,7 @@ export default function BusinessDashboard() {
                     </p>
                   </div>
                   <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #C8102E, #E8183A)', width: `${pct}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #8B0018, #A50014)', width: `${pct}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
                   </div>
                   <p style={{ fontSize: '0.57rem', color: pct >= 100 ? 'var(--accent-green)' : 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
                     {pct >= 100 ? '✓ Target reached!' : `${pct.toFixed(0)}% of target`}
@@ -578,7 +578,7 @@ export default function BusinessDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
             <SectionTitle>Revenue vs Expenses</SectionTitle>
             <Link href="/business/analytics" style={{
-              fontSize: 'var(--text-xs)', fontWeight: 700, color: '#C8102E',
+              fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8B0018',
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
             }}>
               Full view <ChevronRight size={12} />
@@ -603,7 +603,7 @@ export default function BusinessDashboard() {
           <SectionTitle>Recent Jobs</SectionTitle>
           <Link href="/business/repairs" style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 'var(--text-xs)', color: '#C8102E',
+            fontSize: 'var(--text-xs)', color: '#8B0018',
             textDecoration: 'none', fontWeight: 700,
           }}>
             See all <ChevronRight size={13} />

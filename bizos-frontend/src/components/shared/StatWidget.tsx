@@ -20,11 +20,11 @@ interface StatWidgetProps {
 }
 
 const ACCENT_MAP = {
-  profit:     { topBar: 'linear-gradient(90deg,#10B981,#059669)', glow: 'rgba(16,185,129,0.1)',  text: '#10B981', shadow: 'rgba(16,185,129,0.18)', dot: '#10B981' },
-  loss:       { topBar: 'linear-gradient(90deg,#EF4444,#DC2626)', glow: 'rgba(239,68,68,0.1)',   text: '#EF4444', shadow: 'rgba(239,68,68,0.18)',  dot: '#EF4444' },
-  warning:    { topBar: 'linear-gradient(90deg,#F59E0B,#D97706)', glow: 'rgba(245,158,11,0.1)',  text: '#F59E0B', shadow: 'rgba(245,158,11,0.18)', dot: '#F59E0B' },
-  neutral:    { topBar: 'linear-gradient(90deg,#C8102E,#9B0D22)', glow: 'rgba(200,16,46,0.1)',   text: '#C8102E', shadow: 'rgba(200,16,46,0.18)',  dot: '#C8102E' },
-  investment: { topBar: 'linear-gradient(90deg,#D4A535,#A07820)', glow: 'rgba(212,165,53,0.1)',  text: '#D4A535', shadow: 'rgba(212,165,53,0.18)', dot: '#D4A535' },
+  profit:     { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.2)',  icon: '#22C55E', text: '#22C55E',  glow: 'rgba(34,197,94,0.18)'  },
+  loss:       { bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.22)',  icon: '#EF4444', text: '#EF4444',  glow: 'rgba(239,68,68,0.18)'  },
+  warning:    { bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.22)', icon: '#F59E0B', text: '#F59E0B',  glow: 'rgba(245,158,11,0.18)' },
+  neutral:    { bg: 'rgba(139,0,24,0.12)',    border: 'rgba(139,0,24,0.22)',   icon: '#8B0018', text: '#8B0018',  glow: 'rgba(139,0,24,0.18)'   },
+  investment: { bg: 'rgba(212,165,53,0.12)',  border: 'rgba(212,165,53,0.22)', icon: '#D4A535', text: '#D4A535',  glow: 'rgba(212,165,53,0.18)' },
 };
 
 function useCountUp(target: number, duration = 900, active = true) {
@@ -72,7 +72,7 @@ function formatLive(value: number, format: StatWidgetProps['numericFormat']): st
 }
 
 function SkeletonPulse({ width, height }: { width: string; height: string }) {
-  return <div className="skeleton" style={{ width, height, borderRadius: 6 }} />;
+  return <div className="skeleton" style={{ width, height, borderRadius: 8 }} />;
 }
 
 export function StatWidget({
@@ -80,8 +80,8 @@ export function StatWidget({
   change, changePositive, accent = 'neutral',
   icon, loading, sublabel, onClick,
 }: StatWidgetProps) {
-  const colors   = ACCENT_MAP[accent];
-  const countVal = useCountUp(numericValue ?? 0, 950, !loading && numericValue != null);
+  const colors     = ACCENT_MAP[accent];
+  const countVal   = useCountUp(numericValue ?? 0, 950, !loading && numericValue != null);
   const displayValue = (numericValue != null && !loading)
     ? formatLive(countVal, numericFormat)
     : value;
@@ -91,72 +91,61 @@ export function StatWidget({
       variants={fadeUp}
       initial="initial"
       animate="animate"
-      whileHover={{ y: -3, transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
-      whileTap={onClick ? { scale: 0.98 } : {}}
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } }}
+      whileTap={onClick ? { scale: 0.97 } : {}}
       onClick={onClick}
       style={{
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--card-radius)',
-        padding: 'var(--space-5)',
+        padding: '20px',
         position: 'relative',
         overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'border-color 0.2s, box-shadow 0.2s',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.06)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)',
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLElement;
-        el.style.borderColor = 'var(--border-default)';
-        el.style.boxShadow = `0 4px 20px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1), 0 0 0 1px ${colors.shadow}`;
+        el.style.borderColor = colors.border;
+        el.style.boxShadow = `0 8px 28px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15), 0 0 0 1px ${colors.border}`;
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLElement;
         el.style.borderColor = 'var(--border-subtle)';
-        el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.06)';
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)';
       }}
     >
-      {/* Top accent bar */}
+      {/* Subtle background glow from icon corner */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: colors.topBar,
-        borderRadius: 'var(--card-radius) var(--card-radius) 0 0',
-      }} />
-
-      {/* Subtle corner glow */}
-      <div style={{
-        position: 'absolute', top: -8, right: -8, width: 80, height: 80,
-        background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)`,
+        position: 'absolute', top: -20, right: -20,
+        width: 90, height: 90,
+        background: `radial-gradient(circle, ${colors.glow} 0%, transparent 65%)`,
         pointerEvents: 'none',
       }} />
 
-      {/* Header row */}
+      {/* Header: label + icon */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        marginBottom: 'var(--space-4)', marginTop: 4,
+        display: 'flex', alignItems: 'flex-start',
+        justifyContent: 'space-between', marginBottom: 14,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: 2,
-            background: colors.dot, flexShrink: 0,
-            boxShadow: `0 0 6px ${colors.dot}80`,
-          }} />
-          <span style={{
-            fontSize: 'var(--text-xs)', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            color: 'var(--text-muted)',
-          }}>
-            {label}
-          </span>
-        </div>
+        <span style={{
+          fontSize: '0.65rem', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.1em',
+          color: 'var(--text-muted)',
+          lineHeight: 1.3,
+        }}>
+          {label}
+        </span>
 
         {icon && (
           <div style={{
-            width: 30, height: 30, borderRadius: 9,
-            background: colors.glow,
-            border: `1px solid ${colors.shadow}`,
+            width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+            background: colors.bg,
+            border: `1px solid ${colors.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: colors.text, flexShrink: 0,
+            color: colors.icon,
+            boxShadow: `0 4px 12px ${colors.glow}`,
           }}>
             {icon}
           </div>
@@ -165,24 +154,24 @@ export function StatWidget({
 
       {/* Value */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          <SkeletonPulse width="68%" height="1.75rem" />
-          <SkeletonPulse width="40%" height="0.75rem" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SkeletonPulse width="72%" height="1.9rem" />
+          <SkeletonPulse width="44%" height="0.75rem" />
         </div>
       ) : (
         <>
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.32, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 'clamp(1.2rem, 2.2vw, 1.75rem)',
+              fontSize: 'clamp(1.25rem, 2.4vw, 1.85rem)',
               fontWeight: 700,
               color: 'var(--text-primary)',
               lineHeight: 1.1,
               letterSpacing: '-0.03em',
-              marginBottom: sublabel || change ? 'var(--space-2)' : 0,
+              marginBottom: sublabel || change ? 8 : 0,
               wordBreak: 'break-all',
             }}
           >
@@ -191,8 +180,8 @@ export function StatWidget({
 
           {sublabel && (
             <p style={{
-              fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
-              marginBottom: change ? 4 : 0, lineHeight: 1.4,
+              fontSize: '0.65rem', color: 'var(--text-muted)',
+              marginBottom: change ? 6 : 0, lineHeight: 1.4,
             }}>
               {sublabel}
             </p>
@@ -202,25 +191,31 @@ export function StatWidget({
             <motion.div
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.22, delay: 0.12 }}
+              transition={{ duration: 0.22, delay: 0.14 }}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: '0.65rem', fontWeight: 700,
+                fontSize: '0.62rem', fontWeight: 700,
                 color: changePositive === true
-                  ? '#10B981' : changePositive === false
-                    ? '#EF4444' : 'var(--text-secondary)',
+                  ? 'var(--accent-green)'
+                  : changePositive === false
+                  ? 'var(--accent-red)'
+                  : 'var(--text-secondary)',
                 background: changePositive === true
-                  ? 'rgba(16,185,129,0.1)' : changePositive === false
-                    ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
-                padding: '2px 8px', borderRadius: 20,
+                  ? 'rgba(34,197,94,0.1)'
+                  : changePositive === false
+                  ? 'rgba(239,68,68,0.1)'
+                  : 'var(--bg-elevated)',
+                padding: '3px 8px', borderRadius: 20,
                 border: `1px solid ${changePositive === true
-                  ? 'rgba(16,185,129,0.2)' : changePositive === false
-                    ? 'rgba(239,68,68,0.2)' : 'var(--border-subtle)'}`,
+                  ? 'rgba(34,197,94,0.22)'
+                  : changePositive === false
+                  ? 'rgba(239,68,68,0.22)'
+                  : 'var(--border-subtle)'}`,
               }}
             >
-              {changePositive === true  && <TrendingUp size={10} />}
-              {changePositive === false && <TrendingDown size={10} />}
-              {changePositive === undefined && <Minus size={10} />}
+              {changePositive === true  && <TrendingUp  size={9} />}
+              {changePositive === false && <TrendingDown size={9} />}
+              {changePositive === undefined && <Minus    size={9} />}
               {change}
             </motion.div>
           )}

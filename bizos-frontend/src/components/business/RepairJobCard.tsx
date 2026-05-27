@@ -93,32 +93,54 @@ export function RepairJobCard({ job, onClick, variant = 'compact', showBorder = 
     );
   }
 
-  // compact variant — row style (for dashboard list)
+  // compact variant — fintech transaction row
+  const initials = job.customer_name
+    .split(' ')
+    .slice(0, 2)
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase();
+
+  const avatarColors: Record<string, string> = {
+    A: '#8B0018', B: '#0E7490', C: '#6D28D9', D: '#B45309', E: '#065F46',
+    F: '#7C3AED', G: '#DC2626', H: '#0369A1', I: '#15803D', J: '#92400E',
+    K: '#7E22CE', L: '#0F766E', M: '#B91C1C', N: '#1D4ED8', O: '#166534',
+    P: '#C2410C', Q: '#6B21A8', R: '#0C4A6E', S: '#14532D', T: '#78350F',
+    U: '#581C87', V: '#134E4A', W: '#7F1D1D', X: '#1E3A5F', Y: '#1A3A1A', Z: '#3B0764',
+  };
+  const avatarBg = avatarColors[initials[0]] ?? '#8B0018';
+
   return (
     <div
       onClick={() => onClick?.(job)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-        padding: 'var(--space-4) var(--space-5)',
+        display: 'flex', alignItems: 'center', gap: 14,
+        padding: '12px 20px',
         borderBottom: showBorder ? '1px solid var(--border-subtle)' : 'none',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'background 0.15s',
       }}
-      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
       onMouseLeave={(e) => { if (onClick) e.currentTarget.style.background = 'transparent'; }}
     >
+      {/* Avatar circle */}
       <div style={{
-        width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-        background: 'var(--bg-elevated)',
+        width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+        background: `linear-gradient(135deg, ${avatarBg}, ${avatarBg}cc)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)',
-        color: 'var(--accent-primary)', fontWeight: 700,
+        fontSize: '0.7rem', fontWeight: 800, color: '#fff',
+        letterSpacing: '0.02em',
+        boxShadow: `0 2px 8px ${avatarBg}50`,
       }}>
-        #{job.job_number}
+        {initials}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{
+          fontSize: 'var(--text-sm)', fontWeight: 600,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          color: 'var(--text-primary)', marginBottom: 2,
+        }}>
           {job.customer_name}
         </p>
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
@@ -127,10 +149,13 @@ export function RepairJobCard({ job, onClick, variant = 'compact', showBorder = 
       </div>
 
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <Badge variant={job.status as RepairStatus} />
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 3 }}>
+        <p style={{
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)',
+          fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4,
+        }}>
           {formatNaira(job.total_charge)}
         </p>
+        <Badge variant={job.status as RepairStatus} />
       </div>
     </div>
   );
