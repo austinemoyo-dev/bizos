@@ -72,6 +72,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LimitBodySizeMiddleware)
 
 origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+# Capacitor Android uses capacitor://localhost or https://localhost as origin
+origins += ["capacitor://localhost", "https://localhost", "http://localhost"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
