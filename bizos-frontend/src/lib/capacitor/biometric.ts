@@ -2,8 +2,12 @@ import { Capacitor } from '@capacitor/core';
 
 async function getPlugin() {
   if (!Capacitor.isNativePlatform()) return null;
-  const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
-  return BiometricAuth;
+  try {
+    const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+    return BiometricAuth;
+  } catch {
+    return null;
+  }
 }
 
 export async function isBiometricAvailable(): Promise<boolean> {
