@@ -256,8 +256,8 @@ def get_debtors(db: Session) -> List[dict]:
                 "date": sale.sold_at.date() if sale.sold_at else date.today()
             })
 
-    # Repairs where balance > 0
-    repairs = db.query(RepairJob).all()
+    # Repairs where balance > 0 (exclude cancelled jobs)
+    repairs = db.query(RepairJob).filter(RepairJob.status != 'cancelled').all()
     for job in repairs:
         balance = job.total_charge - job.amount_paid
         if balance > 0:

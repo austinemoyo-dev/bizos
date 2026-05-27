@@ -22,12 +22,13 @@ import { exportCsv } from '@/lib/exportCsv';
 import { IfRole } from '@/components/shared/IfRole';
 
 const STATUS_TABS = [
-  { label: 'All', value: '' },
+  { label: 'All', value: 'received,diagnosed,in_progress,completed,delivered' },
   { label: 'Received', value: 'received' },
   { label: 'Diagnosed', value: 'diagnosed' },
   { label: 'In Progress', value: 'in_progress' },
   { label: 'Completed', value: 'completed' },
   { label: 'Delivered', value: 'delivered' },
+  { label: 'Cancelled', value: 'cancelled' },
 ];
 
 type DatePreset = 'all' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
@@ -66,7 +67,7 @@ export default function RepairsPage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('');
+  const [activeTab, setActiveTab] = useState('received,diagnosed,in_progress,completed,delivered');
   const [search, setSearch] = useState('');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showNewJob, setShowNewJob] = useState(false);
@@ -158,7 +159,7 @@ export default function RepairsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['repairs', activeTab, debouncedSearch, datePreset, customFrom, customTo],
-    queryFn: () => repairsApi.list({ status: activeTab || undefined, q: debouncedSearch || undefined, ...dateRange }),
+    queryFn: () => repairsApi.list({ status: activeTab, q: debouncedSearch || undefined, ...dateRange }),
   });
 
   const handleCreate = async (formData: RepairJobCreate) => {
