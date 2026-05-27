@@ -25,6 +25,8 @@ import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import Link from 'next/link';
 import { InsightsCard } from '@/components/shared/InsightsCard';
+import { UserAvatar } from '@/components/shared/UserAvatar';
+import { useProfileStore } from '@/lib/stores/profileStore';
 import { useRouter } from 'next/navigation';
 
 type Period = 'week' | 'month' | 'last_month' | 'year';
@@ -112,6 +114,8 @@ export default function BusinessDashboard() {
   };
 
   const { count: lowStockCount, items: lowStockItems } = useLowStock();
+  const { loadFromStorage } = useProfileStore();
+  useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
 
   const hour     = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -141,16 +145,7 @@ export default function BusinessDashboard() {
       {/* ── Mobile greeting header (replaces TopBar on mobile) ─── */}
       <div className="dash-mobile-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, #8B0018, #5C000F)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: '0.72rem', fontWeight: 800,
-            boxShadow: '0 4px 12px rgba(139,0,24,0.4)',
-            letterSpacing: '0.02em',
-          }}>
-            {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
-          </div>
+          <UserAvatar size={44} style={{ boxShadow: '0 4px 12px rgba(139,0,24,0.35)' }} />
           <div>
             <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>
               {greeting}
@@ -255,20 +250,7 @@ export default function BusinessDashboard() {
         </Link>
       </motion.div>
 
-      {/* ── Total Balance block ───────────────────────────────── */}
-      <motion.div variants={fadeUp} initial="initial" animate="animate"
-        className="dash-balance-block">
-        <p className="dash-balance-label">Total Revenue</p>
-        {isLoading ? (
-          <div className="skeleton" style={{ height: '2.8rem', width: '55%', borderRadius: 8 }} />
-        ) : (
-          <p className="dash-balance-amount">
-            {summary ? formatNaira(summary.total_revenue) : '—'}
-          </p>
-        )}
-      </motion.div>
-
-      {/* ── ATM Card ─────────────────────────────────────────────── */}
+      {/* ── ATM Card (with integrated revenue) ───────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
         style={{ marginBottom: 0, perspective: '1000px' }}>
 
@@ -301,14 +283,39 @@ export default function BusinessDashboard() {
             {/* Row 1: Chip + Mastercard circles */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div className="atm-chip" />
-              {/* Mastercard circles */}
               <div className="mc-circles">
                 <div className="mc-circle-left" />
                 <div className="mc-circle-right" />
               </div>
             </div>
 
-            {/* Row 2: Card number + Dash brand */}
+            {/* Row 1b: Total Revenue — integrated onto card */}
+            <div style={{ margin: '10px 0 4px' }}>
+              <p style={{
+                fontSize: '0.47rem', color: 'rgba(255,255,255,0.38)',
+                textTransform: 'uppercase', letterSpacing: '0.18em',
+                fontWeight: 700, marginBottom: 4,
+              }}>
+                Total Revenue
+              </p>
+              {isLoading ? (
+                <div className="skeleton" style={{
+                  height: '2.2rem', width: '55%',
+                  background: 'rgba(255,255,255,0.10)', borderRadius: 6,
+                }} />
+              ) : (
+                <p style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'clamp(1.5rem, 5vw, 2.2rem)',
+                  fontWeight: 700, color: '#fff',
+                  letterSpacing: '-0.03em', lineHeight: 1,
+                }}>
+                  {summary ? formatNaira(summary.total_revenue) : '—'}
+                </p>
+              )}
+            </div>
+
+            {/* Row 2: Card number */}
             <div>
               <p className="atm-card-number">•••• •••• •••• 8934</p>
             </div>

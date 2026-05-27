@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useProfileStore } from '@/lib/stores/profileStore';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import { usersApi, UserRecord } from '@/lib/api/users';
 import { repairsApi } from '@/lib/api/repairs';
 import { inventoryApi } from '@/lib/api/inventory';
@@ -239,6 +241,27 @@ export default function SettingsPage() {
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  const { avatarUrl, setAvatar, clearAvatar } = useProfileStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      addToast({ type: 'error', title: 'Upload failed', message: 'Image must be under 2 MB' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAvatar(reader.result);
+        addToast({ type: 'success', title: 'Profile updated', message: 'Profile photo updated' });
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       <PageHeader
@@ -255,24 +278,62 @@ export default function SettingsPage() {
 
       {/* Current user profile */}
       <div className="card" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
-        <p className="section-label">My Profile</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, #C8102E, #7B0018)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: 'var(--text-xl)', fontWeight: 800,
-          }}>
-            {currentUser?.name?.charAt(0) ?? 'U'}
+        <p className="section-label" style={{ marginBottom: 'var(--space-4)' }}>My Profile</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+          {/* Avatar + upload button */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <UserAvatar size={72} style={{ boxShadow: '0 4px 16px rgba(139,0,24,0.35)' }} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Change photo"
+              style={{
+                position: 'absolute', bottom: -2, right: -2,
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'var(--accent-primary)', color: '#fff',
+                border: '2px solid var(--bg-surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}
+            >
+              +
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+            />
           </div>
-          <div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)' }}>
               {currentUser?.name}
             </p>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 4 }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
               {currentUser?.email}
             </p>
             <RoleBadge role={currentUser?.role ?? 'viewer'} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+            <button
+              className="btn-ghost"
+              style={{ fontSize: 'var(--text-xs)', padding: '5px 14px' }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Change Photo
+            </button>
+            {avatarUrl && (
+              <button
+                className="btn-danger"
+                style={{ fontSize: 'var(--text-xs)', padding: '5px 14px' }}
+                onClick={() => { clearAvatar(); addToast({ type: 'success', title: 'Photo removed', message: 'Profile photo removed' }); }}
+              >
+                Remove
+              </button>
+            )}
           </div>
         </div>
       </div>

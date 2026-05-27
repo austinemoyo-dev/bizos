@@ -16,6 +16,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoWordmark, LogoMark } from './LogoMark';
 import { useLowStock } from '@/lib/hooks/useLowStock';
+import { UserAvatar } from '@/components/shared/UserAvatar';
+import { useProfileStore } from '@/lib/stores/profileStore';
+import { useEffect } from 'react';
 
 const BUSINESS_NAV = [
   { label: 'Dashboard',   href: '/business/dashboard',     icon: LayoutDashboard },
@@ -151,6 +154,9 @@ export function Sidebar() {
   const isPersonal = pathname.startsWith('/personal');
   const { count: lowStockCount } = useLowStock();
 
+  const { loadFromStorage } = useProfileStore();
+  useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
+
   const bizColor      = '#8B0018';
   const bizGlow       = 'rgba(139,0,24,0.16)';
   const personalColor = '#D4A535';
@@ -251,37 +257,6 @@ export function Sidebar() {
         </button>
       )}
 
-      {/* ── Scope switcher ───────────────────────────────── */}
-      {!collapsed && (
-        <div style={{ padding: '8px 10px 2px', flexShrink: 0, position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display: 'flex',
-            background: 'rgba(0,0,0,0.25)',
-            borderRadius: 11, padding: 3, gap: 2,
-            border: '1px solid rgba(255,255,255,0.06)',
-          }}>
-            {([
-              { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: bizColor },
-              { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: personalColor },
-            ] as const).map(s => (
-              <Link key={s.label} href={s.href} style={{
-                flex: 1, textAlign: 'center',
-                padding: '5px 0',
-                borderRadius: 9,
-                fontSize: '0.6rem', fontWeight: 700,
-                color: s.active ? s.color : 'var(--text-muted)',
-                background: s.active ? 'var(--bg-elevated)' : 'transparent',
-                textDecoration: 'none',
-                transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
-                boxShadow: s.active ? `0 1px 6px rgba(0,0,0,0.25), 0 0 0 1px ${s.color}18` : 'none',
-                letterSpacing: '0.02em',
-              }}>
-                {s.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Navigation ──────────────────────────────────── */}
       <nav style={{
@@ -343,16 +318,13 @@ export function Sidebar() {
         }}>
           {/* Avatar + name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#5C000F'})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '0.6rem', fontWeight: 800,
-              border: `2px solid ${accentColor}30`,
-              boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3)`,
-            }}>
-              {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
-            </div>
+            <UserAvatar
+              size={32}
+              style={{
+                border: `2px solid ${accentColor}30`,
+                boxShadow: `0 0 0 1px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3)`,
+              }}
+            />
 
             <AnimatePresence initial={false}>
               {!collapsed && (

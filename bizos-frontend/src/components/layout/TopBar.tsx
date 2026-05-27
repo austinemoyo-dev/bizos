@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -8,6 +9,8 @@ import { LogoMark } from './LogoMark';
 import { useThemeStore } from '@/lib/stores/themeStore';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UserAvatar } from '@/components/shared/UserAvatar';
+import { useProfileStore } from '@/lib/stores/profileStore';
 
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
   '/business/dashboard': { title: 'Overview',     subtitle: 'Business' },
@@ -42,10 +45,12 @@ export function TopBar() {
   const { theme, toggle } = useThemeStore();
   const isLight   = theme === 'light';
 
+  const { loadFromStorage } = useProfileStore();
+  useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
+
   const meta       = PAGE_META[pathname] ?? { title: 'BizOS' };
   const isPersonal = pathname.startsWith('/personal');
   const accentColor = isPersonal ? '#D4A535' : '#8B0018';
-  const accentGlow  = isPersonal ? 'rgba(212,165,53,0.32)' : 'rgba(139,0,24,0.32)';
 
   return (
     <header style={{
@@ -79,40 +84,9 @@ export function TopBar() {
         />
       </div>
 
-      {/* Left: logo (mobile) + scope switcher + page title */}
+      {/* Left: logo + page title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0, flex: 1 }}>
-        <div className="mobile-logo-mark">
-          <LogoMark size={26} color={accentColor} />
-        </div>
-
-        {/* ── Scope switcher pill ── */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 20, padding: 3, flexShrink: 0,
-        }}>
-          {([
-            { label: 'Business', href: '/business/dashboard', active: !isPersonal, color: '#8B0018' },
-            { label: 'Personal', href: '/personal/dashboard', active: isPersonal,  color: '#D4A535' },
-          ] as const).map(({ label, href, active, color }) => (
-            <button
-              key={label}
-              onClick={() => router.push(href)}
-              style={{
-                padding: '5px 13px', borderRadius: 16, border: 'none', cursor: 'pointer',
-                fontSize: '0.68rem', fontWeight: 700,
-                background: active ? color : 'transparent',
-                color: active ? '#fff' : 'var(--text-muted)',
-                transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
-                boxShadow: active ? `0 2px 8px ${color}40` : 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <LogoMark size={24} color={accentColor} />
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -181,17 +155,13 @@ export function TopBar() {
         </div>
 
         {/* Avatar */}
-        <div style={{
-          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-          background: `linear-gradient(135deg, ${accentColor}, ${isPersonal ? '#A07820' : '#5C000F'})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: 'var(--text-sm)', fontWeight: 800,
-          boxShadow: `0 0 0 2px rgba(255,255,255,0.07), 0 0 0 3px ${accentColor}40, 0 2px 10px ${accentGlow}`,
-          cursor: 'default',
-          letterSpacing: '-0.01em',
-        }} title={user?.name}>
-          {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
-        </div>
+        <UserAvatar
+          size={36}
+          style={{
+            boxShadow: `0 0 0 2px rgba(255,255,255,0.07), 0 0 0 3px ${accentColor}30, 0 2px 10px rgba(0,0,0,0.3)`,
+            cursor: 'default',
+          }}
+        />
       </div>
 
       <style>{`
