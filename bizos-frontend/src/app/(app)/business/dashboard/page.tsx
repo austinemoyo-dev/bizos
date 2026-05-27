@@ -18,13 +18,13 @@ import {
 import { useAuthStore } from '@/lib/stores/authStore';
 import {
   ChevronRight, Wrench, Target, AlertTriangle,
-  HandCoins, Package, TrendingDown, LineChart, Wallet,
+  HandCoins, Package, TrendingDown, LineChart,
+  Bell, ShoppingCart, Users, BarChart2, MoreHorizontal,
 } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
 import Link from 'next/link';
 import { InsightsCard } from '@/components/shared/InsightsCard';
-import { RepairJobCard } from '@/components/business/RepairJobCard';
 import { useRouter } from 'next/navigation';
 
 type Period = 'week' | 'month' | 'last_month' | 'year';
@@ -45,22 +45,23 @@ function getPeriodDates(period: Period) {
 const PERIODS: { key: Period; label: string }[] = [
   { key: 'week',       label: 'Week'       },
   { key: 'month',      label: 'Month'      },
-  { key: 'last_month', label: 'Last Month' },
+  { key: 'last_month', label: 'Last'       },
   { key: 'year',       label: 'Year'       },
 ];
 
-function SectionTitle({ children, accent = '#8B0018' }: { children: React.ReactNode; accent?: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
-      <div style={{ width: 3, height: 14, borderRadius: 2, background: accent, flexShrink: 0 }} />
-      <p style={{
-        fontSize: 'var(--text-xs)', fontWeight: 700,
-        color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em',
-      }}>
-        {children}
-      </p>
-    </div>
-  );
+const AVATAR_COLORS = [
+  '#8B0018','#0E7490','#6D28D9','#B45309','#065F46',
+  '#7C3AED','#DC2626','#0369A1','#15803D','#92400E',
+];
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
 export default function BusinessDashboard() {
@@ -84,7 +85,7 @@ export default function BusinessDashboard() {
   });
   const { data: recentJobsData } = useQuery({
     queryKey: ['repairs', 'recent'],
-    queryFn: () => repairsApi.list({ size: 5 }),
+    queryFn: () => repairsApi.list({ size: 10 }),
   });
 
   const currentMonth = new Date().getMonth() + 1;
@@ -112,61 +113,75 @@ export default function BusinessDashboard() {
 
   const { count: lowStockCount, items: lowStockItems } = useLowStock();
 
-  const hour = new Date().getHours();
+  const hour     = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const isLoss    = summary ? summary.net_profit < 0 : false;
+  const isLoss   = summary ? summary.net_profit < 0 : false;
   const recentJobs = recentJobsData?.items ?? [];
 
-  // Live clock for ATM card
+  // Deduplicated recent contacts from repair jobs
+  const recentContacts = Array.from(
+    new Map(recentJobs.map(j => [j.customer_name, j])).values()
+  ).slice(0, 8);
+
+  // Pending jobs for scheduled-payments style scroll
+  const pendingJobs = recentJobs.filter(j =>
+    j.status === 'received' || j.status === 'diagnosed' || j.status === 'in_progress'
+  ).slice(0, 6);
+
+  // Live clock
   const [clock, setClock] = useState<Date>(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const clockTime  = clock.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const clockDate  = format(clock, 'dd MMM').toUpperCase();
   const cardExpiry = format(clock, 'MM/yy');
 
   return (
     <div>
-      {/* ── Scope switcher — mobile only ─────────────────────────── */}
-      <style>{`.biz-scope-switcher{display:none}@media(max-width:767px){.biz-scope-switcher{display:flex}}`}</style>
-      <div className="biz-scope-switcher" style={{ marginBottom: 'var(--space-4)' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 20, padding: 3,
-        }}>
-          {([
-            { label: 'Business', href: '/business/dashboard', active: true,  color: '#8B0018' },
-            { label: 'Personal', href: '/personal/dashboard', active: false, color: '#D4A535' },
-          ] as const).map(({ label, href, active, color }) => (
-            <button
-              key={label}
-              onClick={() => router.push(href)}
-              style={{
-                padding: '5px 14px', borderRadius: 16, border: 'none', cursor: 'pointer',
-                fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap',
-                background: active ? color : 'transparent',
-                color: active ? '#fff' : 'var(--text-muted)',
-                boxShadow: active ? `0 2px 8px ${color}40` : 'none',
-                transition: 'all 0.18s',
-              }}
-            >
-              {label}
-            </button>
-          ))}
+      {/* ── Mobile greeting header (replaces TopBar on mobile) ─── */}
+      <div className="dash-mobile-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, #8B0018, #5C000F)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: '0.72rem', fontWeight: 800,
+            boxShadow: '0 4px 12px rgba(139,0,24,0.4)',
+            letterSpacing: '0.02em',
+          }}>
+            {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
+          </div>
+          <div>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>
+              {greeting}
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)',
+              fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1,
+              letterSpacing: '-0.01em',
+            }}>
+              {user?.name?.split(' ')[0] ?? 'Welcome'} 👋
+            </p>
+          </div>
         </div>
+        <button style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: 'var(--bg-surface)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}>
+          <Bell size={16} />
+        </button>
       </div>
 
-      {/* ── Greeting ─────────────────────────────────────────────── */}
+      {/* ── Desktop greeting ─────────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
-        style={{ marginBottom: 'var(--space-5)' }}>
-        <p style={{
-          fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
-          fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em',
-        }}>
+        className="dash-desktop-greeting"
+        style={{ marginBottom: 'var(--space-4)' }}>
+        <style>{`.dash-desktop-greeting{display:block}@media(max-width:767px){.dash-desktop-greeting{display:none}}`}</style>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {greeting}
         </p>
         <h2 style={{
@@ -177,18 +192,17 @@ export default function BusinessDashboard() {
         </h2>
       </motion.div>
 
-      {/* ── Low-stock alert ──────────────────────────────────────── */}
+      {/* ── Low-stock alert ───────────────────────────────────── */}
       {lowStockCount > 0 && (
-        <motion.div variants={fadeUp} initial="initial" animate="animate"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 'var(--space-3)', flexWrap: 'wrap',
-            background: 'rgba(245,158,11,0.08)',
-            border: '1px solid rgba(245,158,11,0.25)',
-            borderLeft: '3px solid var(--accent-amber)',
-            borderRadius: 12, padding: 'var(--space-3) var(--space-4)',
-            marginBottom: 'var(--space-4)',
-          }}>
+        <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 'var(--space-3)', flexWrap: 'wrap',
+          background: 'rgba(245,158,11,0.08)',
+          border: '1px solid rgba(245,158,11,0.25)',
+          borderLeft: '3px solid var(--accent-amber)',
+          borderRadius: 12, padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-4)',
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <AlertTriangle size={14} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
             <div>
@@ -213,61 +227,58 @@ export default function BusinessDashboard() {
         </motion.div>
       )}
 
-      {/* ── Period + Analytics link ───────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 8, marginBottom: 'var(--space-5)',
-      }}>
-        <div style={{
-          display: 'flex', gap: 5,
-          overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2, flex: 1,
-        }}>
-          {PERIODS.map((p) => (
+      {/* ── Period tabs — reference pill style ────────────────── */}
+      <motion.div variants={fadeUp} initial="initial" animate="animate"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 'var(--space-4)' }}>
+        <div className="period-tabs" style={{ flex: 1 }}>
+          {PERIODS.map(p => (
             <button
               key={p.key}
+              className={`period-tab${period === p.key ? ' active' : ''}`}
               onClick={() => setPeriod(p.key)}
-              style={{
-                padding: '6px 14px', borderRadius: 20,
-                border: period === p.key ? 'none' : '1px solid var(--border-subtle)',
-                cursor: 'pointer',
-                fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
-                background: period === p.key ? '#8B0018' : 'transparent',
-                color: period === p.key ? '#fff' : 'var(--text-muted)',
-                boxShadow: period === p.key ? '0 2px 10px rgba(139,0,24,0.40)' : 'none',
-                transition: 'all 0.2s', flexShrink: 0,
-              }}
             >
               {p.label}
             </button>
           ))}
         </div>
-
-        {/* Analytics quick link */}
         <Link href="/business/analytics" style={{
-          display: 'flex', alignItems: 'center', gap: 5,
+          display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
           fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8B0018',
-          textDecoration: 'none', flexShrink: 0,
+          textDecoration: 'none',
           padding: '6px 12px', borderRadius: 20,
           border: '1px solid rgba(139,0,24,0.25)',
-          background: 'rgba(139,0,24,0.08)',
+          background: 'rgba(139,0,24,0.07)',
           whiteSpace: 'nowrap',
         }}>
           <LineChart size={12} />
           Analytics
         </Link>
-      </div>
+      </motion.div>
 
-      {/* ── ATM Card — Revenue as primary ────────────────────────── */}
+      {/* ── Total Balance block ───────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"
-        style={{ marginBottom: 'var(--space-5)', perspective: '1000px' }}>
+        className="dash-balance-block">
+        <p className="dash-balance-label">Total Revenue</p>
+        {isLoading ? (
+          <div className="skeleton" style={{ height: '2.8rem', width: '55%', borderRadius: 8 }} />
+        ) : (
+          <p className="dash-balance-amount">
+            {summary ? formatNaira(summary.total_revenue) : '—'}
+          </p>
+        )}
+      </motion.div>
+
+      {/* ── ATM Card ─────────────────────────────────────────────── */}
+      <motion.div variants={fadeUp} initial="initial" animate="animate"
+        style={{ marginBottom: 0, perspective: '1000px' }}>
 
         <div className="atm-card" style={{
           background: isLoss
             ? 'linear-gradient(145deg, #0A0A0A 0%, #1A0000 40%, #3D0808 100%)'
             : 'linear-gradient(145deg, #061206 0%, #0D2410 35%, #1A4020 65%, #1E5028 100%)',
           boxShadow: isLoss
-            ? '0 20px 56px rgba(239,68,68,0.25), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'
-            : '0 20px 56px rgba(34,197,94,0.15), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+            ? '0 20px 56px rgba(239,68,68,0.22), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07)'
+            : '0 20px 56px rgba(34,197,94,0.12), 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.09)',
         }}>
           <div className="atm-card-shimmer" />
           <div className="atm-card-texture" />
@@ -276,52 +287,33 @@ export default function BusinessDashboard() {
           <div style={{
             position: 'absolute', top: '-35%', right: '-15%',
             width: '55%', height: '100%',
-            background: 'radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, transparent 60%)',
+            background: 'radial-gradient(ellipse, rgba(34,197,94,0.10) 0%, transparent 60%)',
             pointerEvents: 'none', zIndex: 1,
           }} />
           <div style={{
             position: 'absolute', bottom: '-20%', left: '-5%',
             width: '35%', height: '60%',
-            background: 'radial-gradient(ellipse, rgba(212,165,53,0.07) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, rgba(212,165,53,0.06) 0%, transparent 70%)',
             pointerEvents: 'none', zIndex: 1,
           }} />
 
           <div className="atm-card-inner">
-            {/* Row 1: Chip + Brand */}
+            {/* Row 1: Chip + Mastercard circles */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div className="atm-chip" />
-              <div style={{ textAlign: 'right' }}>
-                <p style={{
-                  fontFamily: 'var(--font-display)', fontSize: '0.72rem',
-                  fontWeight: 800, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.05em',
-                }}>
-                  Dash & Co.
-                </p>
-                <p style={{
-                  fontSize: '0.52rem', color: 'rgba(255,255,255,0.38)',
-                  letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 2,
-                }}>
-                  Business
-                </p>
+              {/* Mastercard circles */}
+              <div className="mc-circles">
+                <div className="mc-circle-left" />
+                <div className="mc-circle-right" />
               </div>
             </div>
 
-            {/* Row 2: Total Revenue (primary) */}
+            {/* Row 2: Card number + Dash brand */}
             <div>
-              <p className="atm-balance-label">Total Revenue</p>
-              {isLoading ? (
-                <div className="skeleton" style={{
-                  height: '2.6rem', width: '62%',
-                  background: 'rgba(255,255,255,0.14)', marginTop: 8, borderRadius: 8,
-                }} />
-              ) : (
-                <p className="atm-balance-amount">
-                  {summary ? formatNaira(summary.total_revenue) : '—'}
-                </p>
-              )}
+              <p className="atm-card-number">•••• •••• •••• 8934</p>
             </div>
 
-            {/* Row 3: Expiry + Live clock */}
+            {/* Row 3: Cardholder + Expiry */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <div>
                 <p style={{
@@ -329,26 +321,28 @@ export default function BusinessDashboard() {
                   textTransform: 'uppercase', letterSpacing: '0.14em',
                   fontWeight: 700, marginBottom: 3,
                 }}>
-                  Valid Thru
+                  Card Holder
                 </p>
-                <p className="atm-card-number" style={{ fontSize: 13, letterSpacing: '0.22em' }}>
-                  {cardExpiry}
+                <p style={{
+                  fontFamily: 'var(--font-display)', fontSize: 13,
+                  fontWeight: 700, color: 'rgba(255,255,255,0.82)',
+                  letterSpacing: '0.04em',
+                }}>
+                  {user?.name ?? 'Dash & Co.'}
                 </p>
               </div>
-
               <div style={{ textAlign: 'right' }}>
                 <p style={{
                   fontSize: '0.47rem', color: 'rgba(255,255,255,0.38)',
                   textTransform: 'uppercase', letterSpacing: '0.14em',
                   fontWeight: 700, marginBottom: 3,
                 }}>
-                  {clockDate}
+                  Exp
                 </p>
                 <p style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'clamp(1rem, 4vw, 1.35rem)',
-                  fontWeight: 700, color: 'rgba(255,255,255,0.88)',
-                  letterSpacing: '0.06em', lineHeight: 1,
+                  fontFamily: 'var(--font-mono)', fontSize: 13,
+                  fontWeight: 700, color: 'rgba(255,255,255,0.82)',
+                  letterSpacing: '0.1em',
                 }}>
                   {isLoss ? (
                     <span style={{
@@ -361,7 +355,7 @@ export default function BusinessDashboard() {
                       <TrendingDown size={9} />
                       Loss
                     </span>
-                  ) : clockTime}
+                  ) : cardExpiry}
                 </p>
               </div>
             </div>
@@ -371,9 +365,9 @@ export default function BusinessDashboard() {
         {/* Stats tray: Expenses | Net Profit | Available Balance */}
         <div className="atm-stats-tray">
           {[
-            { label: 'Expenses',   value: summary?.total_expenses,    color: 'var(--accent-red)'   },
-            { label: isLoss ? 'Loss' : 'Net Profit', value: summary ? Math.abs(summary.net_profit) : undefined, color: isLoss ? 'var(--accent-red)' : 'var(--accent-green)' },
-            { label: 'Balance',    value: summary?.available_balance,  color: 'var(--text-primary)' },
+            { label: 'Expenses',  value: summary?.total_expenses,   color: 'var(--accent-red)'   },
+            { label: isLoss ? 'Loss' : 'Profit', value: summary ? Math.abs(summary.net_profit) : undefined, color: isLoss ? 'var(--accent-red)' : 'var(--accent-green)' },
+            { label: 'Balance',   value: summary?.available_balance, color: 'var(--text-primary)' },
           ].map(({ label, value, color }) => (
             <div key={label} className="atm-stat-cell">
               <p style={{
@@ -393,30 +387,99 @@ export default function BusinessDashboard() {
             </div>
           ))}
         </div>
-
-        {/* View full analytics CTA */}
-        <Link href="/business/analytics" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          marginTop: 10, padding: '10px',
-          background: 'var(--bg-surface)', borderRadius: 14,
-          border: '1px solid var(--border-subtle)',
-          textDecoration: 'none', fontSize: 'var(--text-xs)',
-          fontWeight: 700, color: '#8B0018',
-          transition: 'background 0.15s',
-        }}>
-          <LineChart size={13} />
-          View Full Analytics Report
-          <ChevronRight size={13} />
-        </Link>
       </motion.div>
 
-      {/* ── AI Insights ─────────────────────────────────────────── */}
-      <InsightsCard
-        summary={summary as any ?? null}
-        period={period === 'week' ? 'This Week' : period === 'year' ? 'This Year' : 'This Month'}
-      />
+      {/* ── Quick Actions ─────────────────────────────────────────── */}
+      <motion.div variants={fadeUp} initial="initial" animate="animate"
+        className="quick-actions" style={{ marginTop: 'var(--space-5)' }}>
+        {[
+          { label: 'Jobs',      href: '/business/repairs',   Icon: Wrench,       color: '#8B0018', bg: 'rgba(139,0,24,0.12)'    },
+          { label: 'Inventory', href: '/business/inventory', Icon: Package,      color: '#D4A535', bg: 'rgba(212,165,53,0.12)'  },
+          { label: 'Sales',     href: '/business/sales',     Icon: ShoppingCart, color: '#22C55E', bg: 'rgba(34,197,94,0.12)'   },
+          { label: 'More',      href: '/business/analytics', Icon: BarChart2,    color: '#A78BFA', bg: 'rgba(167,139,250,0.12)' },
+        ].map(({ label, href, Icon, color, bg }) => (
+          <Link key={label} href={href} className="quick-action-item">
+            <div className="quick-action-icon" style={{ color, background: bg, borderColor: `${color}30` }}>
+              <Icon size={20} strokeWidth={1.8} />
+            </div>
+            <span className="quick-action-label">{label}</span>
+          </Link>
+        ))}
+      </motion.div>
 
-      {/* ── Clickable stat grid ───────────────────────────────────── */}
+      {/* ── Recent Customers (horizontal scroll) ─────────────────── */}
+      {recentContacts.length > 0 && (
+        <motion.div variants={fadeUp} initial="initial" animate="animate"
+          style={{ marginTop: 'var(--space-6)' }}>
+          <div className="section-row-header">
+            <span className="section-row-title">Recent Customers</span>
+            <Link href="/business/repairs" className="section-row-link">See all →</Link>
+          </div>
+          <div className="contacts-scroll">
+            {recentContacts.map(job => {
+              const name    = job.customer_name;
+              const initials = getInitials(name);
+              const color    = getAvatarColor(name);
+              const firstName = name.split(' ')[0];
+              return (
+                <div key={job.id} className="contact-item"
+                  onClick={() => router.push(`/business/repairs/${job.id}`)}>
+                  <div className="contact-avatar-circle" style={{
+                    background: `linear-gradient(135deg, ${color}, ${color}cc)`,
+                    boxShadow: `0 4px 12px ${color}45`,
+                  }}>
+                    {initials}
+                  </div>
+                  <span className="contact-name-label">{firstName}</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Pending Jobs (scheduled-payments style) ───────────────── */}
+      {pendingJobs.length > 0 && (
+        <motion.div variants={fadeUp} initial="initial" animate="animate"
+          style={{ marginTop: 'var(--space-5)' }}>
+          <div className="section-row-header">
+            <span className="section-row-title">Active Jobs</span>
+            <Link href="/business/repairs" className="section-row-link">See all →</Link>
+          </div>
+          <div className="scheduled-scroll">
+            {pendingJobs.map(job => {
+              const color = getAvatarColor(job.customer_name);
+              const initials = getInitials(job.customer_name);
+              return (
+                <div key={job.id} className="scheduled-card"
+                  onClick={() => router.push(`/business/repairs/${job.id}`)}>
+                  <div className="scheduled-card-icon" style={{
+                    background: `linear-gradient(135deg, ${color}, ${color}bb)`,
+                    boxShadow: `0 4px 10px ${color}40`,
+                  }}>
+                    {initials}
+                  </div>
+                  <div>
+                    <p className="scheduled-card-name">{job.customer_name.split(' ')[0]}</p>
+                    <p className="scheduled-card-sub">{job.device_type}</p>
+                  </div>
+                  <p className="scheduled-card-amount">{formatNaira(job.total_charge)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── AI Insights ───────────────────────────────────────────── */}
+      <div style={{ marginTop: 'var(--space-5)' }}>
+        <InsightsCard
+          summary={summary as any ?? null}
+          period={period === 'week' ? 'This Week' : period === 'year' ? 'This Year' : 'This Month'}
+        />
+      </div>
+
+      {/* ── Stat grid ─────────────────────────────────────────────── */}
       <motion.div variants={stagger} initial="initial" animate="animate"
         className="stat-grid" style={{ marginBottom: 'var(--space-5)' }}>
         <StatWidget
@@ -425,7 +488,7 @@ export default function BusinessDashboard() {
           numericValue={summary?.tithe_due}
           numericFormat="currency"
           accent="warning"
-          icon={<HandCoins size={14} />}
+          icon={<HandCoins size={16} />}
           loading={isLoading}
           onClick={() => router.push('/business/tithe')}
         />
@@ -435,17 +498,17 @@ export default function BusinessDashboard() {
           numericValue={summary?.pending_jobs}
           numericFormat="number"
           accent="neutral"
-          icon={<Wrench size={14} />}
+          icon={<Wrench size={16} />}
           loading={isLoading}
           onClick={() => router.push('/business/repairs')}
         />
         <StatWidget
-          label="Inventory Value"
+          label="Inventory"
           value={summary ? formatNaira(summary.inventory_value) : '—'}
           numericValue={summary?.inventory_value}
           numericFormat="currency"
           accent="investment"
-          icon={<Package size={14} />}
+          icon={<Package size={16} />}
           loading={isLoading}
           onClick={() => router.push('/business/inventory')}
         />
@@ -455,22 +518,23 @@ export default function BusinessDashboard() {
           numericValue={summary?.low_stock_count}
           numericFormat="number"
           accent={summary && summary.low_stock_count > 5 ? 'loss' : 'warning'}
-          icon={<AlertTriangle size={14} />}
+          icon={<AlertTriangle size={16} />}
           loading={isLoading}
           onClick={() => router.push('/business/inventory')}
         />
       </motion.div>
 
-      {/* ── Monthly Goals ────────────────────────────────────────── */}
+      {/* ── Monthly Goals ──────────────────────────────────────────── */}
       {period === 'month' && monthlyGoal && (monthlyGoal.revenue_target > 0 || monthlyGoal.profit_target > 0) && (
-        <motion.div variants={fadeUp} initial="initial" animate="animate"
-          style={{
-            background: 'var(--bg-surface)', borderRadius: 20,
-            padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
-            border: '1px solid var(--border-subtle)',
-          }}>
+        <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
+          background: 'var(--bg-surface)', borderRadius: 20,
+          padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
+          border: '1px solid var(--border-subtle)',
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-            <SectionTitle>Monthly Goals — {format(new Date(), 'MMMM')}</SectionTitle>
+            <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Monthly Goals — {format(new Date(), 'MMMM')}
+            </p>
             <button className="btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '4px 12px' }}
               onClick={() => {
                 setGoalForm({ revenue_target: Number(monthlyGoal.revenue_target), profit_target: Number(monthlyGoal.profit_target) });
@@ -479,7 +543,6 @@ export default function BusinessDashboard() {
               Edit
             </button>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {monthlyGoal.revenue_target > 0 && (() => {
               const pct = Math.min(100, (Number(summary?.total_revenue || 0) / Number(monthlyGoal.revenue_target)) * 100);
@@ -500,7 +563,6 @@ export default function BusinessDashboard() {
                 </div>
               );
             })()}
-
             {monthlyGoal.profit_target > 0 && (() => {
               const pct = Math.min(100, (Number(summary?.net_profit || 0) / Number(monthlyGoal.profit_target)) * 100);
               return (
@@ -512,7 +574,7 @@ export default function BusinessDashboard() {
                     </p>
                   </div>
                   <div style={{ height: 6, background: 'var(--bg-overlay)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #10B981, #34D399)', width: `${Math.max(pct, 0)}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                    <div style={{ height: '100%', background: 'linear-gradient(90deg, #22C55E, #16A34A)', width: `${Math.max(pct, 0)}%`, borderRadius: 3, transition: 'width 0.6s ease' }} />
                   </div>
                   <p style={{ fontSize: '0.57rem', color: pct >= 100 ? 'var(--accent-green)' : 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
                     {pct >= 100 ? '✓ Target reached!' : isLoss ? 'Net loss this period' : `${pct.toFixed(0)}% of target`}
@@ -521,6 +583,143 @@ export default function BusinessDashboard() {
               );
             })()}
           </div>
+        </motion.div>
+      )}
+
+      {/* Set Goals Prompt */}
+      {period === 'month' && monthlyGoal && monthlyGoal.revenue_target == 0 && monthlyGoal.profit_target == 0 && (
+        <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
+          background: 'var(--bg-surface)', borderRadius: 20,
+          padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
+          border: '1px dashed var(--border-subtle)', textAlign: 'center',
+        }}>
+          <Target size={24} style={{ color: 'var(--text-muted)', margin: '0 auto var(--space-3)' }} />
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>Set a Monthly Goal</p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+            Track your progress towards revenue and profit targets.
+          </p>
+          <button className="btn-primary" onClick={() => { setGoalForm({ revenue_target: 0, profit_target: 0 }); setEditGoalOpen(true); }}>
+            Set Goals
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── Revenue chart ─────────────────────────────────────────── */}
+      {trendData && trendData.length > 0 && (
+        <motion.div {...scrollFadeUp} style={{
+          background: 'var(--bg-surface)', borderRadius: 20,
+          padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
+          border: '1px solid var(--border-subtle)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+            <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Revenue vs Expenses
+            </p>
+            <Link href="/business/analytics" style={{
+              fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8B0018',
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
+            }}>
+              Full view <ChevronRight size={12} />
+            </Link>
+          </div>
+          <RevenueAreaChart data={trendData} />
+        </motion.div>
+      )}
+
+      {/* ── Transaction History (recent jobs) ─────────────────────── */}
+      <motion.div {...scrollFadeUp} className="txn-history-section">
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-subtle)',
+        }}>
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Transaction History
+          </p>
+          <Link href="/business/repairs" style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 'var(--text-xs)', color: '#8B0018',
+            textDecoration: 'none', fontWeight: 700,
+          }}>
+            View all <ChevronRight size={13} />
+          </Link>
+        </div>
+
+        {recentJobs.length === 0 ? (
+          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+            No repair jobs yet
+          </div>
+        ) : (
+          recentJobs.slice(0, 6).map((job, i) => {
+            const name     = job.customer_name;
+            const initials = getInitials(name);
+            const color    = getAvatarColor(name);
+            return (
+              <div key={job.id}
+                onClick={() => router.push(`/business/repairs/${job.id}`)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '13px 20px',
+                  borderBottom: i < Math.min(recentJobs.length, 6) - 1 ? '1px solid var(--border-subtle)' : 'none',
+                  cursor: 'pointer', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                  background: `linear-gradient(135deg, ${color}, ${color}cc)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.7rem', fontWeight: 800, color: '#fff',
+                  boxShadow: `0 3px 10px ${color}45`,
+                }}>
+                  {initials}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontSize: 'var(--text-sm)', fontWeight: 600,
+                    color: 'var(--text-primary)', marginBottom: 2,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {name}
+                  </p>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    {format(new Date(job.received_at), 'hh:mm a')} · {job.device_type}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)',
+                    fontWeight: 700, color: 'var(--accent-green)', marginBottom: 3,
+                  }}>
+                    +{formatNaira(job.total_charge)}
+                  </p>
+                  <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                    {job.status.replace('_', ' ')}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </motion.div>
+
+      {/* ── Expense breakdown ─────────────────────────────────────── */}
+      {expenseBreakdown && expenseBreakdown.length > 0 && (
+        <motion.div {...scrollFadeUp} style={{
+          background: 'var(--bg-surface)', borderRadius: 20,
+          padding: 'var(--space-5)', border: '1px solid var(--border-subtle)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+            <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Expense Breakdown
+            </p>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+              Includes tithe, damage & inventory
+            </p>
+          </div>
+          <ExpensePieChart data={expenseBreakdown} />
         </motion.div>
       )}
 
@@ -547,102 +746,6 @@ export default function BusinessDashboard() {
           </div>
         </div>
       </Modal>
-
-      {/* Set Goals Prompt */}
-      {period === 'month' && monthlyGoal && monthlyGoal.revenue_target == 0 && monthlyGoal.profit_target == 0 && (
-        <motion.div variants={fadeUp} initial="initial" animate="animate"
-          style={{
-            background: 'var(--bg-surface)', borderRadius: 20,
-            padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
-            border: '1px dashed var(--border-subtle)', textAlign: 'center',
-          }}>
-          <Target size={24} style={{ color: 'var(--text-muted)', margin: '0 auto var(--space-3)' }} />
-          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>Set a Monthly Goal</p>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
-            Track your progress towards revenue and profit targets.
-          </p>
-          <button className="btn-primary" onClick={() => { setGoalForm({ revenue_target: 0, profit_target: 0 }); setEditGoalOpen(true); }}>
-            Set Goals
-          </button>
-        </motion.div>
-      )}
-
-      {/* ── Revenue chart ─────────────────────────────────────────── */}
-      {trendData && trendData.length > 0 && (
-        <motion.div {...scrollFadeUp}
-          style={{
-            background: 'var(--bg-surface)', borderRadius: 20,
-            padding: 'var(--space-5)', marginBottom: 'var(--space-4)',
-            border: '1px solid var(--border-subtle)',
-          }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-            <SectionTitle>Revenue vs Expenses</SectionTitle>
-            <Link href="/business/analytics" style={{
-              fontSize: 'var(--text-xs)', fontWeight: 700, color: '#8B0018',
-              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
-            }}>
-              Full view <ChevronRight size={12} />
-            </Link>
-          </div>
-          <RevenueAreaChart data={trendData} />
-        </motion.div>
-      )}
-
-      {/* ── Recent repairs ─────────────────────────────────────────── */}
-      <motion.div {...scrollFadeUp}
-        style={{
-          background: 'var(--bg-surface)', borderRadius: 20,
-          border: '1px solid var(--border-subtle)',
-          marginBottom: 'var(--space-4)', overflow: 'hidden',
-        }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: 'var(--space-4) var(--space-5)',
-          borderBottom: '1px solid var(--border-subtle)',
-        }}>
-          <SectionTitle>Recent Jobs</SectionTitle>
-          <Link href="/business/repairs" style={{
-            display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 'var(--text-xs)', color: '#8B0018',
-            textDecoration: 'none', fontWeight: 700,
-          }}>
-            See all <ChevronRight size={13} />
-          </Link>
-        </div>
-
-        {recentJobs.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            No repair jobs yet
-          </div>
-        ) : (
-          recentJobs.slice(0, 5).map((job, i) => (
-            <RepairJobCard
-              key={job.id}
-              job={job}
-              onClick={(j) => router.push(`/business/repairs/${j.id}`)}
-              showBorder={i < Math.min(recentJobs.length, 5) - 1}
-            />
-          ))
-        )}
-      </motion.div>
-
-      {/* ── Expense breakdown ─────────────────────────────────────── */}
-      {expenseBreakdown && expenseBreakdown.length > 0 && (
-        <motion.div {...scrollFadeUp}
-          style={{
-            background: 'var(--bg-surface)', borderRadius: 20,
-            padding: 'var(--space-5)', border: '1px solid var(--border-subtle)',
-            marginBottom: 'var(--space-4)',
-          }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-            <SectionTitle accent="#EF4444">Expense Breakdown</SectionTitle>
-            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-              Includes tithe paid, damage & inventory costs
-            </p>
-          </div>
-          <ExpensePieChart data={expenseBreakdown} />
-        </motion.div>
-      )}
     </div>
   );
 }
