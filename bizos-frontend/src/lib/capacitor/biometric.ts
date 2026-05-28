@@ -31,8 +31,6 @@ export async function authenticateWithBiometric(): Promise<boolean> {
   try {
     await plugin.authenticate({
       reason: 'Verify your identity to access BizOS',
-      title: 'BizOS',
-      subtitle: 'Use biometrics to continue',
       cancelTitle: 'Cancel',
       allowDeviceCredential: true,
     });

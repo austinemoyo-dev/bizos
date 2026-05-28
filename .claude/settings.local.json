@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(cp \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/repairs/[id]/page.tsx\" \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/repairs/[id]/RepairDetailPage.tsx\")",
-      "Bash(cp \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/page.tsx\" \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/InventoryDetailPage.tsx\")"
+      "Bash(cp \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/page.tsx\" \"c:/Users/CEMEX/Videos/biz/bizos-frontend/src/app/\\(app\\)/business/inventory/[id]/InventoryDetailPage.tsx\")",
+      "Bash(node -e \"const p = require\\('./node_modules/@aparajita/capacitor-biometric-auth/package.json'\\); console.log\\(p.version\\)\")"
     ]
   }
 }

@@ -42,7 +42,7 @@ const MM: Record<MealType, { label: string; icon: React.ElementType; color: stri
 };
 
 function vGrad(name: string) {
-  const h = [...name].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const h = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return [
     ['#F97316','#EF4444'], ['#8B5CF6','#3B82F6'],
     ['#10B981','#06B6D4'], ['#EAB308','#F97316'],
