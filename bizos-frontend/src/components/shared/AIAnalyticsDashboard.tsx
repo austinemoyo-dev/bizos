@@ -413,7 +413,7 @@ Answer the owner's questions conversationally and specifically. Always reference
                 Dash AI
               </p>
               <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>
-                Gemini 2.0 Flash · {periodLabel}
+                Gemini Flash Lite · {periodLabel}
               </p>
             </div>
           </div>

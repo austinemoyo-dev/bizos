@@ -18,6 +18,7 @@ import {
   TrendingUp, History, CalendarDays, SlidersHorizontal,
   Target, ChevronRight, Star, Flame, Clock, MapPin,
 } from 'lucide-react';
+import { streamGemini } from '@/lib/ai/gemini';
 import { format, subDays, subMonths } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -205,8 +206,6 @@ Nigerian context: healthy daily food budget ₦2,000–₦4,000. Skipping breakf
   return { systemPrompt, dataContext };
 }
 
-const GEMINI_STREAM_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-
 // ── AI Doctor sheet ───────────────────────────────────────
 function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () => void; payload: object }) {
   const [text, setText]       = useState('');
@@ -220,34 +219,16 @@ function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () 
     (async () => {
       setLoading(true); setError(''); setText('');
       try {
-        const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? '';
-        if (!key) { setError('NEXT_PUBLIC_GEMINI_API_KEY not set.'); return; }
         const { systemPrompt, dataContext } = buildAIPrompt(payload as Record<string, unknown>);
-        const res = await fetch(GEMINI_STREAM_URL, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'gemini-2.0-flash', stream: true, max_tokens: 900, temperature: 0.65,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user',   content: `Analyze my food data:\n\n${dataContext}` },
-            ],
-          }),
-        });
-        if (!res.ok) { setError(`AI error ${res.status}`); return; }
-        const reader = res.body!.getReader();
-        const dec    = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          for (const line of dec.decode(value, { stream: true }).split('\n')) {
-            if (!line.startsWith('data: ')) continue;
-            const d = line.slice(6).trim();
-            if (d === '[DONE]') continue;
-            try { const t = JSON.parse(d).choices?.[0]?.delta?.content; if (t) setText(p => p + t); } catch { /* skip */ }
-          }
-        }
-      } catch { setError('Network error. Check your connection.'); }
+        await streamGemini(
+          [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: `Analyze my food data:\n\n${dataContext}` },
+          ],
+          (acc) => setText(acc),
+          { maxTokens: 900, temperature: 0.65 },
+        );
+      } catch (err) { setError(err instanceof Error ? err.message : 'Network error. Check your connection.'); }
       finally { setLoading(false); }
     })();
   }, [open, payload]);
@@ -287,7 +268,7 @@ function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () 
                 </div>
                 <div>
                   <p style={{ fontSize: '1rem', fontWeight: 800, color: TXT }}>Food Doctor AI</p>
-                  <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 1 }}>Powered by Gemini 2.0 Flash</p>
+                  <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 1 }}>Powered by Gemini Flash Lite</p>
                 </div>
               </div>
               <button onClick={close} style={{ width: 36, height: 36, borderRadius: 12, border: `1px solid ${BDR}`, background: CARD2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

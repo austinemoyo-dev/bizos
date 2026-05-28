@@ -98,7 +98,7 @@ Rules:
     method: 'POST',
     headers: { 'Authorization': `Bearer ${GEMINI_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-lite',
       stream: true, max_tokens: 800, temperature: 0.55,
       messages: [
         { role: 'system',  content: systemPrompt },

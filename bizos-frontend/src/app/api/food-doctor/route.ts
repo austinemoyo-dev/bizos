@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Gemini 2.0 Flash (preferred — free, higher quality)
+// Gemini 2.0 Flash Lite (preferred — free, 30 RPM quota)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const useGemini = !!GEMINI_API_KEY;
   const AI_URL    = useGemini ? GEMINI_URL : GROQ_URL;
   const AI_KEY    = useGemini ? GEMINI_API_KEY! : GROQ_API_KEY!;
-  const AI_MODEL  = useGemini ? 'gemini-2.0-flash' : 'llama-3.3-70b-versatile';
+  const AI_MODEL  = useGemini ? 'gemini-2.0-flash-lite' : 'llama-3.3-70b-versatile';
 
   const {
     credits  = [],
