@@ -175,7 +175,7 @@ Rules: every claim must be backed by a number. Nigerian context: savings rate >2
           </div>
           <div>
             <p style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>AI Finance Analyst</p>
-            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>Gemini Flash Lite · {period}</p>
+            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>Groq · Llama 3.3 70B · {period}</p>
           </div>
         </div>
 

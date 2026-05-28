@@ -1,60 +1,40 @@
 'use client';
 
-// Gemini 2.0 Flash Lite — 30 RPM free tier (2× the standard Flash limit)
-const GEMINI_URL  = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const GEMINI_MODEL = 'gemini-2.0-flash-lite';
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
-// Per-call timeout: if no final response within 30 s, abort and surface an error.
+// Hard timeout — aborts the entire call if no response within 30 s
 const CALL_TIMEOUT_MS = 30_000;
 
-// Retry delays on 429 — kept short so the spinner doesn't appear frozen.
-// gemini-2.0-flash-lite has a 30 RPM quota; brief waits usually clear it.
-const RETRY_DELAYS = [5_000, 12_000, 22_000]; // max 3 retries ≈ 39 s total
+// Short retries for 429s; Groq free tier clears quickly
+const RETRY_DELAYS = [4_000, 10_000, 20_000];
 
 export type GeminiMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-// Light semaphore: at most 2 concurrent calls so we don't blast the quota,
-// but a stuck/retrying call doesn't freeze every other component.
-let inflight = 0;
-const MAX_CONCURRENT = 2;
-const waiters: (() => void)[] = [];
-
-function acquire(): Promise<void> {
-  if (inflight < MAX_CONCURRENT) { inflight++; return Promise.resolve(); }
-  return new Promise(resolve => waiters.push(() => { inflight++; resolve(); }));
-}
-
-function release() {
-  inflight--;
-  const next = waiters.shift();
-  if (next) next();
-}
-
-async function _doStream(
+export async function streamGemini(
   messages: GeminiMessage[],
   onChunk: (accumulated: string) => void,
-  options: { maxTokens?: number; temperature?: number },
+  options: { maxTokens?: number; temperature?: number } = {},
 ): Promise<void> {
-  const key = (process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? '').trim();
-  if (!key) throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not configured.');
+  const key = (process.env.NEXT_PUBLIC_GROQ_API_KEY ?? '').trim();
+  if (!key) throw new Error('NEXT_PUBLIC_GROQ_API_KEY is not configured.');
 
-  // Hard timeout — aborts the entire call including retries
   const timeout = new AbortController();
   const timer   = setTimeout(() => timeout.abort(), CALL_TIMEOUT_MS);
 
   try {
     let attempt = 0;
     while (true) {
-      if (timeout.signal.aborted) throw new Error('AI request timed out. Check your connection and try again.');
+      if (timeout.signal.aborted) throw new Error('Request timed out. Check your connection and try again.');
 
       let res: Response;
       try {
-        res = await fetch(GEMINI_URL, {
+        res = await fetch(GROQ_URL, {
           method: 'POST',
           signal: timeout.signal,
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: GEMINI_MODEL,
+            model: GROQ_MODEL,
             stream: true,
             max_tokens: options.maxTokens ?? 900,
             temperature: options.temperature ?? 0.65,
@@ -62,7 +42,7 @@ async function _doStream(
           }),
         });
       } catch (err: unknown) {
-        if ((err as Error)?.name === 'AbortError') throw new Error('AI request timed out. Check your connection and try again.');
+        if ((err as Error)?.name === 'AbortError') throw new Error('Request timed out. Check your connection and try again.');
         throw new Error('Network error — check your connection.');
       }
 
@@ -100,23 +80,5 @@ async function _doStream(
     }
   } finally {
     clearTimeout(timer);
-  }
-}
-
-/**
- * Stream a Gemini response.
- * Max 2 concurrent calls — subsequent callers queue briefly rather than
- * all hammering the API at once, without one stuck call blocking everyone.
- */
-export async function streamGemini(
-  messages: GeminiMessage[],
-  onChunk: (accumulated: string) => void,
-  options: { maxTokens?: number; temperature?: number } = {},
-): Promise<void> {
-  await acquire();
-  try {
-    await _doStream(messages, onChunk, options);
-  } finally {
-    release();
   }
 }

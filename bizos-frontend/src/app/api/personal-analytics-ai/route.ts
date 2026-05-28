@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ') || auth.length < 20)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!GEMINI_API_KEY)
-    return NextResponse.json({ error: 'AI not configured — add GEMINI_API_KEY to .env.local' }, { status: 503 });
+  if (!GROQ_API_KEY)
+    return NextResponse.json({ error: 'AI not configured — add GROQ_API_KEY to .env.local' }, { status: 503 });
 
   const { summary, trend = [], expenseBreakdown = [], incomeBreakdown = [], period } = await req.json();
 
@@ -94,11 +94,11 @@ Rules:
 - Savings rate > 30% = excellent, 20-30% = good, 10-20% = needs work, < 10% = danger zone
 - No generic advice — every tip must reference a specific category or amount`;
 
-  const groqRes = await fetch(GEMINI_URL, {
+  const groqRes = await fetch(GROQ_URL, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${GEMINI_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gemini-2.0-flash-lite',
+      model: 'llama-3.3-70b-versatile',
       stream: true, max_tokens: 800, temperature: 0.55,
       messages: [
         { role: 'system',  content: systemPrompt },

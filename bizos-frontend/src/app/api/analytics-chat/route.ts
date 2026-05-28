@@ -1,15 +1,15 @@
 import { NextRequest } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ') || auth.length < 20) {
     return new Response('Unauthorized', { status: 401 });
   }
-  if (!GEMINI_API_KEY) {
-    return new Response('AI not configured — add GEMINI_API_KEY to .env.local', { status: 503 });
+  if (!GROQ_API_KEY) {
+    return new Response('AI not configured — add GROQ_API_KEY to .env.local', { status: 503 });
   }
 
   const { messages, businessContext } = await req.json();
@@ -27,14 +27,14 @@ Answer the owner's questions conversationally and specifically. Always reference
 - Be direct and practical — this is a real business owner making real decisions
 - Do not repeat the question back or add unnecessary preamble`;
 
-  const groqRes = await fetch(GEMINI_URL, {
+  const groqRes = await fetch(GROQ_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${GEMINI_API_KEY}`,
+      Authorization: `Bearer ${GROQ_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gemini-2.0-flash-lite',
+      model: 'llama-3.3-70b-versatile',
       stream: true,
       max_tokens: 450,
       temperature: 0.5,

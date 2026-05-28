@@ -87,7 +87,7 @@ Respond ONLY with the 4 bullet points. No intro, no conclusion, no headers.`,
               AI Business Insights
             </p>
             <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-              Gemini Flash Lite · {period ?? 'This month'}
+              Groq · Llama 3.3 70B · {period ?? 'This month'}
             </p>
           </div>
         </div>

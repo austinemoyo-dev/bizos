@@ -268,7 +268,7 @@ function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () 
                 </div>
                 <div>
                   <p style={{ fontSize: '1rem', fontWeight: 800, color: TXT }}>Food Doctor AI</p>
-                  <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 1 }}>Powered by Gemini Flash Lite</p>
+                  <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 1 }}>Powered by Groq · Llama 3.3 70B</p>
                 </div>
               </div>
               <button onClick={close} style={{ width: 36, height: 36, borderRadius: 12, border: `1px solid ${BDR}`, background: CARD2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

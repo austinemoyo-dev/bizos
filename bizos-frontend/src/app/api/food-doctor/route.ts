@@ -1,25 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Gemini 2.0 Flash Lite (preferred — free, 30 RPM quota)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-
-// Groq (fallback — free, fast)
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
+const AI_MODEL     = 'llama-3.3-70b-versatile';
 
 export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ') || auth.length < 20)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!GEMINI_API_KEY && !GROQ_API_KEY)
-    return NextResponse.json({ error: 'AI not configured — add GEMINI_API_KEY (recommended) or GROQ_API_KEY to .env.local' }, { status: 503 });
+  if (!GROQ_API_KEY)
+    return NextResponse.json({ error: 'AI not configured — add GROQ_API_KEY to .env.local' }, { status: 503 });
 
-  const useGemini = !!GEMINI_API_KEY;
-  const AI_URL    = useGemini ? GEMINI_URL : GROQ_URL;
-  const AI_KEY    = useGemini ? GEMINI_API_KEY! : GROQ_API_KEY!;
-  const AI_MODEL  = useGemini ? 'gemini-2.0-flash-lite' : 'llama-3.3-70b-versatile';
+  const AI_URL = GROQ_URL;
+  const AI_KEY = GROQ_API_KEY;
 
   const {
     credits  = [],
