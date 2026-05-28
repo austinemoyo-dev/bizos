@@ -2,19 +2,20 @@
 
 // Direct client-side Gemini streaming — works in Capacitor (no server needed)
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const RETRY_DELAYS = [6_000, 12_000, 24_000]; // backoff for 429 rate-limit
+
+// Exponential backoff delays for 429 responses (ms)
+const RETRY_DELAYS = [10_000, 20_000, 40_000, 60_000, 60_000];
 
 export type GeminiMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-/**
- * Stream a Gemini response directly from the browser.
- * Automatically retries on 429 with exponential backoff.
- * Calls `onChunk(accumulatedText)` as tokens arrive.
- */
-export async function streamGemini(
+// Global serial queue — ensures only one Gemini request runs at a time,
+// preventing concurrent callers from stacking up and burning through RPM quota.
+let queue = Promise.resolve();
+
+async function _doStream(
   messages: GeminiMessage[],
   onChunk: (accumulated: string) => void,
-  options: { maxTokens?: number; temperature?: number } = {},
+  options: { maxTokens?: number; temperature?: number },
 ): Promise<void> {
   const key = (process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? '').trim();
   if (!key) throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not configured.');
@@ -39,7 +40,7 @@ export async function streamGemini(
     }
 
     if (res.status === 429) {
-      if (attempt >= RETRY_DELAYS.length) throw new Error('AI rate limit reached. Wait a moment and try again.');
+      if (attempt >= RETRY_DELAYS.length) throw new Error('AI rate limit reached. Please wait a minute and try again.');
       await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt++]));
       continue;
     }
@@ -67,4 +68,20 @@ export async function streamGemini(
     }
     return;
   }
+}
+
+/**
+ * Stream a Gemini response directly from the browser.
+ * Requests are serialized globally — concurrent callers queue up rather than
+ * firing in parallel, which prevents hitting the Gemini RPM rate limit.
+ */
+export function streamGemini(
+  messages: GeminiMessage[],
+  onChunk: (accumulated: string) => void,
+  options: { maxTokens?: number; temperature?: number } = {},
+): Promise<void> {
+  const myTurn = queue.then(() => _doStream(messages, onChunk, options));
+  // Errors must not break the chain for subsequent callers
+  queue = myTurn.catch(() => {});
+  return myTurn;
 }
