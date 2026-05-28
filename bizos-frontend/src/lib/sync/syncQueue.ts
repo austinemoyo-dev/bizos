@@ -74,7 +74,9 @@ export async function flushSyncQueue(): Promise<{ synced: number; failed: number
         failed++;
       }
     } catch {
-      break;
+      // Network error — increment retries and continue to next item
+      await db.pendingSync.update(item.id!, { retries: item.retries + 1 });
+      failed++;
     }
   }
 
