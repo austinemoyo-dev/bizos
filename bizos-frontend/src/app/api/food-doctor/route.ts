@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Gemini 2.0 Flash (preferred — free, higher quality)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
+// Groq (fallback — free, fast)
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -8,8 +13,13 @@ export async function POST(req: NextRequest) {
   if (!auth?.startsWith('Bearer ') || auth.length < 20)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!GROQ_API_KEY)
-    return NextResponse.json({ error: 'AI not configured — add GROQ_API_KEY to .env.local' }, { status: 503 });
+  if (!GEMINI_API_KEY && !GROQ_API_KEY)
+    return NextResponse.json({ error: 'AI not configured — add GEMINI_API_KEY (recommended) or GROQ_API_KEY to .env.local' }, { status: 503 });
+
+  const useGemini = !!GEMINI_API_KEY;
+  const AI_URL    = useGemini ? GEMINI_URL : GROQ_URL;
+  const AI_KEY    = useGemini ? GEMINI_API_KEY! : GROQ_API_KEY!;
+  const AI_MODEL  = useGemini ? 'gemini-2.0-flash' : 'llama-3.3-70b-versatile';
 
   const {
     credits  = [],
@@ -129,17 +139,17 @@ Rules:
 - If outstanding debt > ₦10,000, treat it as financial stress that affects eating habits
 - The prediction section MUST be specific to today (${todayName})`;
 
-  const groqRes = await fetch(GROQ_URL, {
+  const aiRes = await fetch(AI_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Authorization': `Bearer ${AI_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model:       'llama-3.3-70b-versatile',
+      model:       AI_MODEL,
       stream:      true,
-      max_tokens:  750,
-      temperature: 0.6,
+      max_tokens:  900,
+      temperature: 0.65,
       messages: [
         { role: 'system',  content: systemPrompt },
         { role: 'user',    content: `Analyze my food health data:\n\n${dataContext}` },
@@ -147,13 +157,13 @@ Rules:
     }),
   });
 
-  if (!groqRes.ok)
-    return NextResponse.json({ error: await groqRes.text() }, { status: groqRes.status });
+  if (!aiRes.ok)
+    return NextResponse.json({ error: await aiRes.text() }, { status: aiRes.status });
 
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
-      const reader  = groqRes.body!.getReader();
+      const reader  = aiRes.body!.getReader();
       const decoder = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
