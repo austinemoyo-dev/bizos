@@ -14,6 +14,7 @@ import {
   RefreshCw, Utensils, Car, Wifi, Phone, Receipt,
   PiggyBank, Coins, Wallet, HelpCircle,
 } from 'lucide-react';
+import { streamGemini } from '@/lib/ai/gemini';
 import { ComparisonLineChart, ComparisonPoint } from '@/components/charts/ComparisonLineChart';
 import { Skeleton } from '@/components/shared/Skeleton';
 
@@ -69,22 +70,83 @@ function AIInsightsPanel({ payload, period }: { payload: object; period: string 
 
   const run = async () => {
     setLoading(true); setError(''); setText(''); setRan(true);
+
+    const p = payload as {
+      summary?: { total_income?: number; total_expenses?: number };
+      trend?: { date: string; expenses: number }[];
+      expenseBreakdown?: { category: string; amount: number }[];
+      incomeBreakdown?: { category: string; amount: number }[];
+    };
+    const fmt2 = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
+    const totalIncome   = Number(p.summary?.total_income   ?? 0);
+    const totalExpenses = Number(p.summary?.total_expenses ?? 0);
+    const net           = totalIncome - totalExpenses;
+    const savingsRate   = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(1) : '0';
+
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const dowSpend: Record<string, number> = {};
+    DAYS.forEach(d => { dowSpend[d] = 0; });
+    (p.trend ?? []).forEach(t => {
+      const d = DAYS[new Date(t.date + 'T00:00:00').getDay()];
+      dowSpend[d] = (dowSpend[d] ?? 0) + Number(t.expenses);
+    });
+    const heaviest = Object.entries(dowSpend).sort((a, b) => b[1] - a[1])[0];
+    const lightest  = Object.entries(dowSpend).sort((a, b) => a[1] - b[1]).find(([,v]) => v > 0);
+    const expLines  = (p.expenseBreakdown ?? []).map(e => `  • ${e.category}: ${fmt2(e.amount)} (${totalExpenses > 0 ? ((e.amount/totalExpenses)*100).toFixed(0) : 0}%)`).join('\n');
+    const incLines  = (p.incomeBreakdown  ?? []).map(i => `  • ${i.category}: ${fmt2(i.amount)}`).join('\n');
+
+    const dataCtx = `PERSONAL FINANCE SNAPSHOT — ${period}
+SUMMARY
+  Income:   ${fmt2(totalIncome)} | Expenses: ${fmt2(totalExpenses)}
+  Net: ${fmt2(Math.abs(net))} ${net >= 0 ? 'SURPLUS' : 'DEFICIT'} | Savings rate: ${savingsRate}%
+EXPENSE CATEGORIES
+${expLines || '  No expense data'}
+INCOME SOURCES
+${incLines  || '  No income data'}
+DAILY SPENDING PATTERN
+${Object.entries(dowSpend).map(([d, v]) => `  ${d}: ${fmt2(v)}`).join('\n')}
+  Heaviest day: ${heaviest ? `${heaviest[0]} (${fmt2(heaviest[1])})` : 'N/A'}
+  Lightest day: ${lightest  ? `${lightest[0]}  (${fmt2(lightest[1])})` : 'N/A'}`;
+
+    const systemPrompt = `You are an expert personal finance analyst for a Nigerian professional.
+Analyze their financial data and respond in EXACTLY this format:
+
+## Financial Health Score
+Score: X/10. [One sharp sentence: are they saving enough, spending wisely, or in financial danger?]
+
+## What the Numbers Say
+- [emoji] [Specific insight — cite exact amounts or percentages]
+- [emoji] [Second insight]
+- [emoji] [Third insight]
+
+## Biggest Opportunity
+[2 sentences. What ONE thing could they do differently to improve their finances? Name the category, amount, and action.]
+
+## Spending Intelligence
+- [emoji] [Day-of-week pattern — name the heaviest day and amount]
+- [emoji] [Top expense category analysis]
+- [emoji] [Income concentration risk or diversification note]
+
+## 30-Day Action Plan
+1. [Specific, measurable action — e.g. "Cap food spending at ₦X per week"]
+2. [Second action]
+3. [Third action]
+
+## Forecast
+[2 sentences. If current patterns continue, what will their situation look like in 3 months?]
+
+Rules: every claim must be backed by a number. Nigerian context: savings rate >20% is excellent, <10% is poor. If expenses > income, treat it as urgent.`;
+
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      const res = await fetch('/api/personal-analytics-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token ?? 'local'}` },
-        body: JSON.stringify({ ...payload, period }),
-      });
-      if (!res.ok) { setError('AI unavailable — check GROQ_API_KEY in .env.local'); return; }
-      const reader = res.body!.getReader();
-      const dec    = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        setText(p => p + dec.decode(value, { stream: true }));
-      }
-    } catch { setError('Connection failed. Try again.'); }
+      await streamGemini(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyse my personal finances:\n\n${dataCtx}` },
+        ],
+        (acc) => setText(acc),
+        { maxTokens: 800, temperature: 0.55 },
+      );
+    } catch (err) { setError(err instanceof Error ? err.message : 'Connection failed. Try again.'); }
     finally { setLoading(false); }
   };
 
@@ -113,7 +175,7 @@ function AIInsightsPanel({ payload, period }: { payload: object; period: string 
           </div>
           <div>
             <p style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>AI Finance Analyst</p>
-            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>Powered by Groq · {period}</p>
+            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)' }}>Gemini 2.0 Flash · {period}</p>
           </div>
         </div>
 

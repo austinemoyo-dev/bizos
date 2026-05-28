@@ -1,38 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { LoginResponse } from '@/types/api';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { authenticateWithBiometric } from '@/lib/capacitor/biometric';
 
 export default function LoginPage() {
-  const router      = useRouter();
-  const { setAuth }  = useAuthStore();
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [showPwd,  setShowPwd]  = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [mounted,  setMounted]  = useState(false);
+  const router = useRouter();
+  const { setAuth, hasSavedSession, refreshSession, loadFromStorage } = useAuthStore();
+  const [email,      setEmail]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [showPwd,    setShowPwd]    = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
+  const [warmingUp,  setWarmingUp]  = useState(false);
+  const [error,      setError]      = useState('');
+  const [mounted,    setMounted]    = useState(false);
+  const [savedName,  setSavedName]  = useState<string | null>(null);
+  const warmupRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    // Pre-fill email and show biometric option if there's a saved session
+    try {
+      const userJson = localStorage.getItem('bizos_user');
+      if (userJson && hasSavedSession()) {
+        const user = JSON.parse(userJson);
+        setSavedName(user.name ?? user.email ?? null);
+        setEmail(user.email ?? '');
+      }
+    } catch {}
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setWarmingUp(false);
+
+    // Show "server waking up" note after 8 s (Render.com cold starts)
+    warmupRef.current = setTimeout(() => setWarmingUp(true), 8_000);
+    // Belt-and-suspenders timeout — AbortController can be unreliable in Android WebView
+    const manualAbort = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Server took too long. It may be waking up — please try again in a moment.')), 50_000)
+    );
+
     try {
-      const data = await api.post<LoginResponse>('/auth/login', { email, password }, { skipAuth: true });
+      const data = await Promise.race([
+        api.post<LoginResponse>('/auth/login', { email, password }, { skipAuth: true }),
+        manualAbort,
+      ]);
+      clearTimeout(warmupRef.current!);
       setAuth(data.user, data.access_token, data.refresh_token);
       router.push('/business/dashboard');
     } catch (err) {
+      clearTimeout(warmupRef.current!);
+      setWarmingUp(false);
       setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setBioLoading(true);
+    setError('');
+    try {
+      const passed = await authenticateWithBiometric();
+      if (!passed) { setError('Biometric verification failed. Please use your password.'); return; }
+
+      // Try refresh token first
+      const ok = await refreshSession();
+      if (ok) { router.push('/business/dashboard'); return; }
+
+      // Refresh token expired — load user from storage and ask for password
+      loadFromStorage();
+      setError('Your session expired. Please enter your password once to continue.');
+    } catch {
+      setError('Biometric login failed. Please use your password.');
+    } finally {
+      setBioLoading(false);
     }
   };
 
@@ -522,6 +574,7 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 autoFocus
+                disabled={loading || bioLoading}
               />
             </div>
 
@@ -547,6 +600,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
+                  disabled={loading || bioLoading}
                   style={{ paddingRight: 48 }}
                 />
                 <button
@@ -602,19 +656,72 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
+            {/* Warming-up notice */}
+            <AnimatePresence>
+              {warmingUp && (
+                <motion.div
+                  key="warmup"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{
+                    padding: '10px 14px', borderRadius: 10,
+                    background: 'rgba(232,169,74,0.08)',
+                    border: '1px solid rgba(232,169,74,0.2)',
+                  }}
+                >
+                  <span style={{ color: 'rgba(232,169,74,0.9)', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                    ⏳ Server is waking up — this takes ~30 seconds on first login. Please wait…
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Login button */}
             <button
               type="submit"
               className="login-btn"
-              disabled={loading}
+              disabled={loading || bioLoading}
               style={{ marginTop: 4 }}
             >
               {loading ? (
-                <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> Signing in…</>
+                <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> {warmingUp ? 'Waking server…' : 'Signing in…'}</>
               ) : (
                 'Login'
               )}
             </button>
+
+            {/* Biometric quick-login */}
+            {savedName && !loading && (
+              <motion.button
+                type="button"
+                onClick={handleBiometricLogin}
+                disabled={bioLoading || loading}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                style={{
+                  width: '100%', padding: '14px 16px',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 14,
+                  background: 'rgba(255,255,255,0.04)',
+                  backdropFilter: 'blur(12px)',
+                  color: 'rgba(255,255,255,0.75)',
+                  fontSize: '0.92rem', fontWeight: 600,
+                  cursor: bioLoading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  fontFamily: "'Inter', sans-serif",
+                  transition: 'background 0.2s, border-color 0.2s',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; }}
+              >
+                {bioLoading
+                  ? <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> Verifying…</>
+                  : <><Fingerprint size={19} style={{ color: 'rgba(232,169,74,0.8)' }} /> Continue as {savedName.split(' ')[0]}</>
+                }
+              </motion.button>
+            )}
           </form>
 
           {/* ── Sign up link ── */}

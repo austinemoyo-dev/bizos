@@ -24,7 +24,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     // Feature 1 — Biometric gate on first app open
-    authenticateWithBiometric().then((passed) => {
+    // Race with 12s timeout — if native dialog never appears, let user in
+    const biometricTimeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 12_000));
+    Promise.race([authenticateWithBiometric(), biometricTimeout]).then((passed) => {
       if (!passed) {
         router.replace('/login');
       } else {

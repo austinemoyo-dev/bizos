@@ -6,6 +6,7 @@ import {
   Sparkles, RefreshCw, TrendingUp, AlertTriangle, CheckCircle2,
   Zap, DollarSign, BarChart2, MessageSquare, Send, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { streamGemini, GeminiMessage } from '@/lib/ai/gemini';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -190,10 +191,8 @@ export function AIAnalyticsDashboard({
   const score      = extractScore(healthText);
   const hasReport  = reportText.length > 0;
 
-  const getToken = () =>
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('access_token') ?? 'anonymous')
-      : 'anonymous';
+  // kept for possible future use
+  // const getToken = () => typeof window !== 'undefined' ? (localStorage.getItem('access_token') ?? '') : '';
 
   // ── Build context string for chat ────────────────────────────────────────
   const buildContext = useCallback((): string => {
@@ -217,34 +216,100 @@ export function AIAnalyticsDashboard({
     setReportText('');
     setActiveTab('overview');
 
+    const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
+    const pct = (cur: number, prev: number) => {
+      if (!prev) return 'N/A';
+      const diff = ((cur - prev) / Math.abs(prev)) * 100;
+      return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+    };
+    const curRev    = Number(summary?.total_revenue    ?? 0);
+    const curExp    = Number(summary?.total_expenses   ?? 0);
+    const curProfit = Number(summary?.net_profit       ?? 0);
+    const prevRev   = Number(prevSummary?.total_revenue    ?? 0);
+    const prevExp   = Number(prevSummary?.total_expenses   ?? 0);
+    const prevProfit= Number(prevSummary?.net_profit       ?? 0);
+    const topExpenses = [...(expenseBreakdown ?? [])]
+      .sort((a, b) => b.amount - a.amount).slice(0, 5)
+      .map(e => `${e.category.replace(/_/g, ' ')} (${fmt(e.amount)}, ${e.percentage?.toFixed(1) ?? '?'}%)`)
+      .join(', ');
+    const topItemsStr = (topItems ?? []).slice(0, 5)
+      .map(i => `${i.item_name}: ${fmt(i.total_revenue)} revenue, qty ${i.total_quantity}`).join('; ');
+    const repairStr = [...(repairStats ?? [])]
+      .sort((a, b) => b.job_count - a.job_count)
+      .map(r => `${r.device_type}: ${r.job_count} jobs, ${fmt(r.total_revenue)}`).join('; ');
+    const marginPct = curRev > 0 ? ((curProfit / curRev) * 100).toFixed(1) : '0';
+    const prevMarginPct = prevRev > 0 ? ((prevProfit / prevRev) * 100).toFixed(1) : '0';
+
+    const dataContext = `PERIOD: ${periodLabel} vs ${prevPeriodLabel}
+REVENUE
+  Current:  ${fmt(curRev)} (${pct(curRev, prevRev)} vs prior)
+  Previous: ${fmt(prevRev)}
+EXPENSES
+  Current:  ${fmt(curExp)} (${pct(curExp, prevExp)} vs prior)
+  Previous: ${fmt(prevExp)}
+  Top categories: ${topExpenses || 'none'}
+PROFIT
+  Current:  ${fmt(curProfit)} — ${curProfit >= 0 ? 'PROFIT' : 'LOSS'} (${pct(curProfit, prevProfit)} vs prior)
+  Previous: ${fmt(prevProfit)} — ${prevProfit >= 0 ? 'profit' : 'loss'}
+  Margin:   ${marginPct}% current vs ${prevMarginPct}% previous
+CASH POSITION
+  Available balance:  ${fmt(Number(summary?.available_balance ?? 0))}
+  Tithe due (unpaid): ${fmt(Number(summary?.tithe_due ?? 0))}
+OPERATIONS
+  Pending repair jobs: ${summary?.pending_jobs ?? 0}
+  Low stock items:     ${summary?.low_stock_count ?? 0}
+TOP SELLING ITEMS
+  ${topItemsStr || 'No data'}
+REPAIR JOBS BY DEVICE
+  ${repairStr || 'No data'}`;
+
+    const systemPrompt = `You are Dash AI, the business intelligence engine for Dash & Co., a phone repair and electronics shop in Nigeria. You analyze real financial data and speak directly to the owner.
+
+Respond in EXACTLY this format — use ONLY these section headers, in this order:
+
+## Health
+Score: X/10. [One clear sentence on overall business health for this period. Be direct.]
+
+## Wins
+- [emoji] [What went well, specific to the data — name exact amounts]
+- [emoji] [Second win]
+- [emoji] [Third win]
+
+## Warnings
+- [emoji] [Risk or concern, tied to actual numbers]
+- [emoji] [Second warning]
+- [emoji] [Third warning]
+
+## Expenses
+[One or two sentences on the biggest expense pattern. Name the category and amount. Say whether it's alarming or expected.]
+
+## Forecast
+[2-3 sentences predicting next period based on the current trend. Be specific — project an approximate revenue and profit figure.]
+
+## Next Actions
+1. [Specific action tied to the numbers — name items, amounts, categories]
+2. [Second action]
+3. [Third action]
+
+Rules:
+- Every number you cite must come from the provided data
+- Nigerian Naira context: ₦50k is a typical day, ₦500k+ month is strong, ₦1M+ is excellent
+- If profit is negative, treat it as a crisis — be blunt
+- No generic advice ("review your expenses") — always say WHICH and WHY`;
+
     try {
-      const res = await fetch('/api/analytics-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          summary, prevSummary, expenseBreakdown, topItems,
-          repairStats, periodLabel, prevPeriodLabel,
-        }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Request failed');
-
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setReportText(acc);
-      }
+      await streamGemini(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyze this business data:\n\n${dataContext}` },
+        ],
+        (acc) => setReportText(acc),
+        { maxTokens: 900, temperature: 0.55 },
+      );
       setAnalyzedKey(periodCacheKey);
-    } catch {
+    } catch (err) {
       setReportText(
-        '## Health\nScore: 0/10. Could not generate analysis — ensure GROQ_API_KEY is set in .env.local.',
+        `## Health\nScore: 0/10. ${err instanceof Error ? err.message : 'Analysis failed.'}`,
       );
       setAnalyzedKey(periodCacheKey);
     } finally {
@@ -271,37 +336,34 @@ export function AIAnalyticsDashboard({
     setMessages([...withUser, { role: 'assistant', content: '' }]);
     setChatLoading(true);
 
+    const chatSystem = `You are Dash AI, the business intelligence assistant for Dash & Co., a phone repair and electronics shop in Nigeria.
+
+You have access to the following live business data:
+
+${buildContext()}
+
+Answer the owner's questions conversationally and specifically. Always reference actual numbers from the data above when relevant.
+- Keep answers concise: 2–4 sentences for simple questions, up to 6 for complex ones
+- Use Nigerian Naira (₦) for all amounts
+- If asked about something not in the data, say so clearly
+- Be direct and practical — this is a real business owner making real decisions
+- Do not repeat the question back or add unnecessary preamble`;
+
+    const geminiMessages: GeminiMessage[] = [
+      { role: 'system', content: chatSystem },
+      ...withUser.map(m => ({ role: m.role, content: m.content })),
+    ];
+
     try {
-      const res = await fetch('/api/analytics-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          messages: withUser,
-          businessContext: buildContext(),
-        }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Chat failed');
-
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setMessages(prev => [
-          ...prev.slice(0, -1),
-          { role: 'assistant', content: acc },
-        ]);
-      }
-    } catch {
+      await streamGemini(
+        geminiMessages,
+        (acc) => setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: acc }]),
+        { maxTokens: 450, temperature: 0.5 },
+      );
+    } catch (err) {
       setMessages(prev => [
         ...prev.slice(0, -1),
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+        { role: 'assistant', content: err instanceof Error ? err.message : 'Sorry, something went wrong. Please try again.' },
       ]);
     } finally {
       setChatLoading(false);
@@ -351,7 +413,7 @@ export function AIAnalyticsDashboard({
                 Dash AI
               </p>
               <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>
-                Llama 3.3 70B · {periodLabel}
+                Gemini 2.0 Flash · {periodLabel}
               </p>
             </div>
           </div>

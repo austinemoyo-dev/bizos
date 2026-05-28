@@ -27,11 +27,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   }
 
   let response: Response;
-  // Abort writes after 20 s so the spinner never hangs forever
+  // Abort writes after 45 s (Render.com free tier cold-starts can take 30-50 s)
   const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
   const controller  = isMutation ? new AbortController() : undefined;
   const timeoutId   = controller
-    ? setTimeout(() => controller.abort(), 20_000)
+    ? setTimeout(() => controller.abort(), 45_000)
     : undefined;
 
   try {

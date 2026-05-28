@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, RefreshCw, ChevronDown, ChevronUp, TrendingUp, AlertTriangle, CheckCircle2, Zap, DollarSign } from 'lucide-react';
+import { streamGemini } from '@/lib/ai/gemini';
 
 interface AIAnalyticsPanelProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,39 +127,74 @@ export function AIAnalyticsPanel({
     setExpanded(true);
     setActiveTab('overview');
 
+    const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
+    const pct = (cur: number, prev: number) => {
+      if (!prev) return 'N/A';
+      const diff = ((cur - prev) / Math.abs(prev)) * 100;
+      return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+    };
+    const curRev    = Number(summary?.total_revenue ?? 0);
+    const curExp    = Number(summary?.total_expenses ?? 0);
+    const curProfit = Number(summary?.net_profit ?? 0);
+    const prevRev   = Number(prevSummary?.total_revenue ?? 0);
+    const prevExp   = Number(prevSummary?.total_expenses ?? 0);
+    const prevProfit= Number(prevSummary?.net_profit ?? 0);
+    const topExp = [...(expenseBreakdown ?? [])]
+      .sort((a: { amount: number }, b: { amount: number }) => b.amount - a.amount).slice(0, 5)
+      .map((e: { category: string; amount: number }) => `${e.category.replace(/_/g, ' ')} ${fmt(e.amount)}`).join(', ');
+    const topItms = (topItems ?? []).slice(0, 4)
+      .map((i: { item_name: string; total_revenue: number }) => `${i.item_name} ${fmt(i.total_revenue)}`).join('; ');
+    const repStr = (repairStats ?? [])
+      .map((r: { device_type: string; job_count: number }) => `${r.device_type} ${r.job_count} jobs`).join('; ');
+
+    const dataContext = `PERIOD: ${periodLabel} vs ${prevPeriodLabel}
+REVENUE: ${fmt(curRev)} (${pct(curRev, prevRev)} vs prior) | Prior: ${fmt(prevRev)}
+EXPENSES: ${fmt(curExp)} (${pct(curExp, prevExp)} vs prior) | Top: ${topExp || 'none'}
+PROFIT: ${fmt(curProfit)} — ${curProfit >= 0 ? 'PROFIT' : 'LOSS'} (${pct(curProfit, prevProfit)} vs prior)
+CASH: Available ${fmt(Number(summary?.available_balance ?? 0))} | Tithe due ${fmt(Number(summary?.tithe_due ?? 0))}
+OPERATIONS: ${summary?.pending_jobs ?? 0} pending jobs | ${summary?.low_stock_count ?? 0} low stock
+TOP ITEMS: ${topItms || 'none'}
+REPAIRS: ${repStr || 'none'}`;
+
+    const systemPrompt = `You are Dash AI for Dash & Co., a phone repair and electronics shop in Nigeria. Analyze real financial data and speak directly to the owner.
+
+Respond in EXACTLY this format:
+
+## Health
+Score: X/10. [One direct sentence on business health.]
+
+## Wins
+- [emoji] [Win with exact amount]
+- [emoji] [Second win]
+- [emoji] [Third win]
+
+## Warnings
+- [emoji] [Risk with actual numbers]
+- [emoji] [Second warning]
+- [emoji] [Third warning]
+
+## Expenses
+[1-2 sentences on biggest expense. Name the category and amount.]
+
+## Next Actions
+1. [Specific action — name items, amounts, categories]
+2. [Second action]
+3. [Third action]
+
+Rules: cite real numbers only. Nigerian Naira context: ₦500k+ monthly is strong. If loss, be blunt. No generic advice.`;
+
     try {
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      const res = await fetch('/api/analytics-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken ?? 'anonymous'}`,
-        },
-        body: JSON.stringify({
-          summary,
-          prevSummary,
-          expenseBreakdown,
-          topItems,
-          repairStats,
-          periodLabel,
-          prevPeriodLabel,
-        }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Request failed');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        setText(accumulated);
-      }
+      await streamGemini(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyze this business data:\n\n${dataContext}` },
+        ],
+        (acc) => setText(acc),
+        { maxTokens: 800, temperature: 0.55 },
+      );
       setHasLoaded(true);
-    } catch {
-      setText('## Health\nCould not generate analysis. Check GROQ_API_KEY in .env.local.');
+    } catch (err) {
+      setText(`## Health\nScore: 0/10. ${err instanceof Error ? err.message : 'Analysis failed.'}`);
       setHasLoaded(true);
     } finally {
       setLoading(false);

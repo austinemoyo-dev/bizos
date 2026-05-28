@@ -8,6 +8,7 @@ import {
   Sparkles, RefreshCw, ChevronDown, ChevronUp,
   TrendingUp, Lightbulb, Users, Target, Zap,
 } from 'lucide-react';
+import { streamGemini } from '@/lib/ai/gemini';
 
 // ── Section parser (same pattern as AIAnalyticsPanel) ─────────────
 function parseSections(raw: string): Record<string, string> {
@@ -116,31 +117,74 @@ export function FoodVendorInsights({ analytics, trend, vendors, payments, budget
     setExpanded(true);
     setActiveTab('overview');
 
+    const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const dowMap: Record<string, number> = {};
+    DAYS.forEach(d => { dowMap[d] = 0; });
+    (trend as { date: string; total: number }[]).forEach(t => {
+      const d = DAYS[new Date(t.date + 'T00:00:00').getDay()];
+      dowMap[d] = (dowMap[d] ?? 0) + Number(t.total);
+    });
+    const topDay = Object.entries(dowMap).sort((a, b) => b[1] - a[1])[0];
+    const trendTotal = trend.reduce((s, t) => s + Number(t.total), 0);
+    const trueAvg = trendTotal / (trend.length || 1);
+    const vendorLines = vendors.map(v => `  • ${v.vendor_name}: ${fmt(v.total_spent)} total, ${v.total_meals} meals, ${fmt(v.unpaid_amount)} owed`).join('\n');
+    const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid), 0);
+    const budgetLine = budget > 0
+      ? `Monthly budget: ${fmt(budget)} | Spent: ${fmt(monthlySpent)} | ${monthlySpent > budget ? `OVER by ${fmt(monthlySpent - budget)}` : `${fmt(budget - monthlySpent)} remaining`}`
+      : 'No monthly budget set.';
+
+    const dataContext = `FOOD VENDOR SPENDING REPORT
+SUMMARY (last 30 days)
+  Weekly total: ${fmt(analytics?.weekly_total ?? 0)} | Monthly total: ${fmt(analytics?.monthly_total ?? 0)}
+  Daily average: ${fmt(analytics?.daily_average ?? 0)} (true avg: ${fmt(trueAvg)})
+  Outstanding debt: ${fmt(analytics?.total_outstanding ?? 0)} across ${analytics?.unpaid_count ?? 0} credits
+  Total ever paid: ${fmt(analytics?.total_paid ?? 0)} | Total credits: ${analytics?.total_credits ?? 0}
+BUDGET: ${budgetLine}
+VENDORS:
+${vendorLines || '  No vendor data'}
+PAYMENT BEHAVIOUR: ${payments.length} payment batch(es) totalling ${fmt(totalPaid)}
+DAY-OF-WEEK PATTERN: ${Object.entries(dowMap).map(([d, a]) => `${d}: ${fmt(a)}`).join(' | ')}
+  Heaviest day: ${topDay ? `${topDay[0]} (${fmt(topDay[1])})` : 'N/A'}`;
+
+    const systemPrompt = `You are a personal finance assistant for a Nigerian professional tracking food spending at local vendors.
+Analyze their food credit data and respond in EXACTLY this format:
+
+## Overview
+Score: X/10. [One sentence on overall food spending health.]
+
+## Patterns
+- [emoji] [Spending pattern — cite exact amounts or days]
+- [emoji] [Second pattern]
+- [emoji] [Third pattern]
+
+## Vendors
+- [emoji] [Vendor insight — name the vendor, cite amount owed or spent]
+- [emoji] [Second vendor insight]
+- [emoji] [Third vendor insight]
+
+## Budget
+[2 sentences on budget situation. If no budget set, strongly recommend one and suggest an amount.]
+
+## Tips
+1. [Specific, actionable tip tied to the numbers — name days, vendors, amounts]
+2. [Second tip]
+3. [Third tip]
+
+Rules: every figure must come from the data. Nigerian context: ₦1,500–₦3,000 per meal is typical. Flag debt > ₦10,000 strongly. Always name WHICH vendor or WHICH day.`;
+
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      const res = await fetch('/api/food-insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token ?? 'anonymous'}`,
-        },
-        body: JSON.stringify({ analytics, trend, vendors, payments, budget, monthlySpent }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Request failed');
-
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setText(acc);
-      }
+      await streamGemini(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyze this food spending data:\n\n${dataContext}` },
+        ],
+        (acc) => setText(acc),
+        { maxTokens: 700, temperature: 0.55 },
+      );
       setHasLoaded(true);
-    } catch {
-      setText('## Overview\nScore: —/10. Could not generate insights. Check GROQ_API_KEY in .env.local.');
+    } catch (err) {
+      setText(`## Overview\nScore: 0/10. ${err instanceof Error ? err.message : 'Analysis failed.'}`);
       setHasLoaded(true);
     } finally {
       setLoading(false);

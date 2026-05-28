@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { streamGemini } from '@/lib/ai/gemini';
 
 interface InsightsCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,35 +23,37 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
     setText('');
     setExpanded(true);
 
+    const dataContext = `BUSINESS DATA (${period ?? 'This Month'}):
+- Revenue: ₦${Number(summary?.total_revenue ?? 0).toLocaleString()}
+- Expenses: ₦${Number(summary?.total_expenses ?? 0).toLocaleString()}
+- Net Profit: ₦${Number(summary?.net_profit ?? 0).toLocaleString()}
+- Available Balance: ₦${Number(summary?.available_balance ?? 0).toLocaleString()}
+- Tithe Due: ₦${Number(summary?.tithe_due ?? 0).toLocaleString()}
+- Pending Repair Jobs: ${summary?.pending_jobs ?? 0}
+- Low Stock Items: ${summary?.low_stock_count ?? 0}`;
+
     try {
-      const token = typeof window !== 'undefined'
-        ? (localStorage.getItem('access_token') ?? '')
-        : '';
-
-      const res = await fetch('/api/insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ summary, period }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Failed');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        setText(accumulated);
-      }
+      await streamGemini(
+        [
+          {
+            role: 'system',
+            content: `You are a sharp business analyst for Dash & Co., a phone repair and hardware shop in Nigeria.
+Analyze the business data and respond with exactly 4 bullet points.
+Each bullet:
+- Starts with a relevant emoji
+- Is under 18 words
+- Is specific and actionable (not generic)
+- Focuses on what the owner should DO
+Respond ONLY with the 4 bullet points. No intro, no conclusion, no headers.`,
+          },
+          { role: 'user', content: `Give 4 actionable insights from this data:\n\n${dataContext}` },
+        ],
+        (acc) => setText(acc),
+        { maxTokens: 500, temperature: 0.7 },
+      );
       setHasLoaded(true);
-    } catch {
-      setText('Could not generate insights. Check your GROQ_API_KEY in .env.local.');
+    } catch (err) {
+      setText(err instanceof Error ? err.message : 'Could not generate insights.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +87,7 @@ export function InsightsCard({ summary, period }: InsightsCardProps) {
               AI Business Insights
             </p>
             <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-              Powered by Groq · {period ?? 'This month'}
+              Gemini 2.0 Flash · {period ?? 'This month'}
             </p>
           </div>
         </div>
