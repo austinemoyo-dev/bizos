@@ -46,6 +46,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof DOMException && err.name === 'AbortError') {
+      // Our own 45s AbortController fired — queue rather than discard the mutation.
+      const queued = await queueOfflineMutation<T>(endpoint, method, options.body, new TypeError('timeout'));
+      if (queued) return queued;
       throw new Error('Request timed out — please check your connection and try again.');
     }
     const queued = await queueOfflineMutation<T>(endpoint, method, options.body, err);

@@ -21,8 +21,10 @@ import { useUIStore } from '@/lib/stores/uiStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import {
   Plus, Loader2, Shield, UserCheck, UserX,
-  ChevronDown, Download, Database, Building2, UploadCloud, AlertTriangle
+  ChevronDown, Download, Database, Building2, UploadCloud, AlertTriangle,
+  Sun, Moon,
 } from 'lucide-react';
+import { useThemeStore } from '@/lib/stores/themeStore';
 
 const ROLES = ['super_admin', 'owner', 'accountant', 'technician', 'staff', 'viewer'] as const;
 type Role = typeof ROLES[number];
@@ -242,6 +244,7 @@ export default function SettingsPage() {
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const { avatarUrl, setAvatar, clearAvatar } = useProfileStore();
+  const { theme, setTheme } = useThemeStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -338,6 +341,34 @@ export default function SettingsPage() {
         </div>
       </div>
       
+      {/* Appearance */}
+      <div className="card" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
+        <p className="section-label" style={{ marginBottom: 'var(--space-4)' }}>Appearance</p>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          {(['dark', 'light'] as const).map((t) => {
+            const active = theme === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTheme(t)}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)',
+                  border: `1.5px solid ${active ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+                  background: active ? 'var(--accent-primary)10' : 'var(--bg-overlay)',
+                  color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  cursor: 'pointer', fontWeight: 700, fontSize: 'var(--text-sm)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
+                {t === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Business Profile */}
       {isOwnerOrAbove && (
         <div className="card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>

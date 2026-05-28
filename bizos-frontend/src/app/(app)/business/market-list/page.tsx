@@ -48,8 +48,15 @@ export default function MarketListPage() {
     if (!quickName.trim()) return;
     setQuickLoading(true);
     try {
-      await personalApi.marketList.create({ name: quickName.trim(), quantity: '', estimated_price: 0 });
-      qc.invalidateQueries({ queryKey: ['market-list'] });
+      const result = await personalApi.marketList.create({ name: quickName.trim(), quantity: '', estimated_price: 0 });
+      if ((result as any)?._queued) {
+        qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) => [
+          { ...result, purchased: false } as MarketItem,
+          ...(old ?? []),
+        ]);
+      } else {
+        qc.invalidateQueries({ queryKey: ['market-list'] });
+      }
       setQuickName('');
       quickRef.current?.focus();
     } catch {
@@ -63,8 +70,15 @@ export default function MarketListPage() {
     e.preventDefault();
     setFormLoading(true);
     try {
-      await personalApi.marketList.create(form);
-      qc.invalidateQueries({ queryKey: ['market-list'] });
+      const result = await personalApi.marketList.create(form);
+      if ((result as any)?._queued) {
+        qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) => [
+          { ...result, purchased: false } as MarketItem,
+          ...(old ?? []),
+        ]);
+      } else {
+        qc.invalidateQueries({ queryKey: ['market-list'] });
+      }
       addToast({ type: 'success', title: 'Item added' });
       setShowAdd(false);
       setForm({ name: '', quantity: '', estimated_price: 0 });
@@ -85,7 +99,13 @@ export default function MarketListPage() {
     setCheckingLoading(true);
     try {
       await personalApi.marketList.toggle(checkingItem.id);
-      qc.invalidateQueries({ queryKey: ['market-list'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) =>
+          (old ?? []).map((i) => i.id === checkingItem.id ? { ...i, purchased: true } : i)
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['market-list'] });
+      }
       addToast({ type: 'success', title: `✓ ${checkingItem.name} purchased` });
       setCheckingItem(null);
     } catch (err) {
@@ -98,13 +118,25 @@ export default function MarketListPage() {
   const handleToggle = async (item: MarketItem) => {
     if (!item.purchased) { openCheck(item); return; }
     await personalApi.marketList.toggle(item.id);
-    qc.invalidateQueries({ queryKey: ['market-list'] });
+    if (!navigator.onLine) {
+      qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) =>
+        (old ?? []).map((i) => i.id === item.id ? { ...i, purchased: false } : i)
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ['market-list'] });
+    }
   };
 
   const handleDelete = (id: string) => {
     deleteWithUndo(async () => {
       await personalApi.marketList.delete(id);
-      qc.invalidateQueries({ queryKey: ['market-list'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) =>
+          (old ?? []).filter((i) => i.id !== id)
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['market-list'] });
+      }
     });
   };
 
@@ -112,7 +144,13 @@ export default function MarketListPage() {
     for (const item of done) {
       await personalApi.marketList.delete(item.id);
     }
-    qc.invalidateQueries({ queryKey: ['market-list'] });
+    if (!navigator.onLine) {
+      qc.setQueryData(['market-list'], (old: MarketItem[] | undefined) =>
+        (old ?? []).filter((i) => !i.purchased)
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ['market-list'] });
+    }
     addToast({ type: 'success', title: `${done.length} purchased items cleared` });
   };
 

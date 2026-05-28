@@ -290,16 +290,32 @@ export default function InventoryPage() {
   };
 
   const handleCreate = async (formData: ItemCreate) => {
-    await inventoryApi.create(formData);
-    qc.invalidateQueries({ queryKey: ['inventory'] });
+    const result = await inventoryApi.create(formData);
+    if ((result as any)?._queued) {
+      qc.setQueryData(['inventory', debouncedSearch], (old: { items: Item[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+        ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+        items: [result as Item, ...(old?.items ?? [])],
+        total: (old?.total ?? 0) + 1,
+      }));
+    } else {
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    }
     addToast({ type: 'success', title: 'Item added' });
     setShowAdd(false);
   };
 
   const handleEdit = async (formData: ItemCreate) => {
     if (!editItem) return;
-    await inventoryApi.update(editItem.id, formData);
-    qc.invalidateQueries({ queryKey: ['inventory'] });
+    const result = await inventoryApi.update(editItem.id, formData);
+    if ((result as any)?._queued) {
+      const updated = { ...editItem, ...formData, updated_at: new Date().toISOString() } as Item;
+      qc.setQueryData(['inventory', debouncedSearch], (old: { items: Item[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+        ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+        items: (old?.items ?? []).map((i) => i.id === editItem.id ? updated : i),
+      }));
+    } else {
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+    }
     addToast({ type: 'success', title: 'Item updated' });
     setEditItem(null);
   };
@@ -309,8 +325,19 @@ export default function InventoryPage() {
     setRestocking(true);
     try {
       await inventoryApi.restock(restockItem.id, { quantity: restockQty, unit_cost: restockCost, restock_date: restockDate });
-      qc.invalidateQueries({ queryKey: ['inventory'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['inventory', debouncedSearch], (old: { items: Item[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+          ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+          items: (old?.items ?? []).map((i) =>
+            i.id === restockItem.id
+              ? { ...i, quantity_in_stock: i.quantity_in_stock + restockQty, purchase_price: restockCost || i.purchase_price }
+              : i
+          ),
+        }));
+      } else {
+        qc.invalidateQueries({ queryKey: ['inventory'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: `Restocked ${restockQty} units` });
       setRestockItem(null);
       setRestockQty(0);
@@ -328,7 +355,15 @@ export default function InventoryPage() {
     setDeleting(true);
     try {
       await inventoryApi.delete(deleteItem.id);
-      qc.invalidateQueries({ queryKey: ['inventory'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['inventory', debouncedSearch], (old: { items: Item[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+          ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+          items: (old?.items ?? []).filter((i) => i.id !== deleteItem.id),
+          total: Math.max(0, (old?.total ?? 0) - 1),
+        }));
+      } else {
+        qc.invalidateQueries({ queryKey: ['inventory'] });
+      }
       addToast({ type: 'success', title: 'Item deleted', message: `${deleteItem.name} removed from inventory.` });
       setDeleteItem(null);
     } catch (err) {

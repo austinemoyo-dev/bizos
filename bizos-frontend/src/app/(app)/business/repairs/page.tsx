@@ -116,8 +116,20 @@ export default function RepairsPage() {
       if (hasDeposit && depositResolution) {
         await repairsApi.resolveDeposit(cancelTarget.id, depositResolution);
       }
-      qc.invalidateQueries({ queryKey: ['repairs'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(
+          ['repairs', activeTab, debouncedSearch, datePreset, customFrom, customTo],
+          (old: { items: RepairJob[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+            ...(old ?? { total: 0, page: 1, size: 20, pages: 1 }),
+            items: (old?.items ?? []).map((j) =>
+              j.id === cancelTarget.id ? { ...j, status: 'cancelled' as RepairStatus } : j
+            ),
+          })
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['repairs'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Job cancelled', message: 'Parts returned to inventory' });
       setCancelTarget(null);
     } catch (err) {
@@ -165,8 +177,25 @@ export default function RepairsPage() {
   });
 
   const handleCreate = async (formData: RepairJobCreate) => {
-    await repairsApi.create(formData);
-    qc.invalidateQueries({ queryKey: ['repairs'] });
+    const result = await repairsApi.create(formData);
+    if ((result as any)?._queued) {
+      const r = result as any;
+      const job = {
+        job_number: 0, parts: [], parts_cost: 0, profit: 0,
+        ...r,
+        balance: Number(r.total_charge ?? 0) - Number(r.amount_paid ?? 0),
+      } as RepairJob;
+      qc.setQueryData(
+        ['repairs', activeTab, debouncedSearch, datePreset, customFrom, customTo],
+        (old: { items: RepairJob[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+          ...(old ?? { total: 0, page: 1, size: 20, pages: 1 }),
+          items: [job, ...(old?.items ?? [])],
+          total: (old?.total ?? 0) + 1,
+        }),
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ['repairs'] });
+    }
     addToast({ type: 'success', title: 'Repair job created' });
     setShowNewJob(false);
   };

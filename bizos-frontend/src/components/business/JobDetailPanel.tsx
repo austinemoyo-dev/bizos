@@ -74,10 +74,16 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
     if (!next) return;
     setTransitioning(true);
     try {
-      await repairsApi.updateStatus(job.id, next);
-      qc.invalidateQueries({ queryKey: ['repair', jobId] });
-      qc.invalidateQueries({ queryKey: ['repairs'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      const result = await repairsApi.updateStatus(job.id, next);
+      if ((result as any)?._queued || !navigator.onLine) {
+        qc.setQueryData(['repair', jobId], (old: RepairJob | undefined) =>
+          old ? { ...old, status: next } : old
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['repair', jobId] });
+        qc.invalidateQueries({ queryKey: ['repairs'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: `Job marked as ${next.replace('_', ' ')}` });
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to update status', message: err instanceof Error ? err.message : '' });
@@ -88,9 +94,16 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
 
   const handleAddPart = async (data: Parameters<typeof repairsApi.addPart>[1]) => {
     if (!job) return;
-    await repairsApi.addPart(job.id, data);
-    qc.invalidateQueries({ queryKey: ['repair', jobId] });
-    qc.invalidateQueries({ queryKey: ['business-summary'] });
+    const result = await repairsApi.addPart(job.id, data);
+    if ((result as any)?._queued || !navigator.onLine) {
+      const newPart = { id: `offline-${Date.now()}`, damaged: false, selling_price: null, ...data } as any;
+      qc.setQueryData(['repair', jobId], (old: RepairJob | undefined) =>
+        old ? { ...old, parts: [...old.parts, newPart] } : old
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ['repair', jobId] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
+    }
     addToast({ type: 'success', title: 'Part added' });
     setAddingPart(false);
   };
@@ -100,10 +113,16 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
     const suggested = suggestedCharge(job);
     setApplyingCharge(true);
     try {
-      await repairsApi.update(job.id, { total_charge: suggested });
-      qc.invalidateQueries({ queryKey: ['repair', jobId] });
-      qc.invalidateQueries({ queryKey: ['repairs'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      const result = await repairsApi.update(job.id, { total_charge: suggested });
+      if ((result as any)?._queued || !navigator.onLine) {
+        qc.setQueryData(['repair', jobId], (old: RepairJob | undefined) =>
+          old ? { ...old, total_charge: suggested, balance: suggested - Number(old.amount_paid) } : old
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['repair', jobId] });
+        qc.invalidateQueries({ queryKey: ['repairs'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: `Total charge updated to ${formatNaira(suggested)}` });
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to update charge', message: err instanceof Error ? err.message : '' });
@@ -117,9 +136,15 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
     setCancelling(true);
     try {
       await repairsApi.cancelJob(job.id, { cancel_reason: cancelReason || undefined });
-      qc.invalidateQueries({ queryKey: ['repair', jobId] });
-      qc.invalidateQueries({ queryKey: ['repairs'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['repair', jobId], (old: RepairJob | undefined) =>
+          old ? { ...old, status: 'cancelled' as RepairStatus, cancel_reason: cancelReason || undefined } : old
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['repair', jobId] });
+        qc.invalidateQueries({ queryKey: ['repairs'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Order cancelled', message: 'Parts have been returned to inventory.' });
       setCancelOpen(false);
     } catch (err) {
@@ -135,20 +160,26 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
       addToast({ type: 'error', title: 'Please enter a valid amount greater than 0' });
       return;
     }
-    
+
     const newTotalPaid = Number(job.amount_paid) + paymentAmount;
     if (newTotalPaid > Number(job.total_charge)) {
       addToast({ type: 'error', title: 'Payment exceeds total balance' });
       return;
     }
-    
+
     setUpdatingPayment(true);
     try {
       await repairsApi.updatePayment(job.id, newTotalPaid);
-      qc.invalidateQueries({ queryKey: ['repair', jobId] });
-      qc.invalidateQueries({ queryKey: ['repairs'] });
-      qc.invalidateQueries({ queryKey: ['debtors'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['repair', jobId], (old: RepairJob | undefined) =>
+          old ? { ...old, amount_paid: newTotalPaid, balance: Math.max(0, Number(old.total_charge) - newTotalPaid) } : old
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['repair', jobId] });
+        qc.invalidateQueries({ queryKey: ['repairs'] });
+        qc.invalidateQueries({ queryKey: ['debtors'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Payment updated' });
       setUpdatePaymentOpen(false);
     } catch (err) {

@@ -42,9 +42,20 @@ export default function TransactionsPage() {
   });
 
   const handleCreate = async (formData: PersonalTransactionCreate) => {
-    await personalApi.transactions.create(formData);
-    qc.invalidateQueries({ queryKey: ['personal-transactions'] });
-    qc.invalidateQueries({ queryKey: ['personal-summary'] });
+    const result = await personalApi.transactions.create(formData);
+    if ((result as any)?._queued) {
+      qc.setQueryData(
+        ['personal-transactions', typeFilter],
+        (old: { items: PersonalTransaction[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+          ...(old ?? { total: 0, page: 1, size: 200, pages: 1 }),
+          items: [result as PersonalTransaction, ...(old?.items ?? [])],
+          total: (old?.total ?? 0) + 1,
+        }),
+      );
+    } else {
+      qc.invalidateQueries({ queryKey: ['personal-transactions'] });
+      qc.invalidateQueries({ queryKey: ['personal-summary'] });
+    }
     addToast({ type: 'success', title: 'Transaction recorded' });
     setShowAdd(false);
   };
@@ -54,8 +65,19 @@ export default function TransactionsPage() {
     setIsDeleting(true);
     try {
       await personalApi.transactions.delete(deleteId);
-      qc.invalidateQueries({ queryKey: ['personal-transactions'] });
-      qc.invalidateQueries({ queryKey: ['personal-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(
+          ['personal-transactions', typeFilter],
+          (old: { items: PersonalTransaction[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+            ...(old ?? { total: 0, page: 1, size: 200, pages: 1 }),
+            items: (old?.items ?? []).filter((t) => t.id !== deleteId),
+            total: Math.max(0, (old?.total ?? 0) - 1),
+          }),
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['personal-transactions'] });
+        qc.invalidateQueries({ queryKey: ['personal-summary'] });
+      }
       addToast({ type: 'success', title: 'Transaction deleted' });
       setDeleteId(null);
     } catch (err) {

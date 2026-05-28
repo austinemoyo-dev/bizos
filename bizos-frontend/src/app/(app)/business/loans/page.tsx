@@ -77,8 +77,15 @@ export default function LoansPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await investmentsApi.create({ ...form, type: 'loan' });
-      qc.invalidateQueries({ queryKey: ['loans'] });
+      const result = await investmentsApi.create({ ...form, type: 'loan' });
+      if ((result as any)?._queued) {
+        qc.setQueryData(['loans'], (old: Investment[] | undefined) => [
+          { ...result, amount_repaid: 0, balance_outstanding: form.amount, is_settled: false, received_at: new Date().toISOString() } as Investment,
+          ...(old ?? []),
+        ]);
+      } else {
+        qc.invalidateQueries({ queryKey: ['loans'] });
+      }
       addToast({ type: 'success', title: 'Loan recorded' });
       setShowAdd(false);
       setForm({ party_name: '', type: 'loan', amount: 0, purpose: '', due_date: '' });
@@ -94,8 +101,20 @@ export default function LoansPage() {
     setLoading(true);
     try {
       await investmentsApi.repay(repayTarget.id, { amount: repayAmount });
-      qc.invalidateQueries({ queryKey: ['loans'] });
-      const isNowPaid = repayAmount >= repayTarget.balance_outstanding;
+      const newRepaid = Number(repayTarget.amount_repaid) + repayAmount;
+      const newBalance = Math.max(0, Number(repayTarget.balance_outstanding) - repayAmount);
+      const isNowPaid = newBalance === 0;
+      if (!navigator.onLine) {
+        qc.setQueryData(['loans'], (old: Investment[] | undefined) =>
+          (old ?? []).map((l) =>
+            l.id === repayTarget.id
+              ? { ...l, amount_repaid: newRepaid, balance_outstanding: newBalance, is_settled: isNowPaid }
+              : l
+          )
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['loans'] });
+      }
       addToast({
         type: 'success',
         title: isNowPaid ? 'Loan fully repaid!' : 'Repayment recorded',

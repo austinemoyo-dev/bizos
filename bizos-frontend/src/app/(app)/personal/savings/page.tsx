@@ -32,8 +32,15 @@ export default function SavingsPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await personalApi.savings.create(form);
-      qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      const result = await personalApi.savings.create(form);
+      if ((result as any)?._queued) {
+        qc.setQueryData(['savings-goals'], (old: SavingsGoal[] | undefined) => [
+          { ...result, current_amount: 0 } as SavingsGoal,
+          ...(old ?? []),
+        ]);
+      } else {
+        qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      }
       addToast({ type: 'success', title: 'Savings goal created' });
       setShowAdd(false);
       setForm({ title: '', target_amount: 0, deadline: '' });
@@ -53,12 +60,14 @@ export default function SavingsPage() {
     if (!editGoal) return;
     setLoading(true);
     try {
-      await personalApi.savings.update(editGoal.id, {
-        title: editGoal.title,
-        target_amount: editGoal.target_amount,
-        deadline: editGoal.deadline || undefined,
-      });
-      qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      const patch = { title: editGoal.title, target_amount: editGoal.target_amount, deadline: editGoal.deadline || undefined };
+      const result = await personalApi.savings.update(editGoal.id, patch);
+      if ((result as any)?._queued) {
+        qc.setQueryData(['savings-goals'], (old: SavingsGoal[] | undefined) =>
+          (old ?? []).map((g) => g.id === editGoal.id ? { ...g, ...patch } : g));
+      } else {
+        qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      }
       addToast({ type: 'success', title: 'Goal updated' });
       setEditGoal(null);
     } catch (err) {
@@ -73,7 +82,14 @@ export default function SavingsPage() {
     setLoading(true);
     try {
       await personalApi.savings.deposit(depositGoalId, depositAmount);
-      qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['savings-goals'], (old: SavingsGoal[] | undefined) =>
+          (old ?? []).map((g) =>
+            g.id === depositGoalId ? { ...g, current_amount: Number(g.current_amount) + depositAmount } : g
+          ));
+      } else {
+        qc.invalidateQueries({ queryKey: ['savings-goals'] });
+      }
       addToast({ type: 'success', title: `${formatNaira(depositAmount)} deposited` });
       setDepositGoalId(null);
       setDepositAmount(0);

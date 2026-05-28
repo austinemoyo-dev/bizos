@@ -471,9 +471,48 @@ export default function FoodVendorPage() {
   const handlePayAll    = () => runPay(unpaid.map(c => c.id), unpaid.map(c => c.vendor_name).filter((v,i,a)=>a.indexOf(v)===i).join(', '), unpaid);
   const handlePayDay    = () => { if (!dayUnpaid.length) return; runPay(dayUnpaid.map(c => c.id), `Day: ${selectedDate}`, dayUnpaid).then(()=>setShowDayPay(false)); };
   const handlePayVendor = (vn: string) => { const e = vendorUnpaidMap[vn]; if (!e) return; setPayingVendor(vn); runPay(e.ids, vn, e.credits).finally(()=>setPayingVendor(null)); };
-  const handleCreate    = async (data: FoodCreditCreate) => { await foodVendorApi.credits.create(data); invalidateAll(qc); addToast({ type: 'success', title: 'Added to your tab' }); setShowAdd(false); setAddPrefill(undefined); };
-  const handleUpdate    = async (data: FoodCreditCreate) => { if (!editCredit) return; await foodVendorApi.credits.update(editCredit.id, data); invalidateAll(qc); addToast({ type: 'success', title: 'Updated' }); setEditCredit(null); };
-  const handleDelete    = async (id: string) => { try { await foodVendorApi.credits.delete(id); invalidateAll(qc); addToast({ type: 'success', title: 'Removed' }); } catch (err) { addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' }); } };
+  const handleCreate = async (data: FoodCreditCreate) => {
+    const result = await foodVendorApi.credits.create(data);
+    if ((result as any)?._queued) {
+      const item = { ...result, paid: false } as FoodCredit;
+      qc.setQueryData(['food-credits', 'unpaid'], (old: FoodCredit[] | undefined) => [item, ...(old ?? [])]);
+      qc.setQueryData(['food-credits', 'all'], (old: FoodCredit[] | undefined) => [item, ...(old ?? [])]);
+    } else {
+      invalidateAll(qc);
+    }
+    addToast({ type: 'success', title: 'Added to your tab' });
+    setShowAdd(false);
+    setAddPrefill(undefined);
+  };
+  const handleUpdate    = async (data: FoodCreditCreate) => {
+    if (!editCredit) return;
+    const result = await foodVendorApi.credits.update(editCredit.id, data);
+    if ((result as any)?._queued || !navigator.onLine) {
+      const updated = { ...editCredit, ...data } as FoodCredit;
+      qc.setQueryData(['food-credits', 'unpaid'], (old: FoodCredit[] | undefined) =>
+        (old ?? []).map((c) => c.id === editCredit.id ? updated : c)
+      );
+      qc.setQueryData(['food-credits', 'all'], (old: FoodCredit[] | undefined) =>
+        (old ?? []).map((c) => c.id === editCredit.id ? updated : c)
+      );
+    } else {
+      invalidateAll(qc);
+    }
+    addToast({ type: 'success', title: 'Updated' });
+    setEditCredit(null);
+  };
+  const handleDelete    = async (id: string) => {
+    try {
+      await foodVendorApi.credits.delete(id);
+      if (!navigator.onLine) {
+        qc.setQueryData(['food-credits', 'unpaid'], (old: FoodCredit[] | undefined) => (old ?? []).filter((c) => c.id !== id));
+        qc.setQueryData(['food-credits', 'all'], (old: FoodCredit[] | undefined) => (old ?? []).filter((c) => c.id !== id));
+      } else {
+        invalidateAll(qc);
+      }
+      addToast({ type: 'success', title: 'Removed' });
+    } catch (err) { addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' }); }
+  };
   const handleSaveBudget= () => { saveBudget(budgetInput); addToast({ type: 'success', title: 'Budget saved' }); setShowBudget(false); };
 
   const openAdd = (prefill?: Partial<FoodCreditCreate>) => {
@@ -483,7 +522,42 @@ export default function FoodVendorPage() {
 
   return (
     <div style={{ background: BG, minHeight: '100dvh', paddingBottom: unpaid.length > 0 ? 140 : 96 }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} .fspin{animation:spin 1s linear infinite} ::-webkit-scrollbar{display:none}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .fspin{animation:spin 1s linear infinite}
+        ::-webkit-scrollbar{display:none}
+
+        /* ── Mobile optimization: fix sticky + remove main-content padding ── */
+        @media (max-width: 767px) {
+          .main-content {
+            contain: none !important;
+            padding: 0 !important;
+            padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+          }
+          /* Prevent framer-motion page wrapper from creating a containing block
+             that breaks position:fixed on the My Tab bar and FAB */
+          .main-content > div {
+            will-change: auto !important;
+            transform: none !important;
+            contain: none !important;
+          }
+        }
+        .food-sticky-nav {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+        }
+        .food-sticky-filter {
+          position: sticky;
+          top: 0;
+          z-index: 19;
+        }
+        .food-sticky-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+        }
+      `}</style>
 
       <AnimatePresence mode="wait">
 
@@ -546,8 +620,8 @@ export default function FoodVendorPage() {
               </div>
             </div>
 
-            {/* ── 14-Day Navigator ── */}
-            <div style={{ padding: '16px 0 0', background: CARD, borderBottom: `1px solid ${BDR}` }}>
+            {/* ── 14-Day Navigator (sticky on mobile) ── */}
+            <div className="food-sticky-nav" style={{ padding: '16px 0 0', background: CARD, borderBottom: `1px solid ${BDR}` }}>
               <p style={{ fontSize: '0.6rem', color: MUT, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 20px 10px' }}>Pick A Day</p>
               <div style={{ display: 'flex', gap: 6, padding: '0 16px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                 {days14.map(({ date, dl, dn, info }) => {
@@ -633,8 +707,8 @@ export default function FoodVendorPage() {
               </div>
             </div>
 
-            {/* ── Category filter ── */}
-            <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {/* ── Category filter (sticky on mobile) ── */}
+            <div className="food-sticky-filter" style={{ display: 'flex', gap: 8, padding: '14px 16px 10px', overflowX: 'auto', scrollbarWidth: 'none', background: BG }}>
               {(['all','breakfast','lunch','dinner','snack'] as const).map(cat => {
                 const active = activeCategory === cat;
                 const meta   = cat !== 'all' ? MEAL_META[cat] : null;
@@ -912,8 +986,8 @@ export default function FoodVendorPage() {
         {/* ═══════════════ CART / MY TAB ════════════════ */}
         {currentView === 'cart' && (
           <motion.div key="cart" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.26, ease: [0.16,1,0.3,1] }}>
-            {/* Header */}
-            <div style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
+            {/* Header (sticky on mobile) */}
+            <div className="food-sticky-header" style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
               <button onClick={() => setCurrentView('main')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <ArrowLeft size={16} color={TXT} />
               </button>
@@ -1008,7 +1082,7 @@ export default function FoodVendorPage() {
         {/* ═══════════════ HISTORY ════════════════ */}
         {currentView === 'history' && (
           <motion.div key="history" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.26, ease: [0.16,1,0.3,1] }}>
-            <div style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
+            <div className="food-sticky-header" style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
               <button onClick={() => setCurrentView('main')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <ArrowLeft size={16} color={TXT} />
               </button>

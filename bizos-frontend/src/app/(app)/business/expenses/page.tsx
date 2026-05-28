@@ -126,9 +126,20 @@ export default function ExpensesPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await expensesApi.create(form);
-      qc.invalidateQueries({ queryKey: ['expenses'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      const result = await expensesApi.create(form);
+      if ((result as any)?._queued) {
+        qc.setQueryData(
+          ['expenses', activeCategory, datePreset, customFrom, customTo],
+          (old: { items: Expense[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+            ...(old ?? { total: 0, page: 1, size: 200, pages: 1 }),
+            items: [result as Expense, ...(old?.items ?? [])],
+            total: (old?.total ?? 0) + 1,
+          }),
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['expenses'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Expense recorded' });
       setShowAdd(false);
       setForm({ category: 'miscellaneous', amount: 0, description: '', expense_date: format(new Date(), 'yyyy-MM-dd') });
@@ -143,8 +154,19 @@ export default function ExpensesPage() {
     setDeletingId(id);
     try {
       await expensesApi.delete(id);
-      qc.invalidateQueries({ queryKey: ['expenses'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(
+          ['expenses', activeCategory, datePreset, customFrom, customTo],
+          (old: { items: Expense[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+            ...(old ?? { total: 0, page: 1, size: 200, pages: 1 }),
+            items: (old?.items ?? []).filter((e) => e.id !== id),
+            total: Math.max(0, (old?.total ?? 0) - 1),
+          }),
+        );
+      } else {
+        qc.invalidateQueries({ queryKey: ['expenses'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Expense deleted' });
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to delete', message: err instanceof Error ? err.message : '' });

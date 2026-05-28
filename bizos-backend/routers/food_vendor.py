@@ -59,6 +59,36 @@ def record_meal(
     return credit
 
 
+@router.patch("/credits/{credit_id}", response_model=FoodCreditOut)
+def update_credit(
+    credit_id: str,
+    payload: FoodCreditCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(role_required(*_WRITE_ROLES)),
+):
+    credit = db.query(FoodVendorCredit).filter(FoodVendorCredit.id == credit_id).first()
+    if not credit:
+        raise HTTPException(404, "Credit not found")
+    for field, value in payload.model_dump(exclude_none=True).items():
+        setattr(credit, field, value)
+    db.commit()
+    db.refresh(credit)
+    return credit
+
+
+@router.delete("/credits/{credit_id}", status_code=204)
+def delete_credit(
+    credit_id: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(role_required(*_WRITE_ROLES)),
+):
+    credit = db.query(FoodVendorCredit).filter(FoodVendorCredit.id == credit_id).first()
+    if not credit:
+        raise HTTPException(404, "Credit not found")
+    db.delete(credit)
+    db.commit()
+
+
 @router.get("/outstanding", response_model=List[VendorOutstanding])
 def outstanding_by_vendor(
     db: Session = Depends(get_db),

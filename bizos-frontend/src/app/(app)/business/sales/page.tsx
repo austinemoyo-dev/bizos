@@ -31,8 +31,16 @@ export default function SalesPage() {
     if (!confirm(`Are you sure you want to cancel the sale of ${sale.quantity}x ${sale.item_name}? This will return the items to inventory.`)) return;
     try {
       await salesApi.delete(sale.id);
-      qc.invalidateQueries({ queryKey: ['sales'] });
-      qc.invalidateQueries({ queryKey: ['business-summary'] });
+      if (!navigator.onLine) {
+        qc.setQueryData(['sales'], (old: { items: Sale[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+          ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+          items: (old?.items ?? []).filter((s) => s.id !== sale.id),
+          total: Math.max(0, (old?.total ?? 0) - 1),
+        }));
+      } else {
+        qc.invalidateQueries({ queryKey: ['sales'] });
+        qc.invalidateQueries({ queryKey: ['business-summary'] });
+      }
       addToast({ type: 'success', title: 'Sale cancelled' });
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to cancel sale', message: err instanceof Error ? err.message : '' });
@@ -116,9 +124,25 @@ export default function SalesPage() {
   });
 
   const handleCreate = async (formData: SaleCreate) => {
-    await salesApi.create(formData);
-    qc.invalidateQueries({ queryKey: ['sales'] });
-    qc.invalidateQueries({ queryKey: ['business-summary'] });
+    const result = await salesApi.create(formData);
+    if ((result as any)?._queued) {
+      const r = result as any;
+      const sale = {
+        item_name: '(syncing…)', customer: r.customer, profit: 0, cost_price: 0,
+        amount_paid: r.amount_paid ?? 0,
+        balance: Number(r.selling_price ?? 0) * Number(r.quantity ?? 0) - Number(r.amount_paid ?? 0),
+        sold_at: r.sold_at ?? new Date().toISOString(),
+        ...r,
+      } as Sale;
+      qc.setQueryData(['sales'], (old: { items: Sale[]; total: number; page: number; size: number; pages: number } | undefined) => ({
+        ...(old ?? { total: 0, page: 1, size: 100, pages: 1 }),
+        items: [sale, ...(old?.items ?? [])],
+        total: (old?.total ?? 0) + 1,
+      }));
+    } else {
+      qc.invalidateQueries({ queryKey: ['sales'] });
+      qc.invalidateQueries({ queryKey: ['business-summary'] });
+    }
     addToast({ type: 'success', title: 'Sale recorded' });
     setShowAdd(false);
   };
