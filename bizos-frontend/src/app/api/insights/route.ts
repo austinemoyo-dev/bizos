@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
 export async function POST(req: NextRequest) {
   // Require a valid Bearer token — prevents unauthenticated API cost burn
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!GROQ_API_KEY) {
+  if (!GEMINI_API_KEY) {
     return NextResponse.json({ error: 'AI insights not configured on this server' }, { status: 503 });
   }
 
@@ -28,14 +28,14 @@ BUSINESS DATA (${period ?? 'This Month'}):
 - Low Stock Items: ${summary?.low_stock_count ?? 0}
 `.trim();
 
-  const groqRes = await fetch(GROQ_URL, {
+  const groqRes = await fetch(GEMINI_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Authorization': `Bearer ${GEMINI_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'gemini-2.0-flash',
       stream: true,
       max_tokens: 500,
       temperature: 0.7,

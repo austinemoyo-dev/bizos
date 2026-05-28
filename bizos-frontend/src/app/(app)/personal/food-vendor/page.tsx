@@ -16,69 +16,72 @@ import {
   ShoppingBag, Plus, X, Loader2, Sparkles, CheckCircle2,
   ArrowLeft, Trash2, Coffee, Utensils, Moon, Apple,
   TrendingUp, History, CalendarDays, SlidersHorizontal,
-  Target, ChevronRight, Star, Tag,
+  Target, ChevronRight, Star, Flame, Clock, MapPin,
 } from 'lucide-react';
-import { format, subDays, startOfMonth, subMonths } from 'date-fns';
+import { format, subDays, subMonths } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// ── Color tokens ──────────────────────────────────────────
-const BG    = '#F4F5FA';
-const WHITE = '#FFFFFF';
-const RED   = '#E8392D';
-const ORG   = '#F97316';
-const TXT   = '#1A1A2E';
-const SUB   = '#374151';
-const MUT   = '#9CA3AF';
-const BDR   = '#ECEDF2';
-const G     = '#16A34A';
-const GB    = 'rgba(22,163,74,0.1)';
+// ── Dark restaurant theme ─────────────────────────────────
+const BG    = '#08090E';
+const CARD  = '#111219';
+const CARD2 = '#181A24';
+const ORG   = '#FF6B35';
+const RED   = '#FF416C';
+const GOLD  = '#FFD166';
+const G     = '#06D6A0';
+const BLUE  = '#4CC9F0';
+const TXT   = '#F0F2F8';
+const MUT   = 'rgba(240,242,248,0.4)';
+const BDR   = 'rgba(255,255,255,0.07)';
+const GBDR  = 'rgba(255,255,255,0.04)';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
-const MEAL_META: Record<MealType, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  breakfast: { label: 'Breakfast', icon: Coffee,   color: '#F97316', bg: '#FFF7EC' },
-  lunch:     { label: 'Lunch',     icon: Utensils, color: '#E8392D', bg: '#FFF1F0' },
-  dinner:    { label: 'Dinner',    icon: Moon,     color: '#4F46E5', bg: '#EEF2FF' },
-  snack:     { label: 'Snack',     icon: Apple,    color: '#16A34A', bg: '#F0FDF4' },
+const MEAL_META: Record<MealType, { label: string; icon: React.ElementType; color: string; bg: string; time: string }> = {
+  breakfast: { label: 'Breakfast', icon: Coffee,   color: '#FFB347', bg: 'rgba(255,179,71,0.15)',  time: 'Morning'   },
+  lunch:     { label: 'Lunch',     icon: Utensils, color: '#FF6B35', bg: 'rgba(255,107,53,0.15)',  time: 'Afternoon' },
+  dinner:    { label: 'Dinner',    icon: Moon,     color: '#A78BFA', bg: 'rgba(167,139,250,0.15)', time: 'Evening'   },
+  snack:     { label: 'Snack',     icon: Apple,    color: '#06D6A0', bg: 'rgba(6,214,160,0.15)',   time: 'Anytime'   },
 };
 
 // ── Food visual engine ────────────────────────────────────
 function getFoodVisual(mealDesc?: string | null, mealType?: string | null) {
   const d  = (mealDesc ?? '').toLowerCase();
   const mt = (mealType ?? 'lunch') as MealType;
-  const cases: Array<[RegExp, string, string, string]> = [
-    [/jollof|fried.?rice|coconut.?rice|basmati/,            '🍛','linear-gradient(135deg,#FF6B35,#FFA07A)','#FFF3EE'],
-    [/chicken|turkey|shaki|assorted|gizzard|liver/,          '🍗','linear-gradient(135deg,#F97316,#FBBF24)','#FFF7EC'],
-    [/fish|catfish|tilapia|titus|croaker|salmon|ponmo/,      '🐟','linear-gradient(135deg,#0EA5E9,#38BDF8)','#EFF9FF'],
-    [/pasta|spaghetti|indomie|noodle/,                       '🍝','linear-gradient(135deg,#F59E0B,#F97316)','#FFFBEC'],
-    [/bread|toast|sandwich|burger/,                          '🥪','linear-gradient(135deg,#D97706,#F59E0B)','#FFFBEC'],
-    [/pepper.?soup|ogbono|egusi|okra|efo|oha|banga/,         '🍲','linear-gradient(135deg,#EF4444,#F97316)','#FFF1F1'],
-    [/beans|akara|moi.?moi|gbegiri|ewa/,                     '🫘','linear-gradient(135deg,#78350F,#B45309)','#FEF3C7'],
-    [/yam|pounded|eba|fufu|amala|semo|tuwo|agidi/,           '🥘','linear-gradient(135deg,#CA8A04,#EAB308)','#FEFCE8'],
-    [/plantain|dodo|boli/,                                   '🍌','linear-gradient(135deg,#EAB308,#F97316)','#FEFCE8'],
-    [/suya|kebab|stick meat/,                                '🍢','linear-gradient(135deg,#DC2626,#F97316)','#FFF1F1'],
-    [/shawarma|wrap/,                                        '🌯','linear-gradient(135deg,#7C3AED,#A855F7)','#F5F3FF'],
-    [/juice|chapman|smoothie|zobo|kunun/,                    '🥤','linear-gradient(135deg,#EC4899,#F9A8D4)','#FDF2F8'],
-    [/water|soda|coke|pepsi|fanta|malt/,                     '🍾','linear-gradient(135deg,#0EA5E9,#7DD3FC)','#EFF9FF'],
-    [/snack|biscuit|chin.?chin|puff|small.?chop|cake/,       '🍪','linear-gradient(135deg,#92400E,#B45309)','#FEF3C7'],
-    [/egg|omelette/,                                         '🍳','linear-gradient(135deg,#EAB308,#FBBF24)','#FEFCE8'],
-    [/salad|veggie|vegetable/,                               '🥗','linear-gradient(135deg,#16A34A,#4ADE80)','#F0FDF4'],
-    [/pizza/,                                                '🍕','linear-gradient(135deg,#EF4444,#F97316)','#FFF1F1'],
-    [/rice/,                                                 '🍚','linear-gradient(135deg,#FF6B35,#FFA07A)','#FFF3EE'],
+  const cases: Array<[RegExp, string, string]> = [
+    [/jollof|fried.?rice|coconut.?rice/,        '🍛','linear-gradient(135deg,#FF6B35,#FF8C00)'],
+    [/chicken|turkey|shaki|assorted|gizzard/,    '🍗','linear-gradient(135deg,#FF9A3C,#FF6B35)'],
+    [/fish|catfish|tilapia|titus|croaker/,       '🐟','linear-gradient(135deg,#0EA5E9,#4CC9F0)'],
+    [/pasta|spaghetti|indomie|noodle/,           '🍝','linear-gradient(135deg,#F59E0B,#FF6B35)'],
+    [/bread|toast|sandwich|burger/,              '🥪','linear-gradient(135deg,#D97706,#F59E0B)'],
+    [/pepper.?soup|ogbono|egusi|okra|efo|oha/,   '🍲','linear-gradient(135deg,#EF4444,#FF6B35)'],
+    [/beans|akara|moi.?moi|gbegiri|ewa/,         '🫘','linear-gradient(135deg,#92400E,#B45309)'],
+    [/yam|pounded|eba|fufu|amala|semo|tuwo/,     '🥘','linear-gradient(135deg,#B45309,#D97706)'],
+    [/plantain|dodo|boli/,                       '🍌','linear-gradient(135deg,#EAB308,#FF9A3C)'],
+    [/suya|kebab|stick/,                         '🍢','linear-gradient(135deg,#DC2626,#FF6B35)'],
+    [/shawarma|wrap/,                            '🌯','linear-gradient(135deg,#7C3AED,#A855F7)'],
+    [/juice|chapman|smoothie|zobo|kunun/,        '🥤','linear-gradient(135deg,#EC4899,#F9A8D4)'],
+    [/water|soda|coke|pepsi|fanta|malt/,         '🍾','linear-gradient(135deg,#0EA5E9,#7DD3FC)'],
+    [/snack|biscuit|chin.?chin|puff|cake/,       '🍪','linear-gradient(135deg,#92400E,#B45309)'],
+    [/egg|omelette/,                             '🍳','linear-gradient(135deg,#EAB308,#FBBF24)'],
+    [/salad|veggie|vegetable/,                   '🥗','linear-gradient(135deg,#16A34A,#06D6A0)'],
+    [/pizza/,                                    '🍕','linear-gradient(135deg,#EF4444,#FF6B35)'],
+    [/rice/,                                     '🍚','linear-gradient(135deg,#FF6B35,#FFA07A)'],
+    [/nkwobi|isi.?ewu|ofe|bitterleaf/,          '🍵','linear-gradient(135deg,#78350F,#B45309)'],
   ];
-  for (const [re, emoji, gradient, lightBg] of cases) {
-    if (re.test(d)) return { emoji, gradient, lightBg };
+  for (const [re, emoji, gradient] of cases) {
+    if (re.test(d)) return { emoji, gradient };
   }
-  const fb: Record<MealType, { emoji: string; gradient: string; lightBg: string }> = {
-    breakfast: { emoji: '🌅', gradient: 'linear-gradient(135deg,#F97316,#FBBF24)', lightBg: '#FFF7EC' },
-    lunch:     { emoji: '🍽️', gradient: 'linear-gradient(135deg,#E8392D,#F97316)', lightBg: '#FFF1F0' },
-    dinner:    { emoji: '🌙', gradient: 'linear-gradient(135deg,#4F46E5,#7C3AED)', lightBg: '#F5F3FF' },
-    snack:     { emoji: '🍏', gradient: 'linear-gradient(135deg,#16A34A,#4ADE80)', lightBg: '#F0FDF4' },
+  const fb: Record<MealType, { emoji: string; gradient: string }> = {
+    breakfast: { emoji: '🌅', gradient: 'linear-gradient(135deg,#F97316,#FBBF24)' },
+    lunch:     { emoji: '🍽️', gradient: 'linear-gradient(135deg,#FF416C,#FF6B35)' },
+    dinner:    { emoji: '🌙', gradient: 'linear-gradient(135deg,#4F46E5,#7C3AED)' },
+    snack:     { emoji: '🍏', gradient: 'linear-gradient(135deg,#06D6A0,#4CC9F0)' },
   };
   return fb[mt] ?? fb.lunch;
 }
 
-function getTopFoods(credits: FoodCredit[], limit = 8) {
+function getTopFoods(credits: FoodCredit[], limit = 6) {
   const map = new Map<string, { count: number; avgAmt: number; credit: FoodCredit }>();
   credits.forEach(c => {
     const key = (c.meal_description || c.vendor_name).trim();
@@ -91,7 +94,120 @@ function getTopFoods(credits: FoodCredit[], limit = 8) {
   return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
-// ── AI Doctor Sheet ───────────────────────────────────────
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good morning', emoji: '🌅' };
+  if (h < 17) return { text: 'Good afternoon', emoji: '☀️' };
+  return { text: 'Good evening', emoji: '🌙' };
+}
+
+function fmtAmt(n: number) {
+  return n >= 1000 ? `₦${(n / 1000).toFixed(1)}k` : `₦${n}`;
+}
+
+// ── Spending ring ─────────────────────────────────────────
+function SpendRing({ spent, budget }: { spent: number; budget: number }) {
+  const W = 130, r = 50, cx = 65, cy = 65;
+  const circ = 2 * Math.PI * r;
+  const pct  = budget > 0 ? Math.min(spent / budget, 1) : 0;
+  const color = pct >= 1 ? RED : pct >= 0.75 ? GOLD : G;
+  return (
+    <svg width={W} height={W} style={{ overflow: 'visible' }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={GBDR} strokeWidth={10} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={10}
+        strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={circ * (1 - pct)}
+        transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1)', filter: `drop-shadow(0 0 6px ${color})` }}
+      />
+      <text x={cx} y={cy - 6} textAnchor="middle" fill={color} style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+        {budget > 0 ? `${Math.round(pct * 100)}%` : '—'}
+      </text>
+      <text x={cx} y={cy + 10} textAnchor="middle" fill={MUT} style={{ fontSize: '0.5rem', fontWeight: 600 }}>
+        {budget > 0 ? 'of budget' : 'no limit'}
+      </text>
+    </svg>
+  );
+}
+
+// ── AI prompt builder ─────────────────────────────────────
+function buildAIPrompt(payload: Record<string, unknown>) {
+  const { credits = [], analytics, vendors = [], budget = 0 } = payload as {
+    credits: { meal_type?: string; amount: number; purchase_date?: string }[];
+    analytics?: { weekly_total?: number; monthly_total?: number; daily_average?: number; total_outstanding?: number; unpaid_count?: number };
+    vendors: { vendor_name: string; total_spent: number; total_meals: number }[];
+    budget: number;
+  };
+
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const fmt  = (n: number) => `₦${Number(n ?? 0).toLocaleString('en-NG')}`;
+  const todayName = DAYS[new Date().getDay()];
+  type MT = 'breakfast'|'lunch'|'dinner'|'snack'|'unknown';
+  const typeMap: Record<MT,{count:number;total:number}> = {
+    breakfast:{count:0,total:0},lunch:{count:0,total:0},
+    dinner:{count:0,total:0},snack:{count:0,total:0},unknown:{count:0,total:0},
+  };
+  (credits as {meal_type?:string;amount:number}[]).forEach(c => {
+    const t = (c.meal_type ?? 'unknown') as MT;
+    (typeMap[t] ?? typeMap.unknown).count++;
+    (typeMap[t] ?? typeMap.unknown).total += Number(c.amount);
+  });
+  const mealLines = Object.entries(typeMap).filter(([,v])=>v.count>0)
+    .map(([k,v])=>`  • ${k}: ${v.count} meals, ${fmt(v.total)}, avg ${fmt(v.total/v.count)}`).join('\n');
+  const dowMap: Record<string,number> = {};
+  DAYS.forEach(d => { dowMap[d] = 0; });
+  (credits as {purchase_date?:string;amount:number}[]).forEach(c => {
+    if (!c.purchase_date) return;
+    const d = DAYS[new Date(c.purchase_date+'T00:00:00').getDay()];
+    dowMap[d] = (dowMap[d]??0) + Number(c.amount);
+  });
+  const topDay   = Object.entries(dowMap).sort((a,b)=>b[1]-a[1])[0];
+  const breakfastRate = (credits as {meal_type?:string}[]).length
+    ? Math.round((typeMap.breakfast.count/(credits as {meal_type?:string}[]).length)*100) : 0;
+  const topVendor = [...vendors].sort((a,b)=>b.total_spent-a.total_spent)[0];
+
+  const dataContext = `
+TODAY: ${todayName}
+MEAL BREAKDOWN:\n${mealLines || '  None recorded'}
+  Breakfast presence: ${breakfastRate}% of days
+DAY-OF-WEEK SPEND: ${Object.entries(dowMap).map(([d,a])=>`${d}: ${fmt(a)}`).join(' | ')}
+  Heaviest: ${topDay?`${topDay[0]} (${fmt(topDay[1])})`: 'N/A'}
+VENDORS: ${vendors.map(v=>`${v.vendor_name}(${v.total_meals}x,${fmt(v.total_spent)})`).join(', ')||'None'}
+STATS: Weekly ${fmt(analytics?.weekly_total??0)} | Monthly ${fmt(analytics?.monthly_total??0)} | Daily avg ${fmt(analytics?.daily_average??0)} | Outstanding ${fmt(analytics?.total_outstanding??0)}
+BUDGET: ${budget>0?fmt(budget)+'/month':'Not set'}
+FAVOURITE VENDOR: ${topVendor?.vendor_name??'unknown'}
+`.trim();
+
+  const systemPrompt = `You are a sharp, caring personal food doctor for a Nigerian professional. Speak directly, cite real numbers, use their actual vendor names. Respond in this exact structure:
+
+## Health Score
+X/10. [One blunt sentence on their food health.]
+
+## What I See In Your Data
+- [emoji] [Pattern with real number or vendor name]
+- [emoji] [Another specific pattern]
+- [emoji] [Third pattern — good or bad]
+
+## Doctor's Verdict
+[2–3 sentences. Real health implications of their specific habits. Name the worst habit.]
+
+## Today's Forecast (${todayName})
+[2 sentences. Predict which vendor, what meal, and roughly how much they'll spend today based on their ${todayName} pattern.]
+
+## Your Treatment Plan
+1. [Specific action with a vendor or meal type named]
+2. [Second action]
+3. [Financial/budget action if relevant]
+
+Nigerian context: healthy daily food budget ₦2,000–₦4,000. Skipping breakfast = red flag. Outstanding debt > ₦10k = stress eating risk.`;
+
+  return { systemPrompt, dataContext };
+}
+
+const GEMINI_STREAM_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
+// ── AI Doctor sheet ───────────────────────────────────────
 function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () => void; payload: object }) {
   const [text, setText]       = useState('');
   const [loading, setLoading] = useState(false);
@@ -104,264 +220,131 @@ function AIDoctorSheet({ open, onClose, payload }: { open: boolean; onClose: () 
     (async () => {
       setLoading(true); setError(''); setText('');
       try {
-        const res = await fetch('/api/food-doctor', {
+        const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? '';
+        if (!key) { setError('NEXT_PUBLIC_GEMINI_API_KEY not set.'); return; }
+        const { systemPrompt, dataContext } = buildAIPrompt(payload as Record<string, unknown>);
+        const res = await fetch(GEMINI_STREAM_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? 'local' : 'local'}`,
-          },
-          body: JSON.stringify(payload),
+          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gemini-2.0-flash', stream: true, max_tokens: 900, temperature: 0.65,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user',   content: `Analyze my food data:\n\n${dataContext}` },
+            ],
+          }),
         });
-        if (!res.ok) { setError('AI unavailable. Check GROQ_API_KEY.'); return; }
+        if (!res.ok) { setError(`AI error ${res.status}`); return; }
         const reader = res.body!.getReader();
         const dec    = new TextDecoder();
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          setText(p => p + dec.decode(value, { stream: true }));
+          for (const line of dec.decode(value, { stream: true }).split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            const d = line.slice(6).trim();
+            if (d === '[DONE]') continue;
+            try { const t = JSON.parse(d).choices?.[0]?.delta?.content; if (t) setText(p => p + t); } catch { /* skip */ }
+          }
         }
-      } catch { setError('Failed to reach AI. Try again.'); }
+      } catch { setError('Network error. Check your connection.'); }
       finally { setLoading(false); }
     })();
   }, [open, payload]);
 
-  const handleClose = () => { fetched.current = false; setText(''); onClose(); };
+  const close = () => { fetched.current = false; setText(''); onClose(); };
   const sections = text.split(/^## /m).filter(Boolean).map(s => {
-    const [h, ...r] = s.split('\n'); return { heading: h.trim(), body: r.join('\n').trim() };
+    const [h, ...r] = s.split('\n'); return { h: h.trim(), body: r.join('\n').trim() };
   });
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          <motion.div key="doc-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={handleClose}
-            style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }} />
-          <motion.div key="doc-sheet"
+          <motion.div key="bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }} />
+          <motion.div key="sheet"
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1101, background: WHITE, borderRadius: '28px 28px 0 0', maxHeight: '88dvh', overflowY: 'auto', paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 6px' }}>
-              <div style={{ width: 40, height: 4, borderRadius: 2, background: '#E5E7EB' }} />
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1101,
+              background: 'linear-gradient(180deg,#14151D 0%,#0D0E15 100%)',
+              borderRadius: '28px 28px 0 0', maxHeight: '90dvh', overflowY: 'auto',
+              paddingBottom: 'calc(28px + env(safe-area-inset-bottom))',
+              border: `1px solid ${BDR}`, borderBottom: 'none',
+            }}>
+            {/* Handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 6px' }}>
+              <div style={{ width: 36, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 16px', borderBottom: `1px solid ${BDR}`, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 14, background: GB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={20} style={{ color: G }} />
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 18px', borderBottom: `1px solid ${BDR}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 16,
+                  background: 'linear-gradient(135deg,#06D6A0,#4CC9F0)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(6,214,160,0.4)' }}>
+                  <Sparkles size={22} color="#000" />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.95rem', fontWeight: 800, color: TXT }}>Food Doctor AI</p>
-                  <p style={{ fontSize: '0.65rem', color: MUT, marginTop: 2 }}>Personalized health insights</p>
+                  <p style={{ fontSize: '1rem', fontWeight: 800, color: TXT }}>Food Doctor AI</p>
+                  <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 1 }}>Powered by Gemini 2.0 Flash</p>
                 </div>
               </div>
-              <button onClick={handleClose} style={{ width: 34, height: 34, borderRadius: 11, border: 'none', background: '#F3F4F6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} style={{ color: '#6B7280' }} />
+              <button onClick={close} style={{ width: 36, height: 36, borderRadius: 12, border: `1px solid ${BDR}`, background: CARD2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={16} color={MUT} />
               </button>
             </div>
-            <div style={{ padding: '0 20px' }}>
+            {/* Content */}
+            <div style={{ padding: '16px 20px' }}>
               {loading && !text && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '40px 0' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 20, background: GB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Loader2 size={26} style={{ color: G, animation: 'spin 1s linear infinite' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '48px 0' }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 22,
+                    background: 'linear-gradient(135deg,rgba(6,214,160,0.2),rgba(76,201,240,0.2))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1px solid rgba(6,214,160,0.3)` }}>
+                    <Loader2 size={28} style={{ color: G, animation: 'spin 1s linear infinite' }} />
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: MUT, fontWeight: 500 }}>Analysing your food patterns…</p>
+                  <p style={{ fontSize: '0.82rem', color: MUT, fontWeight: 500 }}>Analysing your food patterns…</p>
                 </div>
               )}
-              {error && <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', fontSize: '0.8rem' }}>{error}</div>}
-              {sections.map(({ heading, body }, i) => {
-                const isPred  = heading.toLowerCase().includes('prediction');
-                const isTreat = heading.toLowerCase().includes('treatment');
-                const isScore = heading.toLowerCase().includes('health score');
+              {error && (
+                <div style={{ padding: '14px 16px', borderRadius: 16, background: 'rgba(255,65,108,0.1)', border: `1px solid rgba(255,65,108,0.3)`, color: RED, fontSize: '0.8rem' }}>{error}</div>
+              )}
+              {sections.map(({ h, body }, i) => {
+                const isScore   = h.toLowerCase().includes('health score');
+                const isPred    = h.toLowerCase().includes('forecast') || h.toLowerCase().includes('prediction');
+                const isTreat   = h.toLowerCase().includes('treatment') || h.toLowerCase().includes('plan');
+                const isPattern = h.toLowerCase().includes('see') || h.toLowerCase().includes('pattern');
+                const accent    = isScore ? G : isPred ? GOLD : isTreat ? BLUE : isPattern ? ORG : TXT;
+                const bgColor   = `${accent}12`;
+                const borderCol = `${accent}30`;
                 return (
-                  <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: i * 0.06 }}
-                    style={{ marginBottom: 16, padding: '14px 16px', borderRadius: 18, background: isPred ? GB : isTreat ? 'rgba(139,92,246,0.07)' : '#F9FAFB', border: `1px solid ${isPred ? 'rgba(22,163,74,0.3)' : BDR}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 10, background: isPred ? G : isTreat ? '#8B5CF6' : TXT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {isPred ? <TrendingUp size={14} color={WHITE} /> : isTreat ? <Target size={14} color={WHITE} /> : <Sparkles size={14} color={WHITE} />}
-                      </div>
-                      <p style={{ fontSize: '0.72rem', fontWeight: 800, color: TXT, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{heading}</p>
+                  <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: i * 0.07 }}
+                    style={{ marginBottom: 12, padding: '14px 16px', borderRadius: 20,
+                      background: bgColor, border: `1px solid ${borderCol}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: accent, boxShadow: `0 0 8px ${accent}` }} />
+                      <p style={{ fontSize: '0.68rem', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</p>
                       {isScore && body.match(/\d+\/10/) && (
-                        <span style={{ marginLeft: 'auto', padding: '2px 10px', borderRadius: 20, background: G, fontSize: '0.7rem', fontWeight: 800, color: WHITE }}>{body.match(/\d+\/10/)?.[0]}</span>
+                        <span style={{ marginLeft: 'auto', padding: '2px 12px', borderRadius: 20, background: G, fontSize: '0.72rem', fontWeight: 800, color: '#000' }}>
+                          {body.match(/\d+\/10/)?.[0]}
+                        </span>
                       )}
                     </div>
                     {body.split('\n').filter(Boolean).map((line, j) => (
-                      <p key={j} style={{ fontSize: '0.78rem', lineHeight: 1.65, color: SUB, marginBottom: 4 }}>{line}</p>
+                      <p key={j} style={{ fontSize: '0.8rem', lineHeight: 1.7, color: 'rgba(240,242,248,0.8)', marginBottom: 4 }}>{line}</p>
                     ))}
                   </motion.div>
                 );
               })}
+              {loading && text.length > 0 && sections.length === 0 && (
+                <p style={{ fontSize: '0.8rem', color: MUT, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{text}</p>
+              )}
             </div>
           </motion.div>
         </>
       )}
     </AnimatePresence>
-  );
-}
-
-// ── Calendar strip ────────────────────────────────────────
-function CalStrip({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const days  = Array.from({ length: 7 }, (_, i) => {
-    const d = subDays(new Date(), 6 - i);
-    return { date: format(d, 'yyyy-MM-dd'), dl: format(d, 'EEEEE'), dn: format(d, 'd') };
-  });
-  return (
-    <div style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none' }}>
-      {days.map(({ date, dl, dn }) => {
-        const sel = date === selected, tod = date === today;
-        return (
-          <button key={date} onClick={() => onSelect(date)} style={{
-            flex: 1, minWidth: 38, display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 4, padding: '8px 4px', borderRadius: 14, border: 'none', cursor: 'pointer',
-            background: sel ? RED : 'transparent', transition: 'all 0.15s',
-          }}>
-            <span style={{ fontSize: '0.55rem', fontWeight: 700, color: sel ? 'rgba(255,255,255,0.8)' : MUT, textTransform: 'uppercase' }}>{dl}</span>
-            <span style={{ fontSize: '0.9rem', fontWeight: 800, lineHeight: 1, color: sel ? WHITE : tod ? RED : TXT }}>{dn}</span>
-            {tod && !sel && <div style={{ width: 4, height: 4, borderRadius: '50%', background: RED }} />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Food Emoji Visual ─────────────────────────────────────
-function FoodVisual({ emoji, gradient, size = 72 }: { emoji: string; gradient: string; size?: number }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: size * 0.32, flexShrink: 0,
-      background: gradient,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-      fontSize: size * 0.46,
-      lineHeight: 1,
-    }}>
-      {emoji}
-    </div>
-  );
-}
-
-// ── Meal Card (grid item) ─────────────────────────────────
-function MealCard({ credit, onEdit, onDelete, onPay }: {
-  credit: FoodCredit;
-  onEdit: () => void;
-  onDelete: () => void;
-  onPay?: () => void;
-}) {
-  const mt    = (credit.meal_type ?? 'lunch') as MealType;
-  const meta  = MEAL_META[mt];
-  const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
-  const label = credit.meal_description || credit.vendor_name;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      style={{ background: WHITE, borderRadius: 20, padding: 14, border: `1px solid ${BDR}`, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-      {/* Visual */}
-      <div style={{ position: 'relative', marginBottom: 10 }}>
-        <div style={{
-          width: '100%', height: 90, borderRadius: 14,
-          background: vis.gradient,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '2.6rem', lineHeight: 1,
-        }}>{vis.emoji}</div>
-        {!credit.paid && (
-          <span style={{ position: 'absolute', top: 6, right: 6, padding: '2px 7px', borderRadius: 8, background: 'rgba(232,57,45,0.9)', fontSize: '0.48rem', fontWeight: 800, color: WHITE }}>
-            UNPAID
-          </span>
-        )}
-        {credit.paid && (
-          <span style={{ position: 'absolute', top: 6, right: 6, padding: '2px 7px', borderRadius: 8, background: 'rgba(22,163,74,0.9)', fontSize: '0.48rem', fontWeight: 800, color: WHITE }}>
-            PAID ✓
-          </span>
-        )}
-      </div>
-      {/* Info */}
-      <p style={{ fontSize: '0.78rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
-        {label}
-      </p>
-      <p style={{ fontSize: '0.58rem', color: MUT, marginBottom: 8 }}>{credit.vendor_name} · {meta.label}</p>
-      {/* Footer */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 800, color: credit.paid ? G : RED }}>
-          ₦{Number(credit.amount).toLocaleString()}
-        </span>
-        {!credit.paid ? (
-          <button onClick={onEdit} style={{ padding: '4px 10px', borderRadius: 10, border: `1px solid ${BDR}`, background: BG, fontSize: '0.6rem', fontWeight: 700, color: SUB, cursor: 'pointer' }}>
-            Edit
-          </button>
-        ) : (
-          <CheckCircle2 size={15} color={G} />
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-// ── Hero favourite card ───────────────────────────────────
-function HeroFoodCard({ topFood, onAdd }: {
-  topFood: { count: number; avgAmt: number; credit: FoodCredit } | null;
-  onAdd: (prefill?: Partial<FoodCreditCreate>) => void;
-}) {
-  const credit = topFood?.credit;
-  const vis    = getFoodVisual(credit?.meal_description, credit?.meal_type);
-  const label  = credit ? (credit.meal_description || credit.vendor_name) : 'Record a Meal';
-
-  return (
-    <div style={{ margin: '0 16px', background: WHITE, borderRadius: 24, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', border: `1px solid ${BDR}` }}>
-      {/* Visual header */}
-      <div style={{
-        width: '100%', height: 170,
-        background: credit ? vis.gradient : 'linear-gradient(135deg,#E8392D,#F97316)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', fontSize: '5.5rem', lineHeight: 1,
-      }}>
-        {credit ? vis.emoji : '🍽️'}
-        {topFood && (
-          <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)' }}>
-            <Star size={10} fill={WHITE} stroke="none" />
-            <span style={{ fontSize: '0.58rem', fontWeight: 800, color: WHITE }}>YOUR FAVOURITE</span>
-          </div>
-        )}
-        {topFood && (
-          <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)' }}>
-            <span style={{ fontSize: '0.58rem', fontWeight: 800, color: WHITE }}>×{topFood.count} ordered</span>
-          </div>
-        )}
-      </div>
-      {/* Details */}
-      <div style={{ padding: '14px 16px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '1.05rem', fontWeight: 800, color: TXT, marginBottom: 2 }}>{label}</p>
-            {credit && (
-              <p style={{ fontSize: '0.65rem', color: MUT }}>{credit.vendor_name} · {MEAL_META[(credit.meal_type ?? 'lunch') as MealType]?.label}</p>
-            )}
-            {!credit && (
-              <p style={{ fontSize: '0.65rem', color: MUT }}>Start recording your meals</p>
-            )}
-          </div>
-          {topFood && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.15rem', fontWeight: 800, color: RED, flexShrink: 0 }}>
-              ₦{Math.round(topFood.avgAmt).toLocaleString()}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => onAdd(credit ? { meal_description: credit.meal_description, vendor_name: credit.vendor_name, amount: credit.amount, meal_type: credit.meal_type } : undefined)}
-          style={{
-            marginTop: 12, width: '100%', padding: '13px', borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: `linear-gradient(135deg,${RED} 0%,${ORG} 100%)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            boxShadow: '0 4px 16px rgba(232,57,45,0.35)',
-          }}>
-          <Plus size={16} color={WHITE} strokeWidth={2.5} />
-          <span style={{ fontSize: '0.88rem', fontWeight: 800, color: WHITE }}>
-            {credit ? 'Record Again' : 'Record Meal'}
-          </span>
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -378,20 +361,20 @@ export default function FoodVendorPage() {
   const { storePayment }       = useFoodPaymentCache();
   const searchParams           = useSearchParams();
 
-  const [selectedDate,    setSelectedDate]    = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [showDoctor,      setShowDoctor]       = useState(false);
-  const [showAdd,         setShowAdd]          = useState(false);
-  const [addPrefill,      setAddPrefill]       = useState<Partial<FoodCreditCreate> | undefined>();
-  const [editCredit,      setEditCredit]       = useState<FoodCredit | null>(null);
-  const [showConfirm,     setShowConfirm]      = useState(false);
-  const [showBudget,      setShowBudget]       = useState(false);
-  const [budgetInput,     setBudgetInput]      = useState(budget);
-  const [paying,          setPaying]           = useState(false);
-  const [payingVendor,    setPayingVendor]     = useState<string | null>(null);
-  const [currentView,     setCurrentView]      = useState<'menu' | 'cart' | 'history'>('menu');
-  const [activeCategory,  setActiveCategory]   = useState<MealType | 'all'>('all');
-  const [showDayPay,      setShowDayPay]       = useState(false);
-  const [selHistoryMonth, setSelHistoryMonth]  = useState('all');
+  const [selectedDate,   setSelectedDate]   = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [showDoctor,     setShowDoctor]      = useState(false);
+  const [showAdd,        setShowAdd]         = useState(false);
+  const [addPrefill,     setAddPrefill]      = useState<Partial<FoodCreditCreate>>();
+  const [editCredit,     setEditCredit]      = useState<FoodCredit | null>(null);
+  const [showConfirm,    setShowConfirm]     = useState(false);
+  const [showBudget,     setShowBudget]      = useState(false);
+  const [budgetInput,    setBudgetInput]     = useState(budget);
+  const [paying,         setPaying]          = useState(false);
+  const [payingVendor,   setPayingVendor]    = useState<string | null>(null);
+  const [currentView,    setCurrentView]     = useState<'main'|'cart'|'history'>('main');
+  const [activeCategory, setActiveCategory]  = useState<MealType|'all'>('all');
+  const [selHistoryMonth,setSelHistoryMonth] = useState('all');
+  const [showDayPay,     setShowDayPay]      = useState(false);
 
   useEffect(() => { if (searchParams.get('new') === '1') setShowAdd(true); }, [searchParams]);
 
@@ -402,13 +385,55 @@ export default function FoodVendorPage() {
   const { data: vendors       = [] } = useQuery({ queryKey: ['food-vendors'],           queryFn: () => foodVendorApi.vendorBreakdown() });
   const { data: monthlySummary= [] } = useQuery({ queryKey: ['food-monthly'],           queryFn: () => foodVendorApi.monthlySummary(6) });
 
-  const dailyBudget  = budget > 0 ? Math.round(budget / 30) : 0;
-  const today        = format(new Date(), 'yyyy-MM-dd');
-  const isToday      = selectedDate === today;
+  // ── Computed ─────────────────────────────────────────────
+  const today       = format(new Date(), 'yyyy-MM-dd');
+  const isToday     = selectedDate === today;
+  const dailyBudget = budget > 0 ? Math.round(budget / 30) : 0;
+  const greeting    = getGreeting();
+
+  // Per-day data map — powers the 14-day navigator
+  const dayMap = useMemo(() => {
+    const m = new Map<string, { credits: FoodCredit[]; spent: number; topEmoji: string }>();
+    allCredits.forEach(c => {
+      if (!m.has(c.purchase_date)) m.set(c.purchase_date, { credits: [], spent: 0, topEmoji: '' });
+      const d = m.get(c.purchase_date)!;
+      d.credits.push(c);
+      d.spent += Number(c.amount);
+      if (!d.topEmoji) d.topEmoji = getFoodVisual(c.meal_description, c.meal_type).emoji;
+    });
+    return m;
+  }, [allCredits]);
+
+  // Streak — consecutive days with at least one meal recorded
+  const streak = useMemo(() => {
+    let s = 0, d = new Date();
+    while (s < 30 && dayMap.has(format(d, 'yyyy-MM-dd'))) { s++; d = subDays(d, 1); }
+    return s;
+  }, [dayMap]);
+
+  // 14-day strip
+  const days14 = useMemo(() => Array.from({ length: 14 }, (_, i) => {
+    const d   = subDays(new Date(), 13 - i);
+    const str = format(d, 'yyyy-MM-dd');
+    const info= dayMap.get(str);
+    return { date: str, dl: format(d, 'EEE'), dn: format(d, 'd'), info };
+  }), [dayMap]);
 
   const dayCredits = useMemo(() => allCredits.filter(c => c.purchase_date === selectedDate), [allCredits, selectedDate]);
   const daySpent   = useMemo(() => dayCredits.reduce((s, c) => s + Number(c.amount), 0), [dayCredits]);
   const dayUnpaid  = useMemo(() => dayCredits.filter(c => !c.paid), [dayCredits]);
+
+  // Group by time of day
+  const timeline = useMemo(() => {
+    const grps: Record<'morning'|'afternoon'|'evening', FoodCredit[]> = { morning: [], afternoon: [], evening: [] };
+    dayCredits.forEach(c => {
+      const mt = (c.meal_type ?? 'lunch') as MealType;
+      if (mt === 'breakfast')            grps.morning.push(c);
+      else if (mt === 'lunch')           grps.afternoon.push(c);
+      else                               grps.evening.push(c);
+    });
+    return grps;
+  }, [dayCredits]);
 
   const filteredDay = useMemo(
     () => activeCategory === 'all' ? dayCredits : dayCredits.filter(c => (c.meal_type ?? 'snack') === activeCategory),
@@ -416,10 +441,9 @@ export default function FoodVendorPage() {
   );
 
   const topFoods        = useMemo(() => getTopFoods(allCredits), [allCredits]);
-  const topFood         = topFoods[0] ?? null;
   const totalUnpaidAmt  = unpaid.reduce((s, c) => s + Number(c.amount), 0);
   const budgetPct       = dailyBudget > 0 ? Math.min(daySpent / dailyBudget, 1) : 0;
-  const budgetColor     = budgetPct >= 1 ? '#EF4444' : budgetPct >= 0.75 ? '#F59E0B' : G;
+  const budgetColor     = budgetPct >= 1 ? RED : budgetPct >= 0.75 ? GOLD : G;
 
   const vendorUnpaidMap = useMemo(() => {
     const m: Record<string, { ids: string[]; amount: number; credits: FoodCredit[] }> = {};
@@ -432,12 +456,9 @@ export default function FoodVendorPage() {
     return m;
   }, [unpaid]);
 
-  const historyMonthOptions = useMemo(() => {
+  const historyMonthOpts = useMemo(() => {
     const opts = [{ key: 'all', label: 'All Time' }];
-    for (let i = 0; i < 6; i++) {
-      const d = subMonths(new Date(), i);
-      opts.push({ key: format(d, 'yyyy-MM'), label: format(d, 'MMM yyyy') });
-    }
+    for (let i = 0; i < 6; i++) { const d = subMonths(new Date(), i); opts.push({ key: format(d, 'yyyy-MM'), label: format(d, 'MMM yyyy') }); }
     return opts;
   }, []);
 
@@ -447,267 +468,409 @@ export default function FoodVendorPage() {
   );
 
   const monthlyChartData = useMemo(() =>
-    monthlySummary.map(m => ({ label: format(new Date(m.month + '-01'), 'MMM'), spent: Number(m.total_spent), paid: Number(m.total_paid) })),
+    monthlySummary.map(m => ({ label: format(new Date(m.month + '-01'), 'MMM'), spent: Number(m.total_spent) })),
   [monthlySummary]);
 
   const doctorPayload = useMemo(() => ({ credits: allCredits, analytics, vendors, budget }), [allCredits, analytics, vendors, budget]);
 
+  // ── Actions ───────────────────────────────────────────────
   const runPay = async (creditIds: string[], label: string, creds: FoodCredit[]) => {
     setPaying(true);
     try {
       const payment = await foodVendorApi.pay(creditIds, label);
       storePayment(payment.id, label, creds);
       invalidateAll(qc);
-      addToast({ type: 'success', title: 'Credits paid', message: 'Personal expense recorded.' });
+      addToast({ type: 'success', title: 'Tab cleared!', message: 'Expense recorded.' });
       setShowConfirm(false);
     } catch (err) {
       addToast({ type: 'error', title: 'Payment failed', message: err instanceof Error ? err.message : '' });
     } finally { setPaying(false); }
   };
 
-  const handlePayAll    = () => runPay(unpaid.map(c => c.id), unpaid.map(c => c.vendor_name).filter((v, i, a) => a.indexOf(v) === i).join(', '), unpaid);
-  const handlePayDay    = () => { if (!dayUnpaid.length) return; runPay(dayUnpaid.map(c => c.id), `Day: ${selectedDate}`, dayUnpaid).then(() => setShowDayPay(false)); };
-  const handlePayVendor = (vn: string) => { const e = vendorUnpaidMap[vn]; if (!e) return; setPayingVendor(vn); runPay(e.ids, vn, e.credits).finally(() => setPayingVendor(null)); };
-
-  const handleCreate = async (data: FoodCreditCreate) => {
-    await foodVendorApi.credits.create(data);
-    invalidateAll(qc);
-    addToast({ type: 'success', title: 'Meal recorded' });
-    setShowAdd(false);
-    setAddPrefill(undefined);
-  };
-  const handleUpdate = async (data: FoodCreditCreate) => {
-    if (!editCredit) return;
-    await foodVendorApi.credits.update(editCredit.id, data);
-    invalidateAll(qc);
-    addToast({ type: 'success', title: 'Meal updated' });
-    setEditCredit(null);
-  };
-  const handleDelete = async (id: string) => {
-    try {
-      await foodVendorApi.credits.delete(id);
-      invalidateAll(qc);
-      addToast({ type: 'success', title: 'Credit deleted' });
-    } catch (err) {
-      addToast({ type: 'error', title: 'Delete failed', message: err instanceof Error ? err.message : '' });
-    }
-  };
-  const handleSaveBudget = () => { saveBudget(budgetInput); addToast({ type: 'success', title: 'Budget saved' }); setShowBudget(false); };
+  const handlePayAll    = () => runPay(unpaid.map(c => c.id), unpaid.map(c => c.vendor_name).filter((v,i,a)=>a.indexOf(v)===i).join(', '), unpaid);
+  const handlePayDay    = () => { if (!dayUnpaid.length) return; runPay(dayUnpaid.map(c => c.id), `Day: ${selectedDate}`, dayUnpaid).then(()=>setShowDayPay(false)); };
+  const handlePayVendor = (vn: string) => { const e = vendorUnpaidMap[vn]; if (!e) return; setPayingVendor(vn); runPay(e.ids, vn, e.credits).finally(()=>setPayingVendor(null)); };
+  const handleCreate    = async (data: FoodCreditCreate) => { await foodVendorApi.credits.create(data); invalidateAll(qc); addToast({ type: 'success', title: 'Added to your tab' }); setShowAdd(false); setAddPrefill(undefined); };
+  const handleUpdate    = async (data: FoodCreditCreate) => { if (!editCredit) return; await foodVendorApi.credits.update(editCredit.id, data); invalidateAll(qc); addToast({ type: 'success', title: 'Updated' }); setEditCredit(null); };
+  const handleDelete    = async (id: string) => { try { await foodVendorApi.credits.delete(id); invalidateAll(qc); addToast({ type: 'success', title: 'Removed' }); } catch (err) { addToast({ type: 'error', title: 'Failed', message: err instanceof Error ? err.message : '' }); } };
+  const handleSaveBudget= () => { saveBudget(budgetInput); addToast({ type: 'success', title: 'Budget saved' }); setShowBudget(false); };
 
   const openAdd = (prefill?: Partial<FoodCreditCreate>) => {
-    setAddPrefill(prefill ? { ...prefill, purchase_date: selectedDate } : { purchase_date: selectedDate });
+    setAddPrefill({ ...prefill, purchase_date: selectedDate });
     setShowAdd(true);
   };
 
   return (
-    <div style={{ background: BG, minHeight: '100dvh', paddingBottom: unpaid.length > 0 ? 140 : 100 }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} .fspin{animation:spin 1s linear infinite}`}</style>
+    <div style={{ background: BG, minHeight: '100dvh', paddingBottom: unpaid.length > 0 ? 140 : 96 }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} .fspin{animation:spin 1s linear infinite} ::-webkit-scrollbar{display:none}`}</style>
 
       <AnimatePresence mode="wait">
 
-        {/* ═══════════════ MENU VIEW ════════════════ */}
-        {currentView === 'menu' && (
-          <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.2 }}>
+        {/* ═══════════════════ MAIN VIEW ═══════════════════════ */}
+        {currentView === 'main' && (
+          <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 
-            {/* ── Top bar ── */}
-            <div style={{ background: WHITE, padding: '14px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BDR}` }}>
-              <div>
-                <p style={{ fontSize: '0.6rem', color: MUT, fontWeight: 600, marginBottom: 1 }}>
-                  {format(new Date(selectedDate + 'T00:00:00'), 'EEEE, d MMMM')}
-                </p>
-                <h1 style={{ fontSize: '1.2rem', fontWeight: 800, color: TXT }}>My Food 🍽️</h1>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setBudgetInput(budget); setShowBudget(true); }}
-                  style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <SlidersHorizontal size={16} color={MUT} />
-                </button>
-                <button onClick={() => setCurrentView('history')}
-                  style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <History size={16} color={MUT} />
-                </button>
-                <button onClick={() => setCurrentView('cart')}
-                  style={{ position: 'relative', width: 40, height: 40, borderRadius: 13, border: 'none', background: unpaid.length > 0 ? RED : BG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <ShoppingBag size={16} color={unpaid.length > 0 ? WHITE : MUT} />
-                  {unpaid.length > 0 && (
-                    <span style={{ position: 'absolute', top: -5, right: -5, width: 18, height: 18, borderRadius: 9, background: '#1A1A2E', color: WHITE, fontSize: '0.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${BG}` }}>
-                      {unpaid.length}
-                    </span>
+            {/* ── Hero header ── */}
+            <div style={{
+              background: 'linear-gradient(160deg,#1A0A20 0%,#0D0A18 50%,#08090E 100%)',
+              padding: '20px 20px 24px', position: 'relative', overflow: 'hidden',
+            }}>
+              {/* Decorative orb */}
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.15) 0%,transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div>
+                  <p style={{ fontSize: '0.65rem', color: MUT, fontWeight: 600, marginBottom: 2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {greeting.emoji} {greeting.text}
+                  </p>
+                  <h1 style={{ fontSize: '1.45rem', fontWeight: 900, color: TXT, lineHeight: 1.1 }}>My Food Tab</h1>
+                  {streak > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                      <Flame size={13} color={ORG} />
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: ORG }}>{streak} day streak</span>
+                    </div>
                   )}
-                </button>
+                </div>
+                <div style={{ display: 'flex', gap: 9 }}>
+                  <button onClick={() => { setBudgetInput(budget); setShowBudget(true); }}
+                    style={{ width: 40, height: 40, borderRadius: 14, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <SlidersHorizontal size={15} color={MUT} />
+                  </button>
+                  <button onClick={() => setCurrentView('history')}
+                    style={{ width: 40, height: 40, borderRadius: 14, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <History size={15} color={MUT} />
+                  </button>
+                  <button onClick={() => setCurrentView('cart')} style={{ position: 'relative', width: 40, height: 40, borderRadius: 14, border: 'none', background: unpaid.length > 0 ? ORG : CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <ShoppingBag size={15} color={unpaid.length > 0 ? '#000' : MUT} />
+                    {unpaid.length > 0 && (
+                      <span style={{ position: 'absolute', top: -5, right: -5, width: 18, height: 18, borderRadius: 9, background: RED, color: TXT, fontSize: '0.52rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${BG}` }}>
+                        {unpaid.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Monthly stat pills */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                {[
+                  { label: 'This month', value: fmtAmt(analytics?.monthly_total ?? 0), color: TXT },
+                  { label: 'Outstanding', value: fmtAmt(analytics?.total_outstanding ?? totalUnpaidAmt), color: RED },
+                  { label: 'Avg/day', value: fmtAmt(analytics?.daily_average ?? 0), color: GOLD },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ flex: 1, padding: '8px 10px', borderRadius: 14, background: GBDR, border: `1px solid ${BDR}`, textAlign: 'center' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 800, color, lineHeight: 1, marginBottom: 3 }}>{value}</p>
+                    <p style={{ fontSize: '0.5rem', color: MUT, fontWeight: 600 }}>{label}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* ── Budget bar ── */}
-            {dailyBudget > 0 && (
-              <div style={{ background: WHITE, padding: '10px 20px 14px', borderBottom: `1px solid ${BDR}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 700, color: MUT }}>Daily Budget</span>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 700, color: budgetColor }}>
-                    ₦{daySpent.toLocaleString()} / ₦{dailyBudget.toLocaleString()}
-                  </span>
-                </div>
-                <div style={{ height: 5, borderRadius: 3, background: BDR, overflow: 'hidden' }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${budgetPct * 100}%` }}
-                    transition={{ duration: 0.7, ease: 'easeOut' }}
-                    style={{ height: '100%', borderRadius: 3, background: budgetColor }} />
-                </div>
-              </div>
-            )}
-
-            {/* ── Category tabs ── */}
-            <div style={{ background: WHITE, padding: '12px 20px', borderBottom: `1px solid ${BDR}` }}>
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
-                {(['all', 'breakfast', 'lunch', 'dinner', 'snack'] as const).map(cat => {
-                  const active = activeCategory === cat;
-                  const meta   = cat !== 'all' ? MEAL_META[cat] : null;
-                  const Icon   = meta?.icon;
+            {/* ── 14-Day Navigator ── */}
+            <div style={{ padding: '16px 0 0', background: CARD, borderBottom: `1px solid ${BDR}` }}>
+              <p style={{ fontSize: '0.6rem', color: MUT, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 20px 10px' }}>Pick A Day</p>
+              <div style={{ display: 'flex', gap: 6, padding: '0 16px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {days14.map(({ date, dl, dn, info }) => {
+                  const sel   = date === selectedDate;
+                  const isT   = date === today;
+                  const over  = dailyBudget > 0 && info && info.spent > dailyBudget;
+                  const accent = over ? RED : info ? G : 'transparent';
                   return (
-                    <button key={cat} onClick={() => setActiveCategory(cat)} style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
-                      borderRadius: 20, border: 'none', cursor: 'pointer', flexShrink: 0,
-                      background: active ? RED : BDR,
-                      color: active ? WHITE : SUB,
-                      fontSize: '0.72rem', fontWeight: 700,
+                    <motion.button key={date} whileTap={{ scale: 0.92 }} onClick={() => setSelectedDate(date)} style={{
+                      flexShrink: 0, width: 52, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      padding: '10px 4px 8px', borderRadius: 18, border: sel ? 'none' : `1px solid ${BDR}`,
+                      cursor: 'pointer',
+                      background: sel ? `linear-gradient(135deg,${ORG},${RED})` : CARD2,
+                      boxShadow: sel ? `0 4px 16px rgba(255,107,53,0.4)` : 'none',
                       transition: 'all 0.15s',
                     }}>
-                      {Icon && <Icon size={13} />}
-                      {cat === 'all' ? 'All' : MEAL_META[cat].label}
-                    </button>
+                      <span style={{ fontSize: '0.5rem', fontWeight: 700, color: sel ? 'rgba(255,255,255,0.8)' : MUT, textTransform: 'uppercase' }}>{dl}</span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 900, lineHeight: 1, color: sel ? '#fff' : isT ? ORG : TXT }}>{dn}</span>
+                      {info ? (
+                        <>
+                          <span style={{ fontSize: '1rem', lineHeight: 1 }}>{info.topEmoji}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.42rem', fontWeight: 700, color: sel ? 'rgba(255,255,255,0.8)' : accent !== 'transparent' ? accent : MUT }}>
+                            {fmtAmt(info.spent)}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.15)' }}>—</span>
+                      )}
+                      {isT && !sel && <div style={{ width: 4, height: 4, borderRadius: '50%', background: ORG, marginTop: -2 }} />}
+                    </motion.button>
                   );
                 })}
               </div>
             </div>
 
-            {/* ── Hero: Your Favourite ── */}
-            <div style={{ padding: '20px 0 4px' }}>
-              <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 800, color: TXT }}>
-                  {topFood ? '⭐ Your Favourite' : 'Start Ordering'}
-                </p>
-                {topFoods.length > 1 && (
-                  <span style={{ fontSize: '0.6rem', color: MUT }}>Based on {allCredits.length} meals</span>
-                )}
-              </div>
-              <HeroFoodCard topFood={topFood} onAdd={openAdd} />
-            </div>
-
-            {/* ── Day selector ── */}
-            <div style={{ margin: '16px 16px 0', background: WHITE, borderRadius: 18, padding: '12px 10px', border: `1px solid ${BDR}` }}>
-              <p style={{ fontSize: '0.65rem', fontWeight: 700, color: MUT, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, paddingLeft: 6 }}>Select Day</p>
-              <CalStrip selected={selectedDate} onSelect={setSelectedDate} />
-            </div>
-
-            {/* ── Today's meals grid ── */}
-            <div style={{ padding: '20px 16px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            {/* ── Day summary ── */}
+            <div style={{ margin: '14px 16px 0', background: CARD, borderRadius: 24, border: `1px solid ${BDR}`, overflow: 'hidden' }}>
+              {/* Date label */}
+              <div style={{ padding: '14px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 800, color: TXT }}>
-                    {isToday ? "Today's Orders" : format(new Date(selectedDate + 'T00:00:00'), 'd MMM')}
+                  <p style={{ fontSize: '0.62rem', color: MUT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {isToday ? '📍 Today' : format(new Date(selectedDate + 'T00:00:00'), 'EEEE')}
                   </p>
-                  <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 1 }}>{filteredDay.length} item{filteredDay.length !== 1 ? 's' : ''}</p>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 800, color: TXT }}>
+                    {format(new Date(selectedDate + 'T00:00:00'), 'd MMMM yyyy')}
+                  </p>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {dayUnpaid.length > 0 && (
-                    <button onClick={() => setShowDayPay(true)} style={{ padding: '7px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', background: RED, color: WHITE, fontSize: '0.65rem', fontWeight: 700 }}>
-                      Pay · ₦{dayUnpaid.reduce((s, c) => s + Number(c.amount), 0).toLocaleString()}
+                    <button onClick={() => setShowDayPay(true)} style={{ padding: '7px 13px', borderRadius: 20, border: 'none', cursor: 'pointer', background: ORG, color: '#000', fontSize: '0.65rem', fontWeight: 800 }}>
+                      Pay · {fmtAmt(dayUnpaid.reduce((s, c) => s + Number(c.amount), 0))}
                     </button>
                   )}
-                  <button onClick={() => openAdd()} style={{ width: 34, height: 34, borderRadius: 12, border: 'none', background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                    <Plus size={16} color={WHITE} strokeWidth={2.5} />
+                  <button onClick={() => openAdd()} style={{ width: 36, height: 36, borderRadius: 13, border: 'none', background: ORG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <Plus size={17} color="#000" strokeWidth={2.8} />
                   </button>
                 </div>
               </div>
+              {/* Stats row */}
+              <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 16px', gap: 16 }}>
+                <SpendRing spent={daySpent} budget={dailyBudget} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { label: 'Spent', value: fmtAmt(daySpent), color: budgetColor },
+                    { label: 'Paid', value: fmtAmt(dayCredits.filter(c=>c.paid).reduce((s,c)=>s+Number(c.amount),0)), color: G },
+                    { label: 'On tab', value: fmtAmt(dayUnpaid.reduce((s,c)=>s+Number(c.amount),0)), color: RED },
+                    { label: 'Meals', value: String(dayCredits.length), color: TXT, plain: true },
+                  ].map(({ label, value, color, plain }) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.62rem', color: MUT, fontWeight: 600 }}>{label}</span>
+                      <span style={{ fontFamily: plain?'var(--font-display)':'var(--font-mono)', fontSize: '0.85rem', fontWeight: 800, color }}>{value}</span>
+                    </div>
+                  ))}
+                  {dailyBudget > 0 && (
+                    <div style={{ marginTop: 2 }}>
+                      <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${budgetPct*100}%`, borderRadius: 2, background: `linear-gradient(90deg,${budgetColor},${budgetColor}aa)`, transition: 'width 0.7s ease' }} />
+                      </div>
+                      <p style={{ fontSize: '0.5rem', color: MUT, marginTop: 3 }}>Daily limit: {fmtAmt(dailyBudget)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
+            {/* ── Category filter ── */}
+            <div style={{ display: 'flex', gap: 8, padding: '14px 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {(['all','breakfast','lunch','dinner','snack'] as const).map(cat => {
+                const active = activeCategory === cat;
+                const meta   = cat !== 'all' ? MEAL_META[cat] : null;
+                const Icon   = meta?.icon;
+                return (
+                  <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+                    display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px',
+                    borderRadius: 20, border: `1px solid ${active ? 'transparent' : BDR}`,
+                    cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
+                    background: active ? (meta?.color ?? ORG) : CARD2,
+                    color: active ? '#000' : MUT, fontSize: '0.72rem', fontWeight: 700,
+                    boxShadow: active ? `0 4px 12px ${meta?.color ?? ORG}50` : 'none',
+                  }}>
+                    {Icon && <Icon size={12} />}
+                    {cat === 'all' ? 'All' : MEAL_META[cat].label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── Meal timeline ── */}
+            <div style={{ padding: '12px 16px 0' }}>
               {filteredDay.length === 0 ? (
-                <div style={{ padding: '40px 20px', textAlign: 'center', background: WHITE, borderRadius: 20, border: `1px solid ${BDR}` }}>
-                  <div style={{ fontSize: '3rem', marginBottom: 12 }}>🍽️</div>
-                  <p style={{ fontSize: '0.88rem', fontWeight: 700, color: TXT, marginBottom: 4 }}>
-                    {activeCategory !== 'all' ? `No ${MEAL_META[activeCategory].label.toLowerCase()} yet` : 'Nothing recorded yet'}
+                <div style={{ padding: '36px 20px', textAlign: 'center', background: CARD, borderRadius: 22, border: `1px solid ${BDR}`, marginTop: 8 }}>
+                  <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>🍽️</div>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 700, color: TXT, marginBottom: 6 }}>
+                    {activeCategory !== 'all' ? `No ${MEAL_META[activeCategory].label.toLowerCase()} yet` : 'Nothing here yet'}
                   </p>
-                  <p style={{ fontSize: '0.7rem', color: MUT, marginBottom: 16 }}>
-                    {isToday ? 'What did you eat today?' : 'No meals for this day'}
+                  <p style={{ fontSize: '0.7rem', color: MUT, marginBottom: 18 }}>
+                    {isToday ? "What'd you eat today?" : 'No meals recorded for this day'}
                   </p>
-                  <button onClick={() => openAdd()} style={{ padding: '9px 22px', borderRadius: 20, border: 'none', background: RED, color: WHITE, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
-                    + Add Meal
+                  <button onClick={() => openAdd({ meal_type: activeCategory !== 'all' ? activeCategory : undefined })}
+                    style={{ padding: '10px 24px', borderRadius: 20, border: 'none', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer', boxShadow: `0 4px 14px rgba(255,107,53,0.4)` }}>
+                    + Add to Tab
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                /* Group by meal_type sections when showing all */
+                activeCategory === 'all' ? (
+                  <>
+                    {(['morning','afternoon','evening'] as const).map(period => {
+                      const mealTypeMap: Record<typeof period, MealType[]> = {
+                        morning: ['breakfast'],
+                        afternoon: ['lunch'],
+                        evening: ['dinner','snack'],
+                      };
+                      const items = dayCredits.filter(c => mealTypeMap[period].includes((c.meal_type ?? 'lunch') as MealType));
+                      if (items.length === 0 && !isToday) return null;
+                      const periodMeta = {
+                        morning:   { emoji: '🌅', label: 'Morning',   color: '#FFB347' },
+                        afternoon: { emoji: '☀️',  label: 'Afternoon', color: ORG },
+                        evening:   { emoji: '🌙', label: 'Evening',   color: '#A78BFA' },
+                      }[period];
+                      return (
+                        <div key={period} style={{ marginBottom: 16 }}>
+                          {/* Period header */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                              <span style={{ fontSize: '1rem' }}>{periodMeta.emoji}</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: periodMeta.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{periodMeta.label}</span>
+                              {items.length > 0 && <span style={{ fontSize: '0.58rem', color: MUT }}>· {items.length} item{items.length !== 1 ? 's' : ''}</span>}
+                            </div>
+                            <button onClick={() => openAdd({ meal_type: mealTypeMap[period][0] })}
+                              style={{ fontSize: '0.6rem', color: periodMeta.color, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                              + Add
+                            </button>
+                          </div>
+                          {items.length === 0 && isToday && (
+                            <div style={{ padding: '14px 16px', borderRadius: 16, border: `1px dashed ${BDR}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontSize: '1.2rem' }}>＋</span>
+                              <span style={{ fontSize: '0.72rem', color: MUT }}>Nothing recorded yet for {periodMeta.label.toLowerCase()}</span>
+                            </div>
+                          )}
+                          <AnimatePresence>
+                            {items.map((credit, i) => {
+                              const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
+                              const label = credit.meal_description || credit.vendor_name;
+                              const meta  = MEAL_META[(credit.meal_type ?? 'lunch') as MealType];
+                              return (
+                                <motion.div key={credit.id}
+                                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
+                                  transition={{ duration: 0.2, delay: i * 0.05 }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 20, marginBottom: 8, background: CARD, border: `1px solid ${BDR}`, boxShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>
+                                  {/* Food visual */}
+                                  <div style={{ width: 54, height: 54, borderRadius: 17, flexShrink: 0, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem', boxShadow: `0 4px 12px rgba(0,0,0,0.4)` }}>
+                                    {vis.emoji}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                                      <MapPin size={10} color={MUT} />
+                                      <span style={{ fontSize: '0.6rem', color: MUT }}>{credit.vendor_name}</span>
+                                      <span style={{ width: 3, height: 3, borderRadius: '50%', background: MUT, flexShrink: 0 }} />
+                                      <span style={{ fontSize: '0.58rem', color: meta.color, fontWeight: 600 }}>{meta.label}</span>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: credit.paid ? G : ORG }}>
+                                      {fmtAmt(Number(credit.amount))}
+                                    </span>
+                                    {credit.paid ? (
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.55rem', color: G, fontWeight: 700, padding: '2px 7px', borderRadius: 8, background: 'rgba(6,214,160,0.12)' }}>
+                                        <CheckCircle2 size={9} /> PAID
+                                      </span>
+                                    ) : (
+                                      <button onClick={() => setEditCredit(credit)}
+                                        style={{ fontSize: '0.55rem', color: MUT, fontWeight: 700, background: 'none', border: `1px solid ${BDR}`, borderRadius: 8, cursor: 'pointer', padding: '2px 7px' }}>
+                                        Edit
+                                      </button>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  /* Filtered view */
                   <AnimatePresence>
-                    {filteredDay.map(credit => (
-                      <MealCard
-                        key={credit.id}
-                        credit={credit}
-                        onEdit={() => setEditCredit(credit)}
-                        onDelete={() => handleDelete(credit.id)}
-                      />
-                    ))}
+                    {filteredDay.map((credit, i) => {
+                      const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
+                      const label = credit.meal_description || credit.vendor_name;
+                      const meta  = MEAL_META[(credit.meal_type ?? 'lunch') as MealType];
+                      return (
+                        <motion.div key={credit.id}
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, delay: i * 0.05 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 20, marginBottom: 8, background: CARD, border: `1px solid ${BDR}` }}>
+                          <div style={{ width: 54, height: 54, borderRadius: 17, flexShrink: 0, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem' }}>
+                            {vis.emoji}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
+                            <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 3 }}>{credit.vendor_name} · <span style={{ color: meta.color }}>{meta.label}</span></p>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: credit.paid ? G : ORG }}>{fmtAmt(Number(credit.amount))}</span>
+                            {credit.paid ? <CheckCircle2 size={14} color={G} /> : <button onClick={() => setEditCredit(credit)} style={{ fontSize: '0.55rem', color: MUT, background: 'none', border: `1px solid ${BDR}`, borderRadius: 8, cursor: 'pointer', padding: '2px 7px', fontWeight: 700 }}>Edit</button>}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
-                </div>
+                )
               )}
             </div>
 
-            {/* ── Favourites row ── */}
-            {topFoods.length > 1 && (
+            {/* ── Order Again (favourites) ── */}
+            {topFoods.length > 0 && (
               <div style={{ padding: '24px 0 0' }}>
                 <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p style={{ fontSize: '0.88rem', fontWeight: 800, color: TXT }}>Order Again</p>
-                  <span style={{ fontSize: '0.6rem', color: MUT }}>Your top picks</span>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 800, color: TXT }}>🔁 Order Again</p>
+                  <span style={{ fontSize: '0.58rem', color: MUT }}>Your most eaten</span>
                 </div>
-                <div style={{ display: 'flex', gap: 12, paddingLeft: 16, paddingRight: 16, overflowX: 'auto', scrollbarWidth: 'none' }}>
-                  {topFoods.slice(1).map(({ credit, count, avgAmt }) => {
+                <div style={{ display: 'flex', gap: 10, padding: '0 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                  {topFoods.map(({ credit, count, avgAmt }) => {
                     const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
                     const label = credit.meal_description || credit.vendor_name;
                     return (
-                      <button key={credit.id + label} onClick={() => openAdd({ meal_description: credit.meal_description, vendor_name: credit.vendor_name, amount: credit.amount, meal_type: credit.meal_type })}
-                        style={{ flexShrink: 0, width: 128, background: WHITE, borderRadius: 18, border: `1px solid ${BDR}`, padding: '12px', cursor: 'pointer', textAlign: 'left', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: 52, height: 52, borderRadius: 16, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', marginBottom: 8 }}>
+                      <motion.button key={credit.id + label} whileTap={{ scale: 0.94 }}
+                        onClick={() => openAdd({ meal_description: credit.meal_description, vendor_name: credit.vendor_name, amount: credit.amount, meal_type: credit.meal_type })}
+                        style={{ flexShrink: 0, width: 120, background: CARD, borderRadius: 20, border: `1px solid ${BDR}`, padding: 12, cursor: 'pointer', textAlign: 'left' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: 9, boxShadow: '0 4px 10px rgba(0,0,0,0.4)' }}>
                           {vis.emoji}
                         </div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{label}</p>
-                        <p style={{ fontSize: '0.55rem', color: MUT, marginBottom: 6 }}>×{count} ordered</p>
-                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 800, color: RED }}>₦{Math.round(avgAmt).toLocaleString()}</p>
-                      </button>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{label}</p>
+                        <p style={{ fontSize: '0.5rem', color: MUT, marginBottom: 5 }}>×{count} ordered</p>
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 800, color: ORG }}>{fmtAmt(Math.round(avgAmt))}</p>
+                      </motion.button>
                     );
                   })}
                 </div>
               </div>
             )}
 
-            {/* ── Vendors ── */}
+            {/* ── Your Spots (vendors as restaurant cards) ── */}
             {vendors.length > 0 && (
               <div style={{ padding: '24px 0 0' }}>
-                <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p style={{ fontSize: '0.88rem', fontWeight: 800, color: TXT }}>Vendors</p>
-                  <span style={{ fontSize: '0.62rem', color: MUT }}>{vendors.length} spots</span>
+                <div style={{ padding: '0 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{ fontSize: '0.82rem', fontWeight: 800, color: TXT }}>📍 Your Spots</p>
+                  <span style={{ fontSize: '0.58rem', color: MUT }}>{vendors.length} restaurants</span>
                 </div>
-                <div style={{ display: 'flex', gap: 12, paddingLeft: 16, paddingRight: 16, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                <div style={{ display: 'flex', gap: 12, padding: '0 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                   {vendors.slice().sort((a, b) => b.total_spent - a.total_spent).map(v => {
-                    const owed      = vendorUnpaidMap[v.vendor_name]?.amount ?? 0;
-                    const isPaying  = payingVendor === v.vendor_name;
-                    const vis       = getFoodVisual(v.vendor_name, null);
+                    const owed     = vendorUnpaidMap[v.vendor_name]?.amount ?? 0;
+                    const isPaying = payingVendor === v.vendor_name;
+                    const vis      = getFoodVisual(v.vendor_name, null);
+                    // Rating: 1 visit = 3.0, 5+ = 4.5, 10+ = 4.9
+                    const rating   = Math.min(4.9, 3.0 + Math.log10(Math.max(1, v.total_meals)) * 1.2);
                     return (
-                      <div key={v.vendor_name} style={{ flexShrink: 0, width: 150, background: WHITE, borderRadius: 20, border: `1px solid ${BDR}`, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                        <div style={{ height: 80, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', position: 'relative' }}>
+                      <div key={v.vendor_name} style={{ flexShrink: 0, width: 168, background: CARD, borderRadius: 22, border: `1px solid ${BDR}`, overflow: 'hidden' }}>
+                        {/* Cover */}
+                        <div style={{ height: 90, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.6rem', position: 'relative' }}>
                           {vis.emoji}
                           {owed > 0 && (
-                            <span style={{ position: 'absolute', top: 7, right: 7, padding: '2px 7px', borderRadius: 8, background: RED, fontSize: '0.48rem', fontWeight: 800, color: WHITE }}>OWES</span>
+                            <span style={{ position: 'absolute', top: 8, right: 8, padding: '2px 8px', borderRadius: 8, background: RED, fontSize: '0.48rem', fontWeight: 800, color: TXT }}>TAB OPEN</span>
                           )}
                         </div>
+                        {/* Info */}
                         <div style={{ padding: '10px 12px 12px' }}>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.vendor_name}</p>
-                          <p style={{ fontSize: '0.55rem', color: MUT, marginTop: 2, marginBottom: 8 }}>{v.total_meals} meals</p>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <p style={{ fontSize: '0.78rem', fontWeight: 800, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{v.vendor_name}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                            <Star size={9} fill={GOLD} stroke="none" />
+                            <span style={{ fontSize: '0.58rem', fontWeight: 700, color: GOLD }}>{rating.toFixed(1)}</span>
+                            <span style={{ fontSize: '0.55rem', color: MUT }}>· {v.total_meals} orders</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: `1px solid ${BDR}` }}>
                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 800, color: owed > 0 ? RED : G }}>
-                              {owed > 0 ? `₦${owed.toLocaleString()}` : '✓ Clear'}
+                              {owed > 0 ? fmtAmt(owed) : '✓ Clear'}
                             </span>
                             {owed > 0 && (
                               <button onClick={() => handlePayVendor(v.vendor_name)} disabled={isPaying || paying}
-                                style={{ padding: '4px 9px', borderRadius: 9, border: 'none', cursor: isPaying ? 'not-allowed' : 'pointer', background: RED, color: WHITE, fontSize: '0.55rem', fontWeight: 700, opacity: isPaying ? 0.6 : 1 }}>
-                                {isPaying ? <Loader2 size={10} className="fspin" style={{ display: 'inline' }} /> : 'Pay'}
+                                style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: isPaying ? 'not-allowed' : 'pointer', background: ORG, color: '#000', fontSize: '0.58rem', fontWeight: 800, opacity: isPaying ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                {isPaying ? <Loader2 size={9} className="fspin" /> : 'Pay'}
                               </button>
                             )}
                           </div>
@@ -721,57 +884,41 @@ export default function FoodVendorPage() {
 
             {/* ── AI Food Doctor ── */}
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowDoctor(true)} style={{
-              width: 'calc(100% - 32px)', margin: '24px 16px 0', padding: '15px 20px', borderRadius: 18,
-              background: `linear-gradient(135deg,${G} 0%,#059669 100%)`,
+              width: 'calc(100% - 32px)', margin: '28px 16px 0', padding: '16px 20px', borderRadius: 20,
+              background: 'linear-gradient(135deg,#06D6A0 0%,#4CC9F0 100%)',
               border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 12,
-              boxShadow: '0 4px 18px rgba(22,163,74,0.3)',
+              display: 'flex', alignItems: 'center', gap: 14,
+              boxShadow: '0 6px 24px rgba(6,214,160,0.35)',
             }}>
-              <div style={{ width: 40, height: 40, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Sparkles size={20} color={WHITE} />
+              <div style={{ width: 44, height: 44, borderRadius: 15, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Sparkles size={22} color="#000" />
               </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <p style={{ fontSize: '0.88rem', fontWeight: 800, color: WHITE }}>Ask Food Doctor AI</p>
-                <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>Get health insights from your eating habits</p>
+                <p style={{ fontSize: '0.92rem', fontWeight: 900, color: '#000' }}>AI Food Doctor</p>
+                <p style={{ fontSize: '0.62rem', color: 'rgba(0,0,0,0.6)', marginTop: 1 }}>Health analysis • Pattern insights • Gemini AI</p>
               </div>
-              <ChevronRight size={18} color="rgba(255,255,255,0.7)" />
+              <ChevronRight size={18} color="rgba(0,0,0,0.5)" />
             </motion.button>
-
-            {/* ── Spending summary card ── */}
-            {analytics && (
-              <div style={{ margin: '20px 16px 0', background: WHITE, borderRadius: 20, padding: '16px', border: `1px solid ${BDR}` }}>
-                <p style={{ fontSize: '0.72rem', fontWeight: 800, color: TXT, marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.05em' }}>This Month</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {[
-                    { label: 'This Month', value: `₦${Number(analytics.monthly_total ?? 0).toLocaleString()}`, color: TXT },
-                    { label: 'Outstanding', value: `₦${Number(analytics.total_outstanding ?? totalUnpaidAmt).toLocaleString()}`, color: RED },
-                    { label: 'Credits', value: String(analytics.total_credits ?? allCredits.length), color: ORG, plain: true },
-                  ].map(({ label, value, color, plain }) => (
-                    <div key={label} style={{ textAlign: 'center', padding: '10px 4px', background: BG, borderRadius: 14 }}>
-                      <p style={{ fontFamily: plain ? 'var(--font-display)' : 'var(--font-mono)', fontSize: '1rem', fontWeight: 800, color, lineHeight: 1, marginBottom: 4 }}>{value}</p>
-                      <p style={{ fontSize: '0.52rem', color: MUT, fontWeight: 600 }}>{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* ── Monthly chart ── */}
             {monthlyChartData.length > 0 && (
-              <div style={{ margin: '16px 16px 0', background: WHITE, borderRadius: 20, padding: '16px 12px 12px', border: `1px solid ${BDR}` }}>
+              <div style={{ margin: '20px 16px 0', background: CARD, borderRadius: 22, padding: '16px 14px 12px', border: `1px solid ${BDR}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <TrendingUp size={16} color={RED} />
-                  <p style={{ fontSize: '0.82rem', fontWeight: 800, color: TXT }}>Monthly Spending</p>
+                  <TrendingUp size={15} color={ORG} />
+                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: TXT }}>Monthly Spending</p>
                 </div>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={130}>
                   <BarChart data={monthlyChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="30%">
                     <XAxis dataKey="label" tick={{ fill: MUT, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} tick={{ fill: MUT, fontSize: 9 }} axisLine={false} tickLine={false} width={34} />
-                    <Tooltip contentStyle={{ background: WHITE, border: `1px solid ${BDR}`, borderRadius: 12, padding: '8px 12px' }}
-                      formatter={(value: number) => [`₦${Number(value).toLocaleString()}`, 'Spent']} />
-                    <Bar dataKey="spent" radius={[6, 6, 0, 0]}>
-                      {monthlyChartData.map((_, i) => (
-                        <Cell key={i} fill={i === monthlyChartData.length - 1 ? RED : 'rgba(232,57,45,0.25)'} />
+                    <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} tick={{ fill: MUT, fontSize: 9 }} axisLine={false} tickLine={false} width={32} />
+                    <Tooltip
+                      contentStyle={{ background: CARD2, border: `1px solid ${BDR}`, borderRadius: 12, padding: '8px 12px' }}
+                      labelStyle={{ color: MUT, fontSize: 10 }}
+                      formatter={(v: number) => [`₦${Number(v).toLocaleString()}`, 'Spent']}
+                    />
+                    <Bar dataKey="spent" radius={[6,6,0,0]}>
+                      {monthlyChartData.map((_,i) => (
+                        <Cell key={i} fill={i===monthlyChartData.length-1 ? ORG : 'rgba(255,107,53,0.3)'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -781,121 +928,107 @@ export default function FoodVendorPage() {
           </motion.div>
         )}
 
-        {/* ═══════════════ CART / MY TAB VIEW ════════════════ */}
+        {/* ═══════════════ CART / MY TAB ════════════════ */}
         {currentView === 'cart' && (
           <motion.div key="cart" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.26, ease: [0.16,1,0.3,1] }}>
-
             {/* Header */}
-            <div style={{ background: WHITE, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BDR}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button onClick={() => setCurrentView('menu')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <ArrowLeft size={16} color={TXT} />
-                </button>
-                <div>
-                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: TXT }}>My Order</h2>
-                  <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 1 }}>{unpaid.length} item{unpaid.length !== 1 ? 's' : ''} outstanding</p>
-                </div>
+            <div style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
+              <button onClick={() => setCurrentView('main')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <ArrowLeft size={16} color={TXT} />
+              </button>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: TXT }}>My Tab</h2>
+                <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 1 }}>{unpaid.length} item{unpaid.length !== 1 ? 's' : ''} outstanding</p>
               </div>
-              <span style={{ padding: '4px 12px', borderRadius: 20, background: unpaid.length > 0 ? 'rgba(232,57,45,0.1)' : GB, fontSize: '0.65rem', fontWeight: 800, color: unpaid.length > 0 ? RED : G }}>
-                {unpaid.length > 0 ? `${unpaid.length} unpaid` : 'All clear ✓'}
-              </span>
+              {unpaid.length > 0 && (
+                <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(255,65,108,0.15)', fontSize: '0.65rem', fontWeight: 800, color: RED, border: `1px solid rgba(255,65,108,0.3)` }}>
+                  {fmtAmt(totalUnpaidAmt)}
+                </span>
+              )}
             </div>
 
-            {/* Items */}
             <div style={{ padding: '14px 16px' }}>
               {unpaid.length === 0 ? (
-                <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+                <div style={{ padding: '64px 20px', textAlign: 'center' }}>
                   <div style={{ fontSize: '4rem', marginBottom: 16 }}>🎉</div>
-                  <p style={{ fontSize: '1rem', fontWeight: 800, color: TXT, marginBottom: 6 }}>All settled!</p>
-                  <p style={{ fontSize: '0.75rem', color: MUT, marginBottom: 24 }}>No outstanding credits</p>
-                  <button onClick={() => setCurrentView('menu')} style={{ padding: '11px 28px', borderRadius: 20, border: 'none', background: RED, color: WHITE, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+                  <p style={{ fontSize: '1rem', fontWeight: 800, color: TXT, marginBottom: 8 }}>Tab's clear!</p>
+                  <p style={{ fontSize: '0.75rem', color: MUT, marginBottom: 24 }}>All settled with your vendors</p>
+                  <button onClick={() => setCurrentView('main')} style={{ padding: '11px 28px', borderRadius: 20, border: 'none', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>
                     Back to Menu
                   </button>
                 </div>
               ) : (
-                <AnimatePresence>
-                  {unpaid.map((credit, i) => {
-                    const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
-                    const label = credit.meal_description || credit.vendor_name;
-                    return (
-                      <motion.div key={credit.id}
-                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
-                        transition={{ duration: 0.18, delay: i * 0.04 }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px', borderRadius: 20, marginBottom: 12, background: WHITE, border: `1px solid ${BDR}`, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
-                        <div style={{ width: 60, height: 60, borderRadius: 18, flexShrink: 0, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
-                          {vis.emoji}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '0.85rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
-                          <p style={{ fontSize: '0.62rem', color: MUT, marginTop: 2 }}>{credit.vendor_name}</p>
-                          <p style={{ fontSize: '0.58rem', color: MUT, marginTop: 1 }}>{format(new Date(credit.purchase_date + 'T00:00:00'), 'd MMM yyyy')}</p>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 800, color: RED }}>
-                            ₦{Number(credit.amount).toLocaleString()}
-                          </span>
-                          <button onClick={() => handleDelete(credit.id)} style={{ width: 28, height: 28, borderRadius: 9, border: `1px solid rgba(232,57,45,0.25)`, background: 'rgba(232,57,45,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                            <Trash2 size={12} color={RED} />
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                <>
+                  <AnimatePresence>
+                    {unpaid.map((credit, i) => {
+                      const vis   = getFoodVisual(credit.meal_description, credit.meal_type);
+                      const label = credit.meal_description || credit.vendor_name;
+                      return (
+                        <motion.div key={credit.id}
+                          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 60 }}
+                          transition={{ duration: 0.18, delay: i * 0.04 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 14px', borderRadius: 20, marginBottom: 10, background: CARD, border: `1px solid ${BDR}` }}>
+                          <div style={{ width: 56, height: 56, borderRadius: 17, flexShrink: 0, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', boxShadow: '0 4px 10px rgba(0,0,0,0.4)' }}>
+                            {vis.emoji}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: TXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
+                            <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 2 }}>{credit.vendor_name} · {format(new Date(credit.purchase_date + 'T00:00:00'), 'd MMM')}</p>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 800, color: ORG }}>
+                              {fmtAmt(Number(credit.amount))}
+                            </span>
+                            <button onClick={() => handleDelete(credit.id)} style={{ width: 28, height: 28, borderRadius: 9, border: `1px solid rgba(255,65,108,0.25)`, background: 'rgba(255,65,108,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                              <Trash2 size={12} color={RED} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+
+                  {/* Receipt summary */}
+                  <div style={{ background: CARD, borderRadius: 22, padding: '16px 18px', border: `1px solid ${BDR}`, marginTop: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <span style={{ fontSize: '0.75rem', color: MUT }}>Subtotal</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: TXT }}>{fmtAmt(totalUnpaidAmt)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+                      <span style={{ fontSize: '0.75rem', color: MUT }}>Service charge</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: G }}>FREE</span>
+                    </div>
+                    <div style={{ borderTop: `1px solid ${BDR}`, paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: TXT }}>TOTAL DUE</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 900, color: ORG }}>
+                        {fmtAmt(analytics?.total_outstanding ?? totalUnpaidAmt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pay CTA */}
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowConfirm(true)} style={{
+                    width: '100%', padding: '17px', borderRadius: 20, border: 'none', cursor: 'pointer', marginTop: 12,
+                    background: `linear-gradient(135deg,${ORG} 0%,${RED} 100%)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    boxShadow: '0 8px 24px rgba(255,107,53,0.45)',
+                  }}>
+                    <ShoppingBag size={18} color="#000" />
+                    <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#000' }}>
+                      Clear Tab · {fmtAmt(totalUnpaidAmt)}
+                    </span>
+                  </motion.button>
+                </>
               )}
             </div>
-
-            {/* Order summary */}
-            {unpaid.length > 0 && (
-              <div style={{ margin: '0 16px', background: WHITE, borderRadius: 20, padding: '16px 18px', border: `1px solid ${BDR}` }}>
-                {/* Promo code field (decorative UX touch) */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16, padding: '11px 14px', borderRadius: 14, border: `1.5px dashed ${BDR}`, background: BG, alignItems: 'center' }}>
-                  <Tag size={14} color={MUT} />
-                  <span style={{ fontSize: '0.72rem', color: MUT, flex: 1 }}>Promo code</span>
-                  <ChevronRight size={14} color={MUT} />
-                </div>
-                {[
-                  { label: 'Outstanding Amount', value: `₦${totalUnpaidAmt.toLocaleString()}`, color: TXT },
-                  { label: 'Processing Fee', value: 'FREE', color: G },
-                ].map(({ label, value, color }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: '0.78rem', color: MUT }}>{label}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color }}>{value}</span>
-                  </div>
-                ))}
-                <div style={{ borderTop: `1.5px solid ${BDR}`, paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: TXT }}>TOTAL</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.15rem', fontWeight: 800, color: RED }}>
-                    ₦{(analytics?.total_outstanding ?? totalUnpaidAmt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Pay CTA */}
-            {unpaid.length > 0 && (
-              <div style={{ padding: '14px 16px' }}>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowConfirm(true)} style={{
-                  width: '100%', padding: '17px', borderRadius: 20, border: 'none', cursor: 'pointer',
-                  background: `linear-gradient(135deg,${RED} 0%,#C0392B 100%)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  boxShadow: '0 6px 20px rgba(232,57,45,0.4)',
-                }}>
-                  <ShoppingBag size={18} color={WHITE} />
-                  <span style={{ fontSize: '0.92rem', fontWeight: 800, color: WHITE }}>
-                    Confirm Payment · ₦{totalUnpaidAmt.toLocaleString()}
-                  </span>
-                </motion.button>
-              </div>
-            )}
           </motion.div>
         )}
 
-        {/* ═══════════════ HISTORY VIEW ════════════════ */}
+        {/* ═══════════════ HISTORY ════════════════ */}
         {currentView === 'history' && (
           <motion.div key="history" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.26, ease: [0.16,1,0.3,1] }}>
-            <div style={{ background: WHITE, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
-              <button onClick={() => setCurrentView('menu')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <div style={{ background: CARD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${BDR}` }}>
+              <button onClick={() => setCurrentView('main')} style={{ width: 40, height: 40, borderRadius: 13, border: `1px solid ${BDR}`, background: CARD2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <ArrowLeft size={16} color={TXT} />
               </button>
               <div>
@@ -903,28 +1036,25 @@ export default function FoodVendorPage() {
                 <p style={{ fontSize: '0.6rem', color: MUT, marginTop: 1 }}>All vendor settlements</p>
               </div>
             </div>
-
             <div style={{ padding: '14px 16px' }}>
-              {/* Month filter */}
               <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 16 }}>
-                {historyMonthOptions.map(opt => {
+                {historyMonthOpts.map(opt => {
                   const active = selHistoryMonth === opt.key;
                   return (
                     <button key={opt.key} onClick={() => setSelHistoryMonth(opt.key)} style={{
                       padding: '6px 14px', borderRadius: 20, border: `1px solid ${active ? 'transparent' : BDR}`,
                       cursor: 'pointer', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0,
-                      background: active ? RED : WHITE, color: active ? WHITE : MUT, transition: 'all 0.15s',
+                      background: active ? ORG : CARD2, color: active ? '#000' : MUT, transition: 'all 0.15s',
                     }}>
                       {opt.label}
                     </button>
                   );
                 })}
               </div>
-
               {filteredPayments.length === 0 ? (
-                <div style={{ padding: '40px 20px', textAlign: 'center', background: WHITE, borderRadius: 20, border: `1px solid ${BDR}` }}>
+                <div style={{ padding: '40px 20px', textAlign: 'center', background: CARD, borderRadius: 20, border: `1px solid ${BDR}` }}>
                   <CalendarDays size={36} color={MUT} style={{ marginBottom: 8 }} />
-                  <p style={{ fontSize: '0.78rem', color: MUT, fontWeight: 500 }}>No payments yet</p>
+                  <p style={{ fontSize: '0.78rem', color: MUT }}>No payments yet</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -932,7 +1062,7 @@ export default function FoodVendorPage() {
                     const d   = new Date(payment.paid_at);
                     const vis = getFoodVisual(payment.vendor_name, null);
                     return (
-                      <div key={payment.id} style={{ background: WHITE, borderRadius: 18, padding: '13px 14px', border: `1px solid ${BDR}`, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                      <div key={payment.id} style={{ background: CARD, borderRadius: 18, padding: '13px 14px', border: `1px solid ${BDR}`, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 50, height: 50, borderRadius: 16, flexShrink: 0, background: vis.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
                           {vis.emoji}
                         </div>
@@ -942,7 +1072,7 @@ export default function FoodVendorPage() {
                         </div>
                         <div style={{ flexShrink: 0, textAlign: 'right' }}>
                           <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: G }}>₦{Number(payment.amount_paid).toLocaleString()}</p>
-                          <p style={{ fontSize: '0.52rem', color: G, fontWeight: 700, marginTop: 2 }}>PAID ✓</p>
+                          <p style={{ fontSize: '0.5rem', color: G, fontWeight: 700, marginTop: 2 }}>SETTLED ✓</p>
                         </div>
                       </div>
                     );
@@ -954,50 +1084,46 @@ export default function FoodVendorPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Sticky bottom tab bar (when outstanding credits exist) ── */}
-      {currentView === 'menu' && unpaid.length > 0 && (
-        <motion.div
-          initial={{ y: 100 }} animate={{ y: 0 }} transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
-          style={{
-            position: 'fixed', bottom: 'calc(60px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 300,
-            background: TXT, borderRadius: 22, padding: '14px 18px',
+      {/* ── Sticky tab bar ── */}
+      {currentView === 'main' && unpaid.length > 0 && (
+        <motion.div initial={{ y: 100 }} animate={{ y: 0 }} transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
+          style={{ position: 'fixed', bottom: 'calc(62px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 300,
+            background: 'linear-gradient(135deg,#1A0E08,#200A0F)',
+            borderRadius: 22, padding: '13px 18px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            boxShadow: '0 8px 32px rgba(26,26,46,0.4)',
+            border: `1px solid rgba(255,107,53,0.3)`,
+            boxShadow: '0 8px 32px rgba(255,65,108,0.3)',
           }}>
           <div>
-            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: 2 }}>My Tab</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.05rem', fontWeight: 800, color: WHITE }}>
-              ₦{totalUnpaidAmt.toLocaleString()}
+            <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginBottom: 2 }}>My Tab</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.08rem', fontWeight: 900, color: TXT }}>
+              {fmtAmt(totalUnpaidAmt)}
             </p>
           </div>
-          <button onClick={() => setCurrentView('cart')} style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px',
-            borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: RED, color: WHITE, fontWeight: 700, fontSize: '0.8rem',
-          }}>
+          <button onClick={() => setCurrentView('cart')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 16, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontWeight: 800, fontSize: '0.8rem', boxShadow: `0 4px 12px rgba(255,107,53,0.4)` }}>
             <ShoppingBag size={15} />
-            View Order · {unpaid.length}
+            View · {unpaid.length}
           </button>
         </motion.div>
       )}
 
-      {/* ── Floating Add button (menu view, no outstanding) ── */}
-      {currentView === 'menu' && unpaid.length === 0 && (
-        <motion.button whileTap={{ scale: 0.93 }} onClick={() => openAdd()} style={{
-          position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: 20, zIndex: 200,
-          width: 54, height: 54, borderRadius: 20, background: RED, border: 'none', cursor: 'pointer',
+      {/* ── FAB ── */}
+      {currentView === 'main' && unpaid.length === 0 && (
+        <motion.button whileTap={{ scale: 0.9 }} onClick={() => openAdd()} style={{
+          position: 'fixed', bottom: 'calc(82px + env(safe-area-inset-bottom))', right: 20, zIndex: 200,
+          width: 54, height: 54, borderRadius: 20, background: `linear-gradient(135deg,${ORG},${RED})`, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 6px 20px rgba(232,57,45,0.5)',
+          boxShadow: '0 6px 20px rgba(255,107,53,0.55)',
         }}>
-          <Plus size={24} color={WHITE} strokeWidth={2.5} />
+          <Plus size={24} color="#000" strokeWidth={2.8} />
         </motion.button>
       )}
 
       {/* ── AI Doctor ── */}
       <AIDoctorSheet open={showDoctor} onClose={() => setShowDoctor(false)} payload={doctorPayload} />
 
-      {/* ── Add Meal ── */}
-      <Modal isOpen={showAdd} title="Record Meal" onClose={() => { setShowAdd(false); setAddPrefill(undefined); }}>
+      {/* ── Modals ── */}
+      <Modal isOpen={showAdd} title="Add to Tab" onClose={() => { setShowAdd(false); setAddPrefill(undefined); }}>
         <FoodVendorForm
           allVendors={Array.from(new Set(allCredits.map(c => c.vendor_name))).sort()}
           allCredits={allCredits}
@@ -1007,7 +1133,6 @@ export default function FoodVendorPage() {
         />
       </Modal>
 
-      {/* ── Edit Meal ── */}
       <Modal isOpen={!!editCredit} title="Edit Meal" onClose={() => setEditCredit(null)}>
         {editCredit && (
           <>
@@ -1019,35 +1144,34 @@ export default function FoodVendorPage() {
               onCancel={() => setEditCredit(null)}
               submitLabel="Save Changes"
             />
-            <button onClick={() => handleDelete(editCredit.id)} style={{ width: '100%', marginTop: 8, padding: '10px', borderRadius: 14, border: `1.5px solid rgba(232,57,45,0.3)`, background: 'rgba(232,57,45,0.06)', color: RED, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-              Delete Meal
+            <button onClick={() => handleDelete(editCredit.id)} style={{ width: '100%', marginTop: 8, padding: '10px', borderRadius: 14, border: `1.5px solid rgba(255,65,108,0.3)`, background: 'rgba(255,65,108,0.08)', color: RED, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+              Remove from Tab
             </button>
           </>
         )}
       </Modal>
 
-      {/* ── Pay Day ── */}
       <AnimatePresence>
         {showDayPay && (
           <Modal isOpen={showDayPay} title="Pay This Day" onClose={() => setShowDayPay(false)}>
             <div style={{ padding: '8px 0' }}>
-              <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(232,57,45,0.06)', border: '1px solid rgba(232,57,45,0.2)', marginBottom: 16 }}>
-                <p style={{ fontSize: '0.72rem', color: MUT, marginBottom: 4 }}>{format(new Date(selectedDate + 'T00:00:00'), 'EEEE, d MMMM')}</p>
-                {Object.entries(dayUnpaid.reduce((acc, c) => { acc[c.vendor_name] = (acc[c.vendor_name] ?? 0) + Number(c.amount); return acc; }, {} as Record<string, number>)).map(([vendor, amt]) => (
-                  <div key={vendor} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: '0.75rem', color: SUB, fontWeight: 600 }}>{vendor}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700 }}>₦{amt.toLocaleString()}</span>
+              <div style={{ padding: '14px', borderRadius: 16, background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)', marginBottom: 16 }}>
+                <p style={{ fontSize: '0.7rem', color: MUT, marginBottom: 8 }}>{format(new Date(selectedDate+'T00:00:00'), 'EEEE, d MMMM')}</p>
+                {Object.entries(dayUnpaid.reduce((acc, c) => { acc[c.vendor_name]=(acc[c.vendor_name]??0)+Number(c.amount); return acc; }, {} as Record<string,number>)).map(([v,a]) => (
+                  <div key={v} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: '0.75rem', color: TXT, fontWeight: 600 }}>{v}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700, color: TXT }}>₦{(a as number).toLocaleString()}</span>
                   </div>
                 ))}
-                <div style={{ borderTop: `1px solid rgba(232,57,45,0.2)`, marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Total</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 800 }}>₦{dayUnpaid.reduce((s, c) => s + Number(c.amount), 0).toLocaleString()}</span>
+                <div style={{ borderTop: `1px solid ${BDR}`, marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: TXT }}>Total</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 900, color: ORG }}>₦{dayUnpaid.reduce((s,c)=>s+Number(c.amount),0).toLocaleString()}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setShowDayPay(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1.5px solid ${BDR}`, background: WHITE, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
-                <button onClick={handlePayDay} disabled={paying} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: RED, color: WHITE, fontWeight: 800, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: paying ? 0.7 : 1 }}>
-                  {paying ? <><Loader2 size={16} className="fspin" /> Processing…</> : 'Confirm Payment'}
+                <button onClick={() => setShowDayPay(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1px solid ${BDR}`, background: CARD2, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
+                <button onClick={handlePayDay} disabled={paying} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontWeight: 900, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: paying ? 0.7 : 1, fontSize: '0.88rem' }}>
+                  {paying ? <Loader2 size={16} className="fspin" /> : 'Confirm Payment'}
                 </button>
               </div>
             </div>
@@ -1055,23 +1179,18 @@ export default function FoodVendorPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Pay All Confirm ── */}
       <AnimatePresence>
         {showConfirm && (
-          <Modal isOpen={showConfirm} title="Confirm Payment" onClose={() => setShowConfirm(false)}>
+          <Modal isOpen={showConfirm} title="Clear Your Tab" onClose={() => setShowConfirm(false)}>
             <div style={{ padding: '8px 0' }}>
-              <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(232,57,45,0.06)', border: '1px solid rgba(232,57,45,0.2)', marginBottom: 20 }}>
-                <p style={{ fontSize: '0.8rem', color: SUB, marginBottom: 8 }}>
-                  Paying {unpaid.length} outstanding credit{unpaid.length !== 1 ? 's' : ''}
-                </p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 800, color: TXT }}>
-                  ₦{totalUnpaidAmt.toLocaleString()}
-                </p>
+              <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)', marginBottom: 20, textAlign: 'center' }}>
+                <p style={{ fontSize: '0.8rem', color: MUT, marginBottom: 8 }}>{unpaid.length} item{unpaid.length !== 1 ? 's' : ''} across your vendors</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.6rem', fontWeight: 900, color: ORG }}>₦{totalUnpaidAmt.toLocaleString()}</p>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1.5px solid ${BDR}`, background: WHITE, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
-                <button onClick={handlePayAll} disabled={paying} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: RED, color: WHITE, fontWeight: 800, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: paying ? 0.7 : 1 }}>
-                  {paying ? <><Loader2 size={16} className="fspin" /> Processing…</> : 'Confirm Payment'}
+                <button onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1px solid ${BDR}`, background: CARD2, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
+                <button onClick={handlePayAll} disabled={paying} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontWeight: 900, cursor: paying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: paying ? 0.7 : 1, fontSize: '0.88rem' }}>
+                  {paying ? <Loader2 size={16} className="fspin" /> : 'Pay & Clear Tab'}
                 </button>
               </div>
             </div>
@@ -1079,25 +1198,16 @@ export default function FoodVendorPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Budget ── */}
       <AnimatePresence>
         {showBudget && (
           <Modal isOpen={showBudget} title="Monthly Food Budget" onClose={() => setShowBudget(false)}>
             <div style={{ padding: '8px 0' }}>
-              <p style={{ fontSize: '0.78rem', color: MUT, marginBottom: 16 }}>
-                Set your monthly food budget. Daily limit = monthly ÷ 30.
-              </p>
+              <p style={{ fontSize: '0.78rem', color: MUT, marginBottom: 16 }}>Daily limit = monthly ÷ 30</p>
               <CurrencyInput label="Monthly Budget (₦)" value={budgetInput} onChange={setBudgetInput} />
-              {budgetInput > 0 && (
-                <p style={{ fontSize: '0.72rem', color: RED, fontWeight: 600, marginTop: 8 }}>
-                  Daily limit: ₦{Math.round(budgetInput / 30).toLocaleString()}
-                </p>
-              )}
+              {budgetInput > 0 && <p style={{ fontSize: '0.72rem', color: ORG, fontWeight: 600, marginTop: 8 }}>Daily: ₦{Math.round(budgetInput/30).toLocaleString()}</p>}
               <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                <button onClick={() => setShowBudget(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1.5px solid ${BDR}`, background: WHITE, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
-                <button onClick={handleSaveBudget} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: RED, color: WHITE, fontWeight: 800, cursor: 'pointer' }}>
-                  Save Budget
-                </button>
+                <button onClick={() => setShowBudget(false)} style={{ flex: 1, padding: '12px', borderRadius: 14, border: `1px solid ${BDR}`, background: CARD2, fontWeight: 700, cursor: 'pointer', color: TXT }}>Cancel</button>
+                <button onClick={handleSaveBudget} style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: `linear-gradient(135deg,${ORG},${RED})`, color: '#000', fontWeight: 900, cursor: 'pointer', fontSize: '0.88rem' }}>Save Budget</button>
               </div>
             </div>
           </Modal>
