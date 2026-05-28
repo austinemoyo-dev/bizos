@@ -156,6 +156,13 @@ export default function LoginPage() {
           .login-input { padding: 14px 16px; font-size: 16px !important; }
           .lamp-assembly { transform: scale(0.85) !important; }
         }
+
+        /* Override global html/body overflow:hidden for login page */
+        html, body {
+          overflow: auto !important;
+          overflow-x: hidden !important;
+          overscroll-behavior-y: auto !important;
+        }
       `}</style>
 
       {/* ─── Full-screen background ─── */}
@@ -167,8 +174,8 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        overflow: 'hidden',
-        padding: '20px',
+        overflowX: 'hidden',
+        padding: '40px 20px',
         fontFamily: "'Inter', sans-serif",
       }}>
 
