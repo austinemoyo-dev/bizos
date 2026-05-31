@@ -54,6 +54,23 @@ def create_expense(
     except Exception:
         pass
 
+    try:
+        from models.cash_flow import CashEventType, FinanceScope
+        from services.cash_flow_service import emit_cash_event
+        emit_cash_event(
+            db,
+            scope=FinanceScope.business,
+            event_type=CashEventType.expense,
+            signed_amount=-expense.amount,
+            description=expense.description or expense.category.value,
+            event_date=expense.expense_date,
+            reference_id=expense.id,
+            reference_type="expense",
+            auto_commit=True,
+        )
+    except Exception:
+        pass
+
     return expense
 
 

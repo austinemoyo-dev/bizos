@@ -12,10 +12,12 @@ from core.limiter import limiter
 from routers import (
     analytics,
     auth,
+    cash_flow,
     expenses,
     food_vendor,
     inventory,
     investments,
+    lending,
     market_list,
     personal,
     purchases,
@@ -98,6 +100,8 @@ app.include_router(food_vendor.router,         prefix=f"{API_PREFIX}/food-vendor
 app.include_router(settings_router.router,     prefix=f"{API_PREFIX}/settings",      tags=["Settings"])
 app.include_router(analytics.router,           prefix=f"{API_PREFIX}/analytics",     tags=["Analytics"])
 app.include_router(reports.router,             prefix=f"{API_PREFIX}/reports",       tags=["Reports"])
+app.include_router(lending.router,             prefix=f"{API_PREFIX}/lending",       tags=["Lending"])
+app.include_router(cash_flow.router,           prefix=f"{API_PREFIX}/cash-flow",     tags=["Cash Flow"])
 
 
 @app.get("/health")

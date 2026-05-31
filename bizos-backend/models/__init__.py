@@ -9,6 +9,8 @@ from models.market_list import MarketList, MarketListItem
 from models.personal import PersonalTransaction, SavingsGoal, PersonalTxType
 from models.food_vendor import FoodVendorCredit, FoodVendorPayment
 from models.settings import BusinessProfile, MonthlyGoal
+from models.cash_flow import CashBalance, CashEvent, CashEventType, FinanceScope
+from models.lending import LoanGiven, LoanRepayment, DebtOwed, DebtPayment
 
 __all__ = [
     "User", "UserRole",
@@ -22,4 +24,6 @@ __all__ = [
     "PersonalTransaction", "SavingsGoal", "PersonalTxType",
     "FoodVendorCredit", "FoodVendorPayment",
     "BusinessProfile", "MonthlyGoal",
+    "CashBalance", "CashEvent", "CashEventType", "FinanceScope",
+    "LoanGiven", "LoanRepayment", "DebtOwed", "DebtPayment",
 ]

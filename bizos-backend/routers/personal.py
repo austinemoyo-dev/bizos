@@ -62,6 +62,37 @@ def create_transaction(
     db.add(tx)
     db.commit()
     db.refresh(tx)
+
+    try:
+        from models.cash_flow import CashEventType, FinanceScope
+        from services.cash_flow_service import emit_cash_event
+        if tx.type == PersonalTxType.income:
+            emit_cash_event(
+                db,
+                scope=FinanceScope.personal,
+                event_type=CashEventType.revenue,
+                signed_amount=tx.amount,
+                description=tx.description or tx.category,
+                event_date=tx.transaction_date,
+                reference_id=tx.id,
+                reference_type="personal_income",
+                auto_commit=True,
+            )
+        elif tx.type == PersonalTxType.expense:
+            emit_cash_event(
+                db,
+                scope=FinanceScope.personal,
+                event_type=CashEventType.expense,
+                signed_amount=-tx.amount,
+                description=tx.description or tx.category,
+                event_date=tx.transaction_date,
+                reference_id=tx.id,
+                reference_type="personal_expense",
+                auto_commit=True,
+            )
+    except Exception:
+        pass
+
     return tx
 
 

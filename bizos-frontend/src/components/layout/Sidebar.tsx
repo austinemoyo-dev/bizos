@@ -8,7 +8,7 @@ import {
   Wallet, Utensils, PiggyBank,
   Settings, LogOut, ChevronLeft, ChevronRight,
   LineChart, Users, Banknote, ScrollText, Printer, Calculator,
-  Briefcase, User,
+  Briefcase, User, BarChart2, Target,
 } from 'lucide-react';
 import { SyncIndicator } from '../shared/SyncIndicator';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -34,6 +34,7 @@ const BUSINESS_NAV = [
   { label: 'Expenses',    href: '/business/expenses',      icon: Receipt         },
   { label: 'Investments', href: '/business/investments',   icon: TrendingUp      },
   { label: 'Loans',       href: '/business/loans',         icon: Banknote        },
+  { label: 'Recovery',    href: '/business/recovery',      icon: BarChart2       },
   { label: 'Tithe',       href: '/business/tithe',         icon: HandCoins       },
   { label: 'Market List', href: '/business/market-list',   icon: ShoppingBag     },
   { label: 'Daily Report',href: '/business/reports/daily', icon: Printer         },
@@ -46,6 +47,7 @@ const PERSONAL_NAV = [
   { label: 'Food Vendor',  href: '/personal/food-vendor',  icon: Utensils        },
   { label: 'Savings',      href: '/personal/savings',      icon: PiggyBank       },
   { label: 'Tithe',        href: '/personal/tithe',        icon: HandCoins       },
+  { label: 'Planning',     href: '/personal/planning',     icon: Target          },
 ];
 
 // ── Nav Item ──────────────────────────────────────────────────────

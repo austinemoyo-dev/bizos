@@ -5,6 +5,8 @@ import { analyticsApi } from '@/lib/api/analytics';
 import { foodVendorApi } from '@/lib/api/food-vendor';
 import { titheApi } from '@/lib/api/tithe';
 import { personalApi } from '@/lib/api/personal';
+import { cashFlowApi } from '@/lib/api/cash-flow';
+import { lendingApi } from '@/lib/api/lending';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { formatNaira } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,6 +65,7 @@ const MENU_LINKS = [
   { label: 'Food Vendor',  href: '/personal/food-vendor',  icon: Utensils,   color: '#FBBF24' },
   { label: 'Savings',      href: '/personal/savings',      icon: PiggyBank,  color: '#34D399' },
   { label: 'Tithe',        href: '/personal/tithe',        icon: HandCoins,  color: '#F472B6' },
+  { label: 'Planning',     href: '/personal/planning',     icon: TrendingUp, color: '#A78BFA' },
   { label: 'Settings',     href: '/settings',              icon: Settings,   color: '#9CA3AF' },
 ];
 
@@ -140,6 +143,18 @@ export default function PersonalDashboard() {
   const { data: unpaidCredits } = useQuery({
     queryKey: ['food-credits', 'unpaid'],
     queryFn:  () => foodVendorApi.credits.list({ paid: false }),
+  });
+
+  const { data: cashPos } = useQuery({
+    queryKey: ['cash-position', 'personal'],
+    queryFn:  () => cashFlowApi.getPosition('personal'),
+    retry: false,
+  });
+
+  const { data: lendingSum } = useQuery({
+    queryKey: ['lending-summary', 'personal'],
+    queryFn:  () => lendingApi.summary('personal'),
+    retry: false,
   });
 
   // ── Computed values ────────────────────────────────────────────
@@ -332,6 +347,52 @@ export default function PersonalDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* ── CASH POSITION STRIP ──────────────────────────────────── */}
+      {cashPos && (
+        <Link href="/personal/planning" style={{ textDecoration: 'none', display: 'block', marginBottom: 20 }}>
+          <div style={{
+            borderRadius: 18, padding: '14px 16px',
+            background: 'linear-gradient(135deg, rgba(79,46,220,0.18) 0%, rgba(124,58,237,0.12) 100%)',
+            border: '1px solid rgba(124,58,237,0.25)',
+            display: 'flex', gap: 0,
+          }}>
+            {[
+              {
+                label: 'Cash in Hand',
+                value: formatNaira(Number(cashPos.current_balance)),
+                color: '#A78BFA',
+                sub: null,
+              },
+              {
+                label: 'Lent Out',
+                value: lendingSum ? formatNaira(Number(lendingSum.outstanding_receivable)) : '—',
+                color: '#60A5FA',
+                sub: null,
+              },
+              {
+                label: 'You Owe',
+                value: lendingSum ? formatNaira(Number(lendingSum.outstanding_payable)) : '—',
+                color: '#F87171',
+                sub: null,
+              },
+            ].map(({ label, value, color }, idx, arr) => (
+              <div key={label} style={{
+                flex: 1, textAlign: 'center',
+                borderRight: idx < arr.length - 1 ? '1px solid rgba(124,58,237,0.2)' : 'none',
+                paddingRight: idx < arr.length - 1 ? 12 : 0,
+                paddingLeft: idx > 0 ? 12 : 0,
+              }}>
+                <p style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 800, color, lineHeight: 1 }}>{value}</p>
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 10, flexShrink: 0 }}>
+              <ChevronRight size={14} color="rgba(167,139,250,0.6)" />
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* ── QUICK ACTIONS ─────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 24 }}>

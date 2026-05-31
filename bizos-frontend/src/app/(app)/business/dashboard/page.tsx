@@ -29,6 +29,8 @@ import { InsightsCard } from '@/components/shared/InsightsCard';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { useProfileStore } from '@/lib/stores/profileStore';
 import { useRouter } from 'next/navigation';
+import { cashFlowApi } from '@/lib/api/cash-flow';
+import { lendingApi } from '@/lib/api/lending';
 
 type Period = 'week' | 'month' | 'last_month' | 'year';
 
@@ -118,6 +120,15 @@ export default function BusinessDashboard() {
   const { count: lowStockCount, items: lowStockItems } = useLowStock();
   const { loadFromStorage } = useProfileStore();
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
+
+  const { data: cashPos } = useQuery({
+    queryKey: ['cash-position', 'business'],
+    queryFn: () => cashFlowApi.getPosition('business'),
+  });
+  const { data: lendingSummary } = useQuery({
+    queryKey: ['lending-summary', 'business'],
+    queryFn: () => lendingApi.summary('business'),
+  });
 
   const hour     = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -434,6 +445,55 @@ export default function BusinessDashboard() {
           ))}
         </div>
       </motion.div>
+
+      {/* ── Cash Position strip (only shown when balance is set) ─── */}
+      {cashPos && (
+        <motion.div variants={fadeUp} initial="initial" animate="animate"
+          style={{
+            marginTop: 'var(--space-4)',
+            background: 'var(--bg-surface)', borderRadius: 16,
+            padding: 'var(--space-4)', border: '1px solid var(--border-subtle)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}
+          onClick={() => router.push('/business/recovery')}
+          className="cursor-pointer"
+        >
+          <div>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+              Cash in Hand
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-mono)', fontWeight: 800,
+              fontSize: 'var(--text-lg)', letterSpacing: '-0.02em',
+              color: cashPos.current_balance >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
+            }}>
+              {formatNaira(cashPos.current_balance)}
+            </p>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              vs Profit: {summary ? formatNaira(summary.net_profit) : '—'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+            {lendingSummary && lendingSummary.outstanding_receivable > 0 && (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginBottom: 2 }}>Owed to you</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-amber)' }}>
+                  {formatNaira(lendingSummary.outstanding_receivable)}
+                </p>
+              </div>
+            )}
+            {lendingSummary && lendingSummary.outstanding_payable > 0 && (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginBottom: 2 }}>You owe</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-red)' }}>
+                  {formatNaira(lendingSummary.outstanding_payable)}
+                </p>
+              </div>
+            )}
+            <ChevronRight size={16} style={{ color: 'var(--text-muted)', alignSelf: 'center' }} />
+          </div>
+        </motion.div>
+      )}
 
       {/* ── Quick Actions ─────────────────────────────────────────── */}
       <motion.div variants={fadeUp} initial="initial" animate="animate"

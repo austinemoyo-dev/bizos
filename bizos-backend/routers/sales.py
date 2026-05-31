@@ -84,6 +84,23 @@ def record_sale(
     except Exception:
         pass
 
+    try:
+        from models.cash_flow import CashEventType, FinanceScope
+        from services.cash_flow_service import emit_cash_event
+        emit_cash_event(
+            db,
+            scope=FinanceScope.business,
+            event_type=CashEventType.revenue,
+            signed_amount=sale.amount_paid,
+            description=f"Sale: {sale.quantity}× {item.name}",
+            event_date=sale.sold_at.date(),
+            reference_id=sale.id,
+            reference_type="sale",
+            auto_commit=True,
+        )
+    except Exception:
+        pass
+
     return sale
 
 

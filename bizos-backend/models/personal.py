@@ -29,6 +29,7 @@ class PersonalExpenseCategory(str, enum.Enum):
     bills = "bills"
     savings = "savings"
     tithe = "tithe"
+    debt_repayment = "debt_repayment"
     miscellaneous = "miscellaneous"
 
 
