@@ -28,11 +28,13 @@ export async function queueMutation(
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('bizos-sync-queue-changed'));
   await notifyNativeOfCount(count);
 
-  // Web Background Sync (service worker)
+  // Web Background Sync — only if a service worker is already registered
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
     try {
-      const reg = await navigator.serviceWorker.ready;
-      await (reg as unknown as { sync: { register: (tag: string) => Promise<void> } }).sync.register('bizos-sync');
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        await (reg as unknown as { sync: { register: (tag: string) => Promise<void> } }).sync.register('bizos-sync');
+      }
     } catch { /* not supported */ }
   }
 }
