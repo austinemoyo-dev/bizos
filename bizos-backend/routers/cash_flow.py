@@ -1,12 +1,12 @@
-from datetime import date, timedelta
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from core.dependencies import get_current_user, get_db, role_required
+from core.dependencies import get_current_user, get_db
 from models.cash_flow import FinanceScope
-from models.user import User, UserRole
+from models.user import User
 from schemas.cash_flow import (
     CashBalanceOut,
     CashFlowTimeline,
@@ -29,7 +29,7 @@ router = APIRouter()
 def set_balance(
     payload: OpeningBalanceSet,
     db: Session = Depends(get_db),
-    _: User = Depends(role_required(UserRole.owner, UserRole.super_admin)),
+    _: User = Depends(get_current_user),
 ):
     """Set or update the opening balance for a scope. Safe to call multiple times."""
     return set_opening_balance(db, payload.scope, payload.opening_balance, payload.opened_at)
