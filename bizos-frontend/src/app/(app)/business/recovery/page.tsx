@@ -2,8 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { analyticsApi } from '@/lib/api/analytics';
 import { cashFlowApi } from '@/lib/api/cash-flow';
 import { lendingApi } from '@/lib/api/lending';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { formatNaira } from '@/lib/format';
 import { fadeUp, stagger } from '@/lib/motion-variants';
@@ -53,6 +55,10 @@ function MetricCard({
 }
 
 export default function BusinessRecoveryPage() {
+  const now = new Date();
+  const start = format(startOfMonth(now), 'yyyy-MM-dd');
+  const end = format(endOfMonth(now), 'yyyy-MM-dd');
+
   const { data: recovery, isLoading } = useQuery({
     queryKey: ['business-recovery'],
     queryFn: () => cashFlowApi.getBusinessRecovery(),
@@ -61,6 +67,10 @@ export default function BusinessRecoveryPage() {
   const { data: cashPos } = useQuery({
     queryKey: ['cash-position', 'business'],
     queryFn: () => cashFlowApi.getPosition('business'),
+  });
+  const { data: summary } = useQuery({
+    queryKey: ['business-summary', start, end],
+    queryFn: () => analyticsApi.businessSummary({ period_start: start, period_end: end }),
   });
   const { data: netWorth } = useQuery({
     queryKey: ['net-worth'],
@@ -259,9 +269,9 @@ export default function BusinessRecoveryPage() {
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Actual Cash in Hand</p>
                 <p style={{
                   fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800,
-                  color: cashPos.current_balance >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
+                  color: (summary?.available_balance ?? 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
                 }}>
-                  {formatNaira(cashPos.current_balance)}
+                  {summary ? formatNaira(summary.available_balance) : '—'}
                 </p>
               </div>
             </motion.div>

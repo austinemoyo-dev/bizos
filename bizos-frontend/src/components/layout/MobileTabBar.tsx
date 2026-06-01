@@ -372,7 +372,6 @@ export function MobileTabBar() {
           position: 'fixed',
           bottom: 'calc(14px + env(safe-area-inset-bottom))',
           left: 14, right: 14,
-          height: 66,
           zIndex: 1000,
           borderRadius: 28,
           background: isDark ? 'rgba(10,10,16,0.68)' : 'rgba(248,248,252,0.68)',
@@ -385,11 +384,42 @@ export function MobileTabBar() {
             ? '0 12px 48px rgba(0,0,0,0.70), 0 2px 0 rgba(255,255,255,0.06) inset, 0 -1px 0 rgba(0,0,0,0.35) inset'
             : '0 12px 40px rgba(0,0,0,0.10), 0 2px 0 rgba(255,255,255,0.95) inset',
           display: 'flex',
-          alignItems: 'center',
-          padding: '0 6px',
+          flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
+        {/* ── Scope switch strip ──────────────────────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 2 }}>
+          <div style={{
+            display: 'flex',
+            background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+            borderRadius: 20, padding: 3,
+          }}>
+            {([
+              { key: 'business' as const, label: 'Business', href: '/business/dashboard', color: '#8B0018' },
+              { key: 'personal' as const, label: 'Personal', href: '/personal/dashboard', color: '#D4A535' },
+            ]).map(({ key, label, href, color }) => {
+              const scopeActive = scope === key;
+              return (
+                <Link key={key} href={href} style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    padding: '4px 18px', borderRadius: 16, cursor: 'pointer',
+                    fontSize: '0.62rem', fontWeight: 700, whiteSpace: 'nowrap',
+                    background: scopeActive ? color : 'transparent',
+                    color: scopeActive ? '#fff' : isDark ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)',
+                    transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+                    boxShadow: scopeActive ? `0 2px 8px ${color}50` : 'none',
+                  }}>
+                    {label}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Icons row ───────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 6px', height: 62 }}>
         {/* Specular top highlight */}
         <div style={{
           position: 'absolute', top: 0, left: 24, right: 24, height: 1,
@@ -504,6 +534,7 @@ export function MobileTabBar() {
             </Link>
           );
         })}
+        </div>
       </div>
 
       {/* ── More sheet ───────────────────────────────────────────── */}

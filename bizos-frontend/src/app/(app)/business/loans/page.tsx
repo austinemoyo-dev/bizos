@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { analyticsApi } from '@/lib/api/analytics';
 import { lendingApi, LoanGiven, DebtOwed } from '@/lib/api/lending';
 import { cashFlowApi } from '@/lib/api/cash-flow';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -15,7 +16,7 @@ import {
   Plus, Loader2, CheckCircle, ArrowUpRight, ArrowDownLeft,
   AlertTriangle, Wallet, TrendingDown, TrendingUp, Clock,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 type MainTab = 'loans_given' | 'debts_owed';
 type SubTab  = 'outstanding' | 'settled';
@@ -57,6 +58,9 @@ function DueSoonChip({ dueDate, isSettled }: { dueDate: string | null; isSettled
 export default function LendingLedgerPage() {
   const { addToast } = useUIStore();
   const qc = useQueryClient();
+  const now = new Date();
+  const summaryStart = format(startOfMonth(now), 'yyyy-MM-dd');
+  const summaryEnd   = format(endOfMonth(now), 'yyyy-MM-dd');
   const [mainTab, setMainTab] = useState<MainTab>('loans_given');
   const [subTab, setSubTab]   = useState<SubTab>('outstanding');
   const [loading, setLoading] = useState(false);
@@ -99,6 +103,10 @@ export default function LendingLedgerPage() {
   const { data: cashPos } = useQuery({
     queryKey: ['cash-position', 'business'],
     queryFn: () => cashFlowApi.getPosition('business'),
+  });
+  const { data: businessSummary } = useQuery({
+    queryKey: ['business-summary', summaryStart, summaryEnd],
+    queryFn: () => analyticsApi.businessSummary({ period_start: summaryStart, period_end: summaryEnd }),
   });
 
   // Derived lists
@@ -208,13 +216,13 @@ export default function LendingLedgerPage() {
       />
 
       {/* ── Cash Position Banner ────────────────────────────────── */}
-      {cashPos && (
+      {(businessSummary || cashPos) && (
         <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)',
           marginBottom: 'var(--space-5)',
         }}>
           {[
-            { label: 'Cash in Hand', value: cashPos.current_balance, color: cashPos.current_balance >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' },
+            { label: 'Cash in Hand', value: businessSummary?.available_balance ?? 0, color: (businessSummary?.available_balance ?? 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' },
             { label: 'Money Out (Loans)', value: summary ? summary.outstanding_receivable : 0, color: 'var(--accent-amber)' },
             { label: 'Money Owed', value: summary ? summary.outstanding_payable : 0, color: 'var(--accent-red)' },
           ].map(({ label, value, color }) => (
