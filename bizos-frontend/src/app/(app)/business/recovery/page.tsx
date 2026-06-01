@@ -64,10 +64,6 @@ export default function BusinessRecoveryPage() {
     queryFn: () => cashFlowApi.getBusinessRecovery(),
     refetchInterval: 60_000,
   });
-  const { data: cashPos } = useQuery({
-    queryKey: ['cash-position', 'business'],
-    queryFn: () => cashFlowApi.getPosition('business'),
-  });
   const { data: summary } = useQuery({
     queryKey: ['business-summary', start, end],
     queryFn: () => analyticsApi.businessSummary({ period_start: start, period_end: end }),
@@ -253,21 +249,20 @@ export default function BusinessRecoveryPage() {
               <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
                 Cash Position
               </p>
-              {cashPos && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-                  {[
-                    { l: 'Opening', v: cashPos.opening_balance, c: 'var(--text-secondary)' },
-                    { l: 'Total In', v: cashPos.total_in, c: 'var(--accent-green)' },
-                    { l: 'Total Out', v: cashPos.total_out, c: 'var(--accent-red)' },
-                  ].map(({ l, v, c }) => (
-                    <div key={l} style={{ textAlign: 'center' }}>
-                      <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{l}</p>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: c }}>{formatNaira(v)}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ paddingTop: cashPos ? 'var(--space-4)' : 0, borderTop: cashPos ? '1px solid var(--border-subtle)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+                {[
+                  { l: 'Cash In (MTD)',  v: summary.cash_collected,  c: 'var(--accent-green)' },
+                  { l: 'Expenses (MTD)', v: summary.total_expenses,  c: 'var(--accent-red)'   },
+                  { l: 'Net (MTD)',      v: summary.cash_collected - summary.total_expenses,
+                    c: (summary.cash_collected - summary.total_expenses) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' },
+                ].map(({ l, v, c }) => (
+                  <div key={l} style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{l}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: c }}>{formatNaira(Math.abs(v))}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>Actual Cash in Hand</p>
                 <p style={{
                   fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800,
