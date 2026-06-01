@@ -164,8 +164,10 @@ export default function PersonalDashboard() {
   const titheDue        = Number(summary?.tithe_due ?? 0);
   const foodDebt        = (unpaidCredits ?? []).reduce((s, c) => s + Number(c.amount), 0);
 
-  // ✅ Compute directly from income/expenses (net_savings from backend is unreliable)
-  const availableBalance = totalIncome - totalExpenses - paidTitheAmount;
+  // Period-based net (fallback when no cash position is set)
+  const computedBalance  = totalIncome - totalExpenses - paidTitheAmount;
+  // Prefer the live cash position (opening balance + all events) when available
+  const availableBalance = cashPos ? Number(cashPos.current_balance) : computedBalance;
   const isPositive       = availableBalance >= 0;
   const periodLabel      = PERIOD_LABELS[period];
 
@@ -292,7 +294,7 @@ export default function PersonalDashboard() {
                 </p>
 
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-                  {periodLabel}
+                  {cashPos ? 'Current cash balance' : periodLabel}
                 </p>
               </div>
             )}
