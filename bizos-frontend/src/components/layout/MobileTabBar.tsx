@@ -53,6 +53,7 @@ const BUSINESS_MORE: MoreItem[] = [
 
 const PERSONAL_MORE: MoreItem[] = [
   { label: 'Food Vendor',  href: '/personal/food-vendor',  Icon: Utensils,   color: '#F59E0B' },
+  { label: 'Loans',        href: '/personal/loans',        Icon: Banknote,   color: '#A78BFA' },
   { label: 'Savings',      href: '/personal/savings',      Icon: PiggyBank,  color: '#10B981' },
   { label: 'Tithe',        href: '/personal/tithe',        Icon: HandCoins,  color: '#EC4899' },
   { label: 'Planning',     href: '/personal/planning',     Icon: Target,     color: '#8B5CF6' },

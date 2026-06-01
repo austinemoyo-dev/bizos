@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.expense import Expense
+from models.food_vendor import FoodVendorCredit
 from models.lending import DebtOwed
 from models.personal import PersonalTransaction, PersonalTxType
 from models.repair import RepairJob, RepairStatus
@@ -128,7 +129,15 @@ def get_debt_payoff_plan(db: Session) -> dict:
         .all()
     )
 
-    total_owed = sum(Decimal(str(d.outstanding)) for d in debts)
+    # Unpaid food vendor credits count as personal debt
+    food_credits_total = (
+        db.query(func.sum(FoodVendorCredit.amount))
+        .filter(FoodVendorCredit.paid == False)
+        .scalar()
+        or Decimal("0")
+    )
+
+    total_owed = sum(Decimal(str(d.outstanding)) for d in debts) + Decimal(str(food_credits_total))
     months_to_clear = None
     if disposable > 0 and total_owed > 0:
         months_to_clear = float(total_owed / disposable)
@@ -143,6 +152,18 @@ def get_debt_payoff_plan(db: Session) -> dict:
             "outstanding": outstanding,
             "due_date": d.due_date,
             "months_to_clear_at_current_rate": round(months, 1) if months else None,
+            "source": "debt",
+        })
+
+    if food_credits_total > 0:
+        food_months = float(Decimal(str(food_credits_total)) / disposable) if disposable > 0 else None
+        debt_items.append({
+            "id": "food_vendor_credits",
+            "creditor_name": "Food Vendor (unpaid credits)",
+            "outstanding": Decimal(str(food_credits_total)),
+            "due_date": None,
+            "months_to_clear_at_current_rate": round(food_months, 1) if food_months else None,
+            "source": "food_vendor",
         })
 
     return {

@@ -46,6 +46,7 @@ const PERSONAL_NAV = [
   { label: 'Transactions', href: '/personal/transactions', icon: Wallet          },
   { label: 'Food Vendor',  href: '/personal/food-vendor',  icon: Utensils        },
   { label: 'Savings',      href: '/personal/savings',      icon: PiggyBank       },
+  { label: 'Loans',        href: '/personal/loans',        icon: Banknote        },
   { label: 'Tithe',        href: '/personal/tithe',        icon: HandCoins       },
   { label: 'Planning',     href: '/personal/planning',     icon: Target          },
 ];
