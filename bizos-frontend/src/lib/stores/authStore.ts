@@ -12,7 +12,8 @@ export interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, token: string, refreshToken?: string) => void;
+  /** remember=false skips saving refresh_token and bizos_user, disabling biometric on next visit */
+  setAuth: (user: User, token: string, refreshToken?: string, remember?: boolean) => void;
   clearAuth: () => void;
   loadFromStorage: () => boolean;
   /** Use the stored refresh token to get a new access token (for biometric login). */
@@ -25,12 +26,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
 
-  setAuth: (user, token, refreshToken?) => {
+  setAuth: (user, token, refreshToken?, remember = true) => {
     localStorage.setItem('access_token', token);
-    // Store refresh token so biometric re-login can call /auth/refresh without a password.
-    // In Capacitor the WebView sandbox makes localStorage equivalent to secure storage.
-    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-    localStorage.setItem('bizos_user', JSON.stringify(user));
+    if (remember) {
+      // Persist session so biometric re-login works on next visit
+      if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+      localStorage.setItem('bizos_user', JSON.stringify(user));
+    } else {
+      // Session-only: clear any previously remembered credentials
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('bizos_user');
+    }
     set({ user, isAuthenticated: true });
   },
 

@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { LoginResponse } from '@/types/api';
-import { Eye, EyeOff, Loader2, Fingerprint } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Fingerprint, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { authenticateWithBiometric } from '@/lib/capacitor/biometric';
+import { authenticateWithBiometric, isBiometricAvailable } from '@/lib/capacitor/biometric';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +22,8 @@ export default function LoginPage() {
   const [error,      setError]      = useState('');
   const [mounted,    setMounted]    = useState(false);
   const [savedName,  setSavedName]  = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [bioAvailable, setBioAvailable] = useState(false);
   const warmupRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -35,6 +37,8 @@ export default function LoginPage() {
         setEmail(user.email ?? '');
       }
     } catch {}
+    // Check if device has fingerprint/face hardware
+    isBiometricAvailable().then(setBioAvailable);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +60,7 @@ export default function LoginPage() {
         manualAbort,
       ]);
       clearTimeout(warmupRef.current!);
-      setAuth(data.user, data.access_token, data.refresh_token);
+      setAuth(data.user, data.access_token, data.refresh_token, rememberMe);
       router.push('/business/dashboard');
     } catch (err) {
       clearTimeout(warmupRef.current!);
@@ -622,8 +626,31 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Forgot password */}
-            <div style={{ textAlign: 'right', marginTop: -6 }}>
+            {/* Remember me + Forgot password */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: -4 }}>
+              {/* Remember me checkbox */}
+              <button
+                type="button"
+                onClick={() => setRememberMe(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                }}
+              >
+                <span style={{
+                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                  border: `1.5px solid ${rememberMe ? 'rgba(232,169,74,0.7)' : 'rgba(255,255,255,0.18)'}`,
+                  background: rememberMe ? 'rgba(232,169,74,0.15)' : 'rgba(255,255,255,0.04)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}>
+                  {rememberMe && <Check size={12} style={{ color: 'rgba(232,169,74,0.95)' }} />}
+                </span>
+                <span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" }}>
+                  Remember me
+                </span>
+              </button>
+
               <span style={{
                 fontSize: '0.73rem', color: 'rgba(255,255,255,0.3)',
                 cursor: 'pointer', transition: 'color 0.2s',
@@ -691,36 +718,53 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* Biometric quick-login */}
-            {savedName && !loading && (
-              <motion.button
-                type="button"
-                onClick={handleBiometricLogin}
-                disabled={bioLoading || loading}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                style={{
-                  width: '100%', padding: '14px 16px',
-                  border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 14,
-                  background: 'rgba(255,255,255,0.04)',
-                  backdropFilter: 'blur(12px)',
-                  color: 'rgba(255,255,255,0.75)',
-                  fontSize: '0.92rem', fontWeight: 600,
-                  cursor: bioLoading ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  fontFamily: "'Inter', sans-serif",
-                  transition: 'background 0.2s, border-color 0.2s',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; }}
-              >
-                {bioLoading
-                  ? <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> Verifying…</>
-                  : <><Fingerprint size={19} style={{ color: 'rgba(232,169,74,0.8)' }} /> Continue as {savedName.split(' ')[0]}</>
-                }
-              </motion.button>
+            {/* Biometric quick-login — shows when device has fingerprint/face AND a saved session */}
+            {(savedName || bioAvailable) && !loading && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.06em' }}>OR</span>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+                </div>
+
+                <motion.button
+                  type="button"
+                  onClick={savedName ? handleBiometricLogin : undefined}
+                  disabled={bioLoading || loading || !savedName}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  style={{
+                    width: '100%', padding: '14px 16px',
+                    border: savedName
+                      ? '1.5px solid rgba(232,169,74,0.2)'
+                      : '1.5px solid rgba(255,255,255,0.08)',
+                    borderRadius: 14,
+                    background: savedName ? 'rgba(232,169,74,0.06)' : 'rgba(255,255,255,0.03)',
+                    backdropFilter: 'blur(12px)',
+                    color: savedName ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
+                    fontSize: '0.92rem', fontWeight: 600,
+                    cursor: savedName && !bioLoading ? 'pointer' : 'default',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    fontFamily: "'Inter', sans-serif",
+                    transition: 'background 0.2s, border-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (savedName) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(232,169,74,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = savedName ? 'rgba(232,169,74,0.06)' : 'rgba(255,255,255,0.03)';
+                  }}
+                >
+                  {bioLoading
+                    ? <><Loader2 size={17} style={{ animation: 'spin 1s linear infinite' }} /> Verifying…</>
+                    : savedName
+                      ? <><Fingerprint size={19} style={{ color: 'rgba(232,169,74,0.85)' }} /> Continue as {savedName.split(' ')[0]}</>
+                      : <><Fingerprint size={19} style={{ color: 'rgba(255,255,255,0.25)' }} /> Use fingerprint (remember me to enable)</>
+                  }
+                </motion.button>
+              </div>
             )}
           </form>
 
