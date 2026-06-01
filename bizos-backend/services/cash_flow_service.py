@@ -6,8 +6,12 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models.cash_flow import CashBalance, CashEvent, CashEventType, FinanceScope
+from models.expense import Expense
 from models.inventory import Item
-from models.lending import DebtOwed, LoanGiven
+from models.lending import DebtOwed, LoanGiven, LoanRepayment
+from models.personal import PersonalTransaction, PersonalTxType
+from models.repair import RepairJob, RepairStatus, DepositResolution
+from models.sales import Sale
 from schemas.cash_flow import (
     CashBalanceOut,
     CashFlowTimeline,
@@ -218,34 +222,103 @@ def get_liquidity_forecast(db: Session, scope: FinanceScope, days: int = 30) -> 
 
 
 def get_net_worth(db: Session) -> NetWorth:
-    biz = get_cash_position(db, FinanceScope.business)
-    pers = get_cash_position(db, FinanceScope.personal)
+    # ── Business available balance (mirrors analytics_service formula) ──────────
+    biz_cash_repairs = (
+        db.query(func.sum(RepairJob.amount_paid))
+        .filter(
+            (RepairJob.status != RepairStatus.cancelled)
+            | (RepairJob.deposit_resolution == DepositResolution.kept)
+        )
+        .scalar() or Decimal("0")
+    )
+    biz_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
+    biz_expenses   = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
+    biz_loans_given = (
+        db.query(func.sum(LoanGiven.principal_amount))
+        .filter(LoanGiven.scope == FinanceScope.business)
+        .scalar() or Decimal("0")
+    )
+    biz_loan_repayments = (
+        db.query(func.sum(LoanRepayment.amount))
+        .join(LoanGiven, LoanRepayment.loan_id == LoanGiven.id)
+        .filter(LoanGiven.scope == FinanceScope.business)
+        .scalar() or Decimal("0")
+    )
+    biz_borrowed = (
+        db.query(func.sum(DebtOwed.principal_amount))
+        .filter(DebtOwed.scope == FinanceScope.business)
+        .scalar() or Decimal("0")
+    )
+    # Note: business debt repayments are already in biz_expenses via
+    # Expense(category=loan_repayment), so not added separately.
+    business_cash = (
+        (biz_cash_repairs + biz_cash_sales)
+        - biz_expenses
+        - biz_loans_given
+        + biz_loan_repayments
+        + biz_borrowed
+    )
 
+    # ── Personal available balance ──────────────────────────────────────────────
+    personal_income = (
+        db.query(func.sum(PersonalTransaction.amount))
+        .filter(PersonalTransaction.type == PersonalTxType.income)
+        .scalar() or Decimal("0")
+    )
+    personal_expenses = (
+        db.query(func.sum(PersonalTransaction.amount))
+        .filter(PersonalTransaction.type == PersonalTxType.expense)
+        .scalar() or Decimal("0")
+    )
+    personal_loans_given = (
+        db.query(func.sum(LoanGiven.principal_amount))
+        .filter(LoanGiven.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    personal_loan_repayments = (
+        db.query(func.sum(LoanRepayment.amount))
+        .join(LoanGiven, LoanRepayment.loan_id == LoanGiven.id)
+        .filter(LoanGiven.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    personal_borrowed = (
+        db.query(func.sum(DebtOwed.principal_amount))
+        .filter(DebtOwed.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    # Personal debt repayments are in personal_expenses via
+    # PersonalTransaction(type=expense, category=debt_repayment).
+    personal_cash = (
+        personal_income
+        - personal_expenses
+        - personal_loans_given
+        + personal_loan_repayments
+        + personal_borrowed
+    )
+
+    # ── Loans & debts outstanding (scope-agnostic assets/liabilities) ──────────
     loans_outstanding = (
         db.query(func.sum(LoanGiven.principal_amount - LoanGiven.amount_repaid))
         .filter(LoanGiven.is_settled == False)
-        .scalar()
-        or Decimal("0")
+        .scalar() or Decimal("0")
     )
     debts_outstanding = (
         db.query(func.sum(DebtOwed.principal_amount - DebtOwed.amount_repaid))
         .filter(DebtOwed.is_settled == False)
-        .scalar()
-        or Decimal("0")
+        .scalar() or Decimal("0")
     )
     inventory_value = (
         db.query(func.sum(Item.purchase_price * Item.quantity_in_stock))
         .filter(Item.is_active == True)
-        .scalar()
-        or Decimal("0")
+        .scalar() or Decimal("0")
     )
 
-    total_cash = biz.current_balance + pers.current_balance
+    total_cash = business_cash + personal_cash
     net = total_cash + loans_outstanding + inventory_value - debts_outstanding
 
     return NetWorth(
-        business_cash=biz.current_balance,
-        personal_cash=pers.current_balance,
+        business_cash=business_cash,
+        personal_cash=personal_cash,
         total_cash=total_cash,
         loans_given_outstanding=loans_outstanding,
         debts_owed_outstanding=debts_outstanding,

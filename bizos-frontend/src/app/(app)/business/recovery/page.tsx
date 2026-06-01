@@ -290,37 +290,29 @@ export default function BusinessRecoveryPage() {
                 Net Worth Snapshot
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {(() => {
-                  const businessCash = summary?.available_balance ?? netWorth.business_cash;
-                  const adjustedNetWorth = netWorth.net_worth - netWorth.business_cash + businessCash;
-                  return (
-                    <>
-                      {[
-                        { label: 'Business Cash', value: businessCash, color: 'var(--accent-green)' },
-                        { label: 'Personal Cash', value: netWorth.personal_cash, color: 'var(--accent-green)' },
-                        { label: 'Loans Given (Outstanding)', value: netWorth.loans_given_outstanding, color: 'var(--accent-amber)' },
-                        { label: 'Inventory Value', value: netWorth.inventory_value, color: 'var(--accent-primary)' },
-                        { label: 'Debts Owed', value: -netWorth.debts_owed_outstanding, color: 'var(--accent-red)' },
-                      ].map(({ label, value, color }) => (
-                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{label}</p>
-                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color }}>
-                            {value < 0 ? '−' : '+'}{formatNaira(Math.abs(value))}
-                          </p>
-                        </div>
-                      ))}
-                      <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>Total Net Worth</p>
-                        <p style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800,
-                          color: adjustedNetWorth >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
-                        }}>
-                          {formatNaira(adjustedNetWorth)}
-                        </p>
-                      </div>
-                    </>
-                  );
-                })()}
+                {[
+                  { label: 'Business Cash', value: netWorth.business_cash, color: 'var(--accent-green)' },
+                  { label: 'Personal Cash', value: netWorth.personal_cash, color: 'var(--accent-green)' },
+                  { label: 'Loans Given (Outstanding)', value: netWorth.loans_given_outstanding, color: 'var(--accent-amber)' },
+                  { label: 'Inventory Value', value: netWorth.inventory_value, color: 'var(--accent-primary)' },
+                  { label: 'Debts Owed', value: -netWorth.debts_owed_outstanding, color: 'var(--accent-red)' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{label}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color }}>
+                      {value < 0 ? '−' : '+'}{formatNaira(Math.abs(value))}
+                    </p>
+                  </div>
+                ))}
+                <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>Total Net Worth</p>
+                  <p style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800,
+                    color: netWorth.net_worth >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
+                  }}>
+                    {formatNaira(netWorth.net_worth)}
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
