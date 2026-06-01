@@ -154,7 +154,7 @@ def update_sale_payment(
     sale = db.query(Sale).filter_by(id=sale_id).first()
     if not sale:
         raise HTTPException(404, "Sale not found")
-        
+
     sale.amount_paid = payload.amount_paid
     db.commit()
     db.refresh(sale)

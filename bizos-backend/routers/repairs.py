@@ -343,7 +343,7 @@ def update_payment(
     job = db.query(RepairJob).filter_by(id=job_id).first()
     if not job:
         raise HTTPException(404, "Job not found")
-        
+
     job.amount_paid = payload.amount_paid
     db.commit()
     db.refresh(job)

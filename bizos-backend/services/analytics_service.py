@@ -5,8 +5,10 @@ from typing import List
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from models.cash_flow import FinanceScope
 from models.expense import Expense
 from models.inventory import Item
+from models.lending import DebtOwed, LoanGiven, LoanRepayment
 from models.repair import RepairJob, RepairStatus, DepositResolution
 from models.sales import Sale
 from models.tithe import TitheRecord, TitheScope
@@ -135,8 +137,8 @@ def get_business_summary(
         or Decimal("0")
     )
 
-    # available_balance is all-time cumulative cash.
-    # Exclude cancelled jobs unless deposit was explicitly kept — those are liabilities until resolved.
+    # available_balance reflects actual physical cash.
+    # Exclude cancelled jobs unless deposit was explicitly kept.
     all_time_cash_repairs = (
         db.query(func.sum(RepairJob.amount_paid))
         .filter(
@@ -149,7 +151,36 @@ def get_business_summary(
     all_time_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
     all_time_expenses = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
 
-    available_balance = (all_time_cash_repairs + all_time_cash_sales) - all_time_expenses
+    # Loan adjustments — only business-scoped movements
+    loans_given = (
+        db.query(func.sum(LoanGiven.principal_amount))
+        .filter(LoanGiven.scope == FinanceScope.business)
+        .scalar()
+        or Decimal("0")
+    )
+    loan_repayments_received = (
+        db.query(func.sum(LoanRepayment.amount))
+        .join(LoanGiven, LoanRepayment.loan_id == LoanGiven.id)
+        .filter(LoanGiven.scope == FinanceScope.business)
+        .scalar()
+        or Decimal("0")
+    )
+    money_borrowed = (
+        db.query(func.sum(DebtOwed.principal_amount))
+        .filter(DebtOwed.scope == FinanceScope.business)
+        .scalar()
+        or Decimal("0")
+    )
+    # Note: debt repayments (paying creditors back) are already in all_time_expenses
+    # via Expense(category=loan_repayment), so they are not added again here.
+
+    available_balance = (
+        (all_time_cash_repairs + all_time_cash_sales)
+        - all_time_expenses
+        - loans_given
+        + loan_repayments_received
+        + money_borrowed
+    )
 
     repair_count = (
         db.query(func.count(RepairJob.id))

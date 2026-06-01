@@ -121,10 +121,6 @@ export default function BusinessDashboard() {
   const { loadFromStorage } = useProfileStore();
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
 
-  const { data: cashPos } = useQuery({
-    queryKey: ['cash-position', 'business'],
-    queryFn: () => cashFlowApi.getPosition('business'),
-  });
   const { data: lendingSummary } = useQuery({
     queryKey: ['lending-summary', 'business'],
     queryFn: () => lendingApi.summary('business'),
@@ -446,8 +442,8 @@ export default function BusinessDashboard() {
         </div>
       </motion.div>
 
-      {/* ── Cash Position strip (only shown when balance is set) ─── */}
-      {cashPos && (
+      {/* ── Cash Position strip ─── */}
+      {summary && (
         <motion.div variants={fadeUp} initial="initial" animate="animate"
           style={{
             marginTop: 'var(--space-4)',
@@ -465,9 +461,9 @@ export default function BusinessDashboard() {
             <p style={{
               fontFamily: 'var(--font-mono)', fontWeight: 800,
               fontSize: 'var(--text-lg)', letterSpacing: '-0.02em',
-              color: cashPos.current_balance >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
+              color: (summary.available_balance ?? 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
             }}>
-              {formatNaira(cashPos.current_balance)}
+              {formatNaira(summary.available_balance)}
             </p>
             <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 2 }}>
               vs Profit: {summary ? formatNaira(summary.net_profit) : '—'}
