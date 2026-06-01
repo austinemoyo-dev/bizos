@@ -153,17 +153,34 @@ async function queueOfflineMutation<T>(
 
 async function attemptRefresh(): Promise<boolean> {
   try {
-    // No body needed — the refresh_token is sent automatically via HttpOnly cookie.
-    // credentials: 'include' ensures the cookie is attached to this cross-origin request.
+    // Try cookie-based refresh first (works in browser)
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({}),
     });
-    if (!res.ok) return false;
-    const data = await res.json();
-    localStorage.setItem('access_token', data.access_token);
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+      return true;
+    }
+
+    // Fallback: use localStorage refresh_token (reliable in Capacitor WebView
+    // where HttpOnly cookies are not always sent cross-origin)
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+    if (!storedToken) return false;
+    const res2 = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${storedToken}` },
+      credentials: 'include',
+      body: JSON.stringify({}),
+    });
+    if (!res2.ok) return false;
+    const data2 = await res2.json();
+    localStorage.setItem('access_token', data2.access_token);
+    if (data2.refresh_token) localStorage.setItem('refresh_token', data2.refresh_token);
     return true;
   } catch {
     return false;

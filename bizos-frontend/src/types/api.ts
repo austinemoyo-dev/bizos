@@ -384,6 +384,7 @@ export interface PersonalSummary {
   net_savings: number;
   food_debt: number;
   tithe_due: number;
+  available_balance: number;
 }
 
 // Stock Movements

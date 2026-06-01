@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { cashFlowApi } from '@/lib/api/cash-flow';
 import { lendingApi } from '@/lib/api/lending';
+import { analyticsApi } from '@/lib/api/analytics';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
@@ -43,6 +45,12 @@ export default function PersonalPlanningPage() {
   const { data: cashPos } = useQuery({
     queryKey: ['cash-position', 'personal'],
     queryFn: () => cashFlowApi.getPosition('personal'),
+  });
+  const _planningStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+  const _planningEnd   = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  const { data: personalSummary } = useQuery({
+    queryKey: ['personal-summary', _planningStart, _planningEnd],
+    queryFn: () => analyticsApi.personalSummary({ period_start: _planningStart, period_end: _planningEnd }),
   });
   const { data: forecast } = useQuery({
     queryKey: ['liquidity-forecast', 'personal'],
@@ -86,7 +94,7 @@ export default function PersonalPlanningPage() {
       />
 
       {/* ── Cash Position ────────────────────────────────────────── */}
-      {cashPos && (
+      {(personalSummary || cashPos) && (
         <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
           background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(99,102,241,0.08) 100%)',
           border: '1px solid rgba(139,92,246,0.25)',
@@ -94,21 +102,28 @@ export default function PersonalPlanningPage() {
           marginBottom: 'var(--space-5)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-              Personal Cash in Hand
-            </p>
-            <p style={{
-              fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.3rem, 4vw, 1.8rem)',
-              fontWeight: 800, color: cashPos.current_balance >= 0 ? '#A78BFA' : 'var(--accent-red)',
-              letterSpacing: '-0.02em', lineHeight: 1,
-            }}>
-              {formatNaira(cashPos.current_balance)}
-            </p>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
-              Opening: {formatNaira(cashPos.opening_balance)} · In: {formatNaira(cashPos.total_in)} · Out: {formatNaira(cashPos.total_out)}
-            </p>
-          </div>
+          {(() => {
+            const cashInHand = personalSummary?.available_balance ?? cashPos?.current_balance ?? 0;
+            return (
+              <div>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  Personal Cash in Hand
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 'clamp(1.3rem, 4vw, 1.8rem)',
+                  fontWeight: 800, color: Number(cashInHand) >= 0 ? '#A78BFA' : 'var(--accent-red)',
+                  letterSpacing: '-0.02em', lineHeight: 1,
+                }}>
+                  {formatNaira(cashInHand)}
+                </p>
+                {cashPos && (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+                    Opening: {formatNaira(cashPos.opening_balance)} · In: {formatNaira(cashPos.total_in)} · Out: {formatNaira(cashPos.total_out)}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Wallet size={24} style={{ color: '#A78BFA' }} />
           </div>

@@ -217,8 +217,11 @@ def personal_summary(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from decimal import Decimal
     from sqlalchemy import func
     from models.personal import PersonalTransaction, PersonalTxType
+    from models.lending import DebtOwed, LoanGiven, LoanRepayment
+    from models.cash_flow import FinanceScope
     if not period_start or not period_end:
         period_start, period_end = _default_period()
     income = (
@@ -239,7 +242,55 @@ def personal_summary(
         )
         .scalar() or 0
     )
-    return {"period_start": period_start, "period_end": period_end, "total_income": income, "total_expenses": expenses, "balance": income - expenses}
+
+    # All-time available balance (mirrors business logic — reflects actual physical cash)
+    all_time_income = (
+        db.query(func.sum(PersonalTransaction.amount))
+        .filter(PersonalTransaction.type == PersonalTxType.income)
+        .scalar() or Decimal("0")
+    )
+    all_time_expenses = (
+        db.query(func.sum(PersonalTransaction.amount))
+        .filter(PersonalTransaction.type == PersonalTxType.expense)
+        .scalar() or Decimal("0")
+    )
+    # Personal loans given (cash left wallet, not an expense)
+    loans_given = (
+        db.query(func.sum(LoanGiven.principal_amount))
+        .filter(LoanGiven.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    # Loan repayments received (cash returned, not income)
+    loan_repayments_received = (
+        db.query(func.sum(LoanRepayment.amount))
+        .join(LoanGiven, LoanRepayment.loan_id == LoanGiven.id)
+        .filter(LoanGiven.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    # Money borrowed from creditors (cash entered wallet, not income)
+    money_borrowed = (
+        db.query(func.sum(DebtOwed.principal_amount))
+        .filter(DebtOwed.scope == FinanceScope.personal)
+        .scalar() or Decimal("0")
+    )
+    # Note: debt repayments are already in all_time_expenses via
+    # PersonalTransaction(type=expense, category='debt_repayment') — not double-counted.
+    available_balance = (
+        all_time_income
+        - all_time_expenses
+        - loans_given
+        + loan_repayments_received
+        + money_borrowed
+    )
+
+    return {
+        "period_start": period_start,
+        "period_end": period_end,
+        "total_income": income,
+        "total_expenses": expenses,
+        "balance": income - expenses,
+        "available_balance": available_balance,
+    }
 
 
 @router.get("/personal/spending-trend")

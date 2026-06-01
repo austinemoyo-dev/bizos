@@ -11,7 +11,7 @@ import { initDeepLinks } from '@/lib/capacitor/deepLinks';
 const BIO_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { loadFromStorage } = useAuthStore();
+  const { loadFromStorage, refreshSession, hasSavedSession } = useAuthStore();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const lastActiveRef = useRef<number>(Date.now());
@@ -26,12 +26,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // Feature 1 — Biometric gate on first app open
     // Race with 12s timeout — if native dialog never appears, let user in
     const biometricTimeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 12_000));
-    Promise.race([authenticateWithBiometric(), biometricTimeout]).then((passed) => {
+    Promise.race([authenticateWithBiometric(), biometricTimeout]).then(async (passed) => {
       if (!passed) {
         router.replace('/login');
-      } else {
-        setReady(true);
+        return;
       }
+      // Always refresh the access token after biometric so API calls work.
+      // Without this, the saved access_token may be expired and every request
+      // would fail silently until the user manually logs in again.
+      if (hasSavedSession()) {
+        const tokenOk = await refreshSession();
+        if (!tokenOk) {
+          router.replace('/login');
+          return;
+        }
+      }
+      setReady(true);
     });
 
     // Feature 17 — Deep link routing
@@ -48,8 +58,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       } else if (document.visibilityState === 'visible') {
         const elapsed = Date.now() - lastActiveRef.current;
         if (elapsed > BIO_TIMEOUT_MS) {
-          authenticateWithBiometric().then((passed) => {
-            if (!passed) router.replace('/login');
+          authenticateWithBiometric().then(async (passed) => {
+            if (!passed) { router.replace('/login'); return; }
+            if (hasSavedSession()) {
+              const tokenOk = await refreshSession();
+              if (!tokenOk) router.replace('/login');
+            }
           });
         }
       }

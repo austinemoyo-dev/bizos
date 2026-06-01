@@ -164,10 +164,10 @@ export default function PersonalDashboard() {
   const titheDue        = Number(summary?.tithe_due ?? 0);
   const foodDebt        = (unpaidCredits ?? []).reduce((s, c) => s + Number(c.amount), 0);
 
-  // Period-based net (fallback when no cash position is set)
+  // Period-based net (fallback while summary loads)
   const computedBalance  = totalIncome - totalExpenses - paidTitheAmount;
-  // Prefer the live cash position (opening balance + all events) when available
-  const availableBalance = cashPos ? Number(cashPos.current_balance) : computedBalance;
+  // Use all-time available_balance from summary (reflects actual physical cash including loans)
+  const availableBalance = summary?.available_balance != null ? Number(summary.available_balance) : computedBalance;
   const isPositive       = availableBalance >= 0;
   const periodLabel      = PERIOD_LABELS[period];
 
@@ -294,7 +294,7 @@ export default function PersonalDashboard() {
                 </p>
 
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-                  {cashPos ? 'Current cash balance' : periodLabel}
+                  Current cash balance
                 </p>
               </div>
             )}
@@ -351,7 +351,7 @@ export default function PersonalDashboard() {
       </div>
 
       {/* ── CASH POSITION STRIP ──────────────────────────────────── */}
-      {cashPos && (
+      {summary && (
         <Link href="/personal/planning" style={{ textDecoration: 'none', display: 'block', marginBottom: 20 }}>
           <div style={{
             borderRadius: 18, padding: '14px 16px',
@@ -362,7 +362,7 @@ export default function PersonalDashboard() {
             {[
               {
                 label: 'Cash in Hand',
-                value: formatNaira(Number(cashPos.current_balance)),
+                value: formatNaira(Number(summary.available_balance)),
                 color: '#A78BFA',
                 sub: null,
               },

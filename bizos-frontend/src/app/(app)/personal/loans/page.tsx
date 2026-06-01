@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { lendingApi, LoanGiven, DebtOwed } from '@/lib/api/lending';
 import { cashFlowApi } from '@/lib/api/cash-flow';
+import { analyticsApi } from '@/lib/api/analytics';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Modal } from '@/components/shared/Modal';
 import { CurrencyInput } from '@/components/shared/CurrencyInput';
@@ -101,6 +103,12 @@ export default function PersonalLendingPage() {
   const { data: cashPos } = useQuery({
     queryKey: ['cash-position', 'personal'],
     queryFn: () => cashFlowApi.getPosition('personal'),
+  });
+  const _summaryStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+  const _summaryEnd   = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  const { data: personalSummary } = useQuery({
+    queryKey: ['personal-summary', _summaryStart, _summaryEnd],
+    queryFn: () => analyticsApi.personalSummary({ period_start: _summaryStart, period_end: _summaryEnd }),
   });
 
   const shownLoans = loans.filter(l => subTab === 'outstanding' ? !l.is_settled : l.is_settled);
@@ -209,16 +217,19 @@ export default function PersonalLendingPage() {
       />
 
       {/* ── Cash Position Banner ─────────────────────────────────── */}
-      {cashPos && (
+      {(personalSummary || cashPos) && (
         <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)',
           marginBottom: 'var(--space-5)',
         }}>
-          {[
-            { label: 'Cash in Hand', value: cashPos.current_balance, color: cashPos.current_balance >= 0 ? PURPLE : 'var(--accent-red)' },
-            { label: 'Money Out (Loans)', value: summary ? summary.outstanding_receivable : 0, color: 'var(--accent-amber)' },
-            { label: 'Money Owed', value: summary ? summary.outstanding_payable : 0, color: 'var(--accent-red)' },
-          ].map(({ label, value, color }) => (
+          {(() => {
+            const cashInHand = personalSummary?.available_balance ?? cashPos?.current_balance ?? 0;
+            return [
+              { label: 'Cash in Hand', value: cashInHand, color: Number(cashInHand) >= 0 ? PURPLE : 'var(--accent-red)' },
+              { label: 'Money Out (Loans)', value: summary ? summary.outstanding_receivable : 0, color: 'var(--accent-amber)' },
+              { label: 'Money Owed', value: summary ? summary.outstanding_payable : 0, color: 'var(--accent-red)' },
+            ];
+          })().map(({ label, value, color }) => (
             <div key={label} style={{
               background: 'var(--bg-surface)', borderRadius: 16,
               padding: 'var(--space-4)', border: '1px solid var(--border-subtle)',
