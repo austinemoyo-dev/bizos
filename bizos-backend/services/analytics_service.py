@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.cash_flow import FinanceScope
-from models.expense import Expense
+from models.expense import Expense, ExpenseCategory
 from models.inventory import Item
 from models.lending import DebtOwed, LoanGiven, LoanRepayment
 from models.repair import RepairJob, RepairStatus, DepositResolution
@@ -149,7 +149,18 @@ def get_business_summary(
         or Decimal("0")
     )
     all_time_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
-    all_time_expenses = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
+    # Exclude any Expense rows that were created by personal tithe payments (legacy data
+    # before personal tithe was rerouted to PersonalTransaction).
+    personal_tithe_in_expenses = (
+        db.query(func.coalesce(func.sum(Expense.amount), 0))
+        .join(TitheRecord, Expense.reference_id == TitheRecord.id)
+        .filter(
+            Expense.category == ExpenseCategory.tithe,
+            TitheRecord.scope == TitheScope.personal,
+        )
+        .scalar()
+    ) or Decimal("0")
+    all_time_expenses = (db.query(func.sum(Expense.amount)).scalar() or Decimal("0")) - Decimal(str(personal_tithe_in_expenses))
 
     # Loan adjustments — only business-scoped movements
     loans_given = (

@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.expense import Expense, ExpenseCategory
+from models.personal import PersonalTransaction, PersonalTxType
 from models.tithe import TitheRecord, TitheScope
 
 
@@ -71,19 +72,31 @@ def pay_tithe(db: Session, tithe_id: UUID, paid_date: date = None) -> TitheRecor
         if paid_date else datetime.utcnow()
     )
 
-    expense = Expense(
-        category=ExpenseCategory.tithe,
-        amount=record.tithe_amount,
-        description=f"{record.scope.value.capitalize()} tithe payment",
-        expense_date=paid_date or date.today(),
-        reference_id=record.id,
-    )
-    db.add(expense)
-    db.flush()  # get expense.id
+    if record.scope == TitheScope.business:
+        expense = Expense(
+            category=ExpenseCategory.tithe,
+            amount=record.tithe_amount,
+            description="Business tithe payment",
+            expense_date=paid_date or date.today(),
+            reference_id=record.id,
+        )
+        db.add(expense)
+        db.flush()
+        record.expense_id = expense.id
+    else:
+        # Personal tithe → PersonalTransaction so it doesn't touch the business Expense table
+        tx = PersonalTransaction(
+            type=PersonalTxType.expense,
+            category="tithe",
+            amount=record.tithe_amount,
+            description="Personal tithe payment",
+            transaction_date=paid_date or date.today(),
+        )
+        db.add(tx)
+        db.flush()
 
     record.paid = True
     record.paid_at = paid_at
-    record.expense_id = expense.id
 
     db.commit()
     db.refresh(record)
