@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models.cash_flow import CashBalance, CashEvent, CashEventType, FinanceScope
@@ -55,10 +55,10 @@ def _build_balance_out(db: Session, row: CashBalance) -> CashBalanceOut:
     totals = (
         db.query(
             func.sum(
-                func.case((CashEvent.signed_amount > 0, CashEvent.signed_amount), else_=0)
+                case((CashEvent.signed_amount > 0, CashEvent.signed_amount), else_=0)
             ).label("total_in"),
             func.sum(
-                func.case((CashEvent.signed_amount < 0, CashEvent.signed_amount), else_=0)
+                case((CashEvent.signed_amount < 0, CashEvent.signed_amount), else_=0)
             ).label("total_out"),
             func.sum(CashEvent.signed_amount).label("net"),
         )
