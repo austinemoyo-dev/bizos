@@ -6,8 +6,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models.cash_flow import CashBalance, CashEvent, CashEventType, FinanceScope
-from models.expense import Expense, ExpenseCategory
-from models.tithe import TitheRecord, TitheScope
+from models.expense import Expense
 from models.inventory import Item
 from models.lending import DebtOwed, LoanGiven, LoanRepayment
 from models.personal import PersonalTransaction, PersonalTxType
@@ -233,16 +232,7 @@ def get_net_worth(db: Session) -> NetWorth:
         .scalar() or Decimal("0")
     )
     biz_cash_sales = db.query(func.sum(Sale.amount_paid)).scalar() or Decimal("0")
-    personal_tithe_in_expenses = (
-        db.query(func.coalesce(func.sum(Expense.amount), 0))
-        .join(TitheRecord, Expense.reference_id == TitheRecord.id)
-        .filter(
-            Expense.category == ExpenseCategory.tithe,
-            TitheRecord.scope == TitheScope.personal,
-        )
-        .scalar()
-    ) or Decimal("0")
-    biz_expenses = (db.query(func.sum(Expense.amount)).scalar() or Decimal("0")) - Decimal(str(personal_tithe_in_expenses))
+    biz_expenses   = db.query(func.sum(Expense.amount)).scalar() or Decimal("0")
     biz_loans_given = (
         db.query(func.sum(LoanGiven.principal_amount))
         .filter(LoanGiven.scope == FinanceScope.business)
