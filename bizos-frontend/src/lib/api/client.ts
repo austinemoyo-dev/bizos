@@ -173,9 +173,10 @@ async function attemptRefresh(): Promise<boolean> {
     if (!storedToken) return false;
     const res2 = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${storedToken}` },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({}),
+      // Send in body — backend reads payload.refresh_token, not Authorization header
+      body: JSON.stringify({ refresh_token: storedToken }),
     });
     if (!res2.ok) return false;
     const data2 = await res2.json();

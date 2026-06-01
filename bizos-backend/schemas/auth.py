@@ -50,6 +50,7 @@ class TokenResponse(BaseModel):
 
 class AccessTokenResponse(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None  # returned in body for Capacitor (cookie unreliable)
     token_type: str = "bearer"
 
 

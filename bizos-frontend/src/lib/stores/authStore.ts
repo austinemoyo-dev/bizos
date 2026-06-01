@@ -69,15 +69,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (!refreshToken) return false;
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${refreshToken}` },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({}),
+        // Send token in body — backend reads payload.refresh_token, not Authorization header
+        body: JSON.stringify({ refresh_token: refreshToken }),
       });
       if (!res.ok) return false;
       const data = await res.json();
       localStorage.setItem('access_token', data.access_token);
       if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-      // Re-hydrate user from storage (already there)
       const userJson = localStorage.getItem('bizos_user');
       if (userJson) {
         const user = JSON.parse(userJson) as User;

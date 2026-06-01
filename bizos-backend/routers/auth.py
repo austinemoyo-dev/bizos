@@ -104,10 +104,13 @@ def refresh(
     user = db.query(User).filter_by(id=data["sub"], is_active=True).first()
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
-    # Rotate: old token is replaced, new cookie issued
+    # Rotate: old token is replaced, new cookie issued; also return in body for Capacitor
     new_refresh = create_refresh_token({"sub": str(user.id)})
     _set_refresh_cookie(response, new_refresh)
-    return AccessTokenResponse(access_token=create_access_token({"sub": str(user.id)}))
+    return AccessTokenResponse(
+        access_token=create_access_token({"sub": str(user.id)}),
+        refresh_token=new_refresh,
+    )
 
 
 @router.post("/logout")
