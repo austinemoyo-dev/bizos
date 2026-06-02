@@ -76,6 +76,7 @@ export default function PersonalTithePage() {
     try {
       await titheApi.markPaid(id);
       qc.invalidateQueries({ queryKey: ['tithe'] });
+      qc.invalidateQueries({ queryKey: ['personal-summary'] });
       addToast({ type: 'success', title: 'Tithe marked as paid' });
     } catch (err) {
       addToast({ type: 'error', title: 'Failed to mark tithe as paid', message: err instanceof Error ? err.message : '' });

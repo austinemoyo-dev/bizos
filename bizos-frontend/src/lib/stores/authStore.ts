@@ -16,8 +16,12 @@ interface AuthState {
   setAuth: (user: User, token: string, refreshToken?: string, remember?: boolean) => void;
   clearAuth: () => void;
   loadFromStorage: () => boolean;
-  /** Use the stored refresh token to get a new access token (for biometric login). */
-  refreshSession: () => Promise<boolean>;
+  /**
+   * Use the stored refresh token to get a new access token.
+   * Returns true on success, false if the token is expired/invalid (user must log in),
+   * or null if the server couldn't be reached (cold start / network error — don't force logout).
+   */
+  refreshSession: () => Promise<boolean | null>;
   /** True if a refresh token is stored — i.e. biometric login is possible. */
   hasSavedSession: () => boolean;
 }
@@ -64,28 +68,39 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   refreshSession: async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
+    let res: Response;
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) return false;
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
+      res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        // Send token in body — backend reads payload.refresh_token, not Authorization header
         body: JSON.stringify({ refresh_token: refreshToken }),
+        signal: controller.signal,
       });
-      if (!res.ok) return false;
-      const data = await res.json();
-      localStorage.setItem('access_token', data.access_token);
-      if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-      const userJson = localStorage.getItem('bizos_user');
-      if (userJson) {
+    } catch {
+      // Network error or timeout — server likely cold-starting; don't force logout.
+      clearTimeout(timeout);
+      return null;
+    }
+    clearTimeout(timeout);
+
+    if (!res.ok) return false; // 401 = token expired/invalid — user must log in
+
+    const data = await res.json();
+    localStorage.setItem('access_token', data.access_token);
+    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+    const userJson = localStorage.getItem('bizos_user');
+    if (userJson) {
+      try {
         const user = JSON.parse(userJson) as User;
         set({ user, isAuthenticated: true });
-      }
-      return true;
-    } catch {
-      return false;
+      } catch {}
     }
+    return true;
   },
 }));

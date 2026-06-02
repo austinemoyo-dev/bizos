@@ -36,10 +36,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       // would fail silently until the user manually logs in again.
       if (hasSavedSession()) {
         const tokenOk = await refreshSession();
-        if (!tokenOk) {
+        if (tokenOk === false) {
+          // Refresh token is expired/invalid — must log in again.
           router.replace('/login');
           return;
         }
+        // tokenOk === null means network error (server cold-starting).
+        // Let the user in — the API client will retry refresh lazily on the first request.
       }
       setReady(true);
     });

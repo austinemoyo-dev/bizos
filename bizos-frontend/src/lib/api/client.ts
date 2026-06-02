@@ -61,7 +61,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (skipAuth || endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || options._retry) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
-        localStorage.removeItem('bizos_user');
+        // Keep bizos_user and refresh_token so loadFromStorage() still works on next open
+        // and refreshSession() can be attempted before forcing the user to retype credentials.
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
@@ -77,7 +78,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
-      localStorage.removeItem('bizos_user');
+      // Keep bizos_user and refresh_token — see comment above.
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');

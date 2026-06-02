@@ -68,6 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             width: '100%',
             minWidth: 0,
             boxSizing: 'border-box',
+            paddingBottom: isMobile ? 'calc(120px + env(safe-area-inset-bottom))' : undefined,
           }}
         >
           <AnimatePresence mode="wait">

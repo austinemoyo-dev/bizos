@@ -79,12 +79,15 @@ export default function LoginPage() {
       if (!passed) { setError('Biometric verification failed. Please use your password.'); return; }
 
       // Try refresh token first
-      const ok = await refreshSession();
-      if (ok) { router.push('/business/dashboard'); return; }
+      const result = await refreshSession();
+      if (result === true) { router.push('/business/dashboard'); return; }
 
-      // Refresh token expired — load user from storage and ask for password
       loadFromStorage();
-      setError('Your session expired. Please enter your password once to continue.');
+      if (result === null) {
+        setError('Server is starting up — please wait a moment and try again.');
+      } else {
+        setError('Your session expired. Please enter your password once to continue.');
+      }
     } catch {
       setError('Biometric login failed. Please use your password.');
     } finally {
