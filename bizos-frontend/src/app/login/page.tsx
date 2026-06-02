@@ -28,16 +28,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Pre-fill email and show biometric option if there's a saved session
     try {
       const userJson = localStorage.getItem('bizos_user');
       if (userJson && hasSavedSession()) {
         const user = JSON.parse(userJson);
         setSavedName(user.name ?? user.email ?? null);
         setEmail(user.email ?? '');
+        // Pre-fill password when remember-me is active
+        const saved = localStorage.getItem('bizos_credential');
+        if (saved) setPassword(atob(saved));
       }
     } catch {}
-    // Check if device has fingerprint/face hardware
     isBiometricAvailable().then(setBioAvailable);
   }, []);
 
@@ -61,6 +62,11 @@ export default function LoginPage() {
       ]);
       clearTimeout(warmupRef.current!);
       setAuth(data.user, data.access_token, data.refresh_token, rememberMe);
+      if (rememberMe) {
+        localStorage.setItem('bizos_credential', btoa(password));
+      } else {
+        localStorage.removeItem('bizos_credential');
+      }
       router.push('/business/dashboard');
     } catch (err) {
       clearTimeout(warmupRef.current!);

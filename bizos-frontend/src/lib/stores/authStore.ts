@@ -48,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('bizos_user');
+    localStorage.removeItem('bizos_credential');
     set({ user: null, isAuthenticated: false });
   },
 
