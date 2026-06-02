@@ -8,7 +8,7 @@ import {
   Wallet, Utensils, PiggyBank,
   Settings, LogOut, ChevronLeft, ChevronRight,
   LineChart, Users, Banknote, ScrollText, Printer, Calculator,
-  Briefcase, User, BarChart2, Target,
+  Briefcase, User, BarChart2, Target, Scale,
 } from 'lucide-react';
 import { SyncIndicator } from '../shared/SyncIndicator';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -371,6 +371,13 @@ export function Sidebar() {
             glow={personalGlow}
           />
         ))}
+
+        <SectionHeading collapsed={collapsed} color="#6B7280">Overview</SectionHeading>
+
+        <NavItem href="/overview/net-worth" icon={Scale} label="Net Worth"
+          active={pathname === '/overview/net-worth'}
+          collapsed={collapsed} color="#6B7280" glow="rgba(107,114,128,0.15)"
+        />
 
         <div style={{ height: 1, background: 'var(--glass-border)', margin: '8px 4px' }} />
 

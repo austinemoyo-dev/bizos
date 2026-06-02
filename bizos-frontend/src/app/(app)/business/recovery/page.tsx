@@ -274,40 +274,47 @@ export default function BusinessRecoveryPage() {
             </motion.div>
           )}
 
-          {/* ── Net Worth ────────────────────────────────────────── */}
+          {/* ── Business Assets ──────────────────────────────────── */}
           {netWorth && (
             <motion.div variants={fadeUp} initial="initial" animate="animate" style={{
               background: 'var(--bg-surface)', borderRadius: 20,
               padding: 'var(--space-5)', border: '1px solid var(--border-subtle)',
               marginBottom: 'var(--space-5)',
             }}>
-              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
-                Net Worth Snapshot
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Business Assets
+                </p>
+                <Link href="/overview/net-worth" style={{ fontSize: '0.6rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
+                  Combined net worth →
+                </Link>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {[
                   { label: 'Business Cash', value: netWorth.business_cash, color: 'var(--accent-green)' },
-                  { label: 'Personal Cash', value: netWorth.personal_cash, color: 'var(--accent-green)' },
-                  { label: 'Loans Given (Outstanding)', value: netWorth.loans_given_outstanding, color: 'var(--accent-amber)' },
-                  { label: 'Inventory Value', value: netWorth.inventory_value, color: 'var(--accent-primary)' },
-                  { label: 'Debts Owed', value: -netWorth.debts_owed_outstanding, color: 'var(--accent-red)' },
+                  { label: 'Inventory Value (at cost)', value: netWorth.inventory_value, color: 'var(--accent-primary)' },
                 ].map(({ label, value, color }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{label}</p>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, color }}>
-                      {value < 0 ? '−' : '+'}{formatNaira(Math.abs(value))}
+                      +{formatNaira(value)}
                     </p>
                   </div>
                 ))}
                 <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>Total Net Worth</p>
+                  <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>Business Total</p>
                   <p style={{
                     fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 800,
-                    color: netWorth.net_worth >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
+                    color: (netWorth.business_cash + netWorth.inventory_value) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)',
                   }}>
-                    {formatNaira(netWorth.net_worth)}
+                    {formatNaira(netWorth.business_cash + netWorth.inventory_value)}
                   </p>
                 </div>
+                <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  Personal accounts, loans, and debts are excluded here. View the{' '}
+                  <Link href="/overview/net-worth" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>combined overview</Link>{' '}
+                  for full net worth.
+                </p>
               </div>
             </motion.div>
           )}
