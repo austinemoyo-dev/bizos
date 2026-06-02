@@ -57,6 +57,11 @@ function healthLabel(score: number) {
   return { label: 'Needs Work', color: '#EF4444' };
 }
 
+function safeNum(v: unknown): number {
+  const n = Number(v);
+  return isFinite(n) ? n : 0;
+}
+
 function loadBudgets(): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(BUDGET_KEY) ?? '{}'); } catch { return {}; }
 }
@@ -190,20 +195,20 @@ export default function PersonalPlanningPage() {
   // ── Derived values ─────────────────────────────────────────────
   const isLoading = burnLoading || debtLoading;
   const thisMonth = burnRate?.this_month;
-  const avgBurn = burnRate?.average_monthly_burn ?? 1;
+  const avgBurn = safeNum(burnRate?.average_monthly_burn) || 1;
   const overSpending = thisMonth ? thisMonth.projected_total > avgBurn : false;
-  const monthProgress = thisMonth ? Math.min(100, (thisMonth.spent_so_far / avgBurn) * 100) : 0;
+  const monthProgress = thisMonth ? Math.min(100, (safeNum(thisMonth.spent_so_far) / avgBurn) * 100) : 0;
 
-  const avgIncome = debtPlan?.avg_monthly_income ?? 0;
-  const avgExpenses = debtPlan?.avg_monthly_expenses ?? 0;
+  const avgIncome = safeNum(debtPlan?.avg_monthly_income);
+  const avgExpenses = safeNum(debtPlan?.avg_monthly_expenses);
   const savingsRate = avgIncome > 0 ? ((avgIncome - avgExpenses) / avgIncome) * 100 : 0;
-  const currentBal = cashPos?.current_balance ?? personalSummary?.available_balance ?? 0;
+  const currentBal = safeNum(cashPos?.current_balance ?? personalSummary?.available_balance ?? 0);
   const emergencyMonths = avgBurn > 0 ? currentBal / avgBurn : 0;
-  const totalDebt = debtPlan?.total_personal_debt ?? 0;
-  const debtToIncome = avgIncome > 0 ? totalDebt / avgIncome : 0;
+  const totalDebt = safeNum(debtPlan?.total_personal_debt);
+  const debtToIncome = avgIncome > 0 ? safeNum(totalDebt / avgIncome) : 0;
   const healthScore = computeHealthScore(savingsRate, emergencyMonths, debtToIncome);
   const health = healthLabel(healthScore);
-  const dailyBurn = avgBurn / 30;
+  const dailyBurn = safeNum(avgBurn / 30);
 
   // Category chart data
   const categoryData = Object.entries(burnRate?.category_breakdown ?? {})
@@ -220,7 +225,7 @@ export default function PersonalPlanningPage() {
   const forecastChart = (() => {
     if (!forecast) return [];
     const sorted = [...forecast.items].sort((a, b) => a.date.localeCompare(b.date));
-    let balance = forecast.current_balance;
+    let balance = safeNum(forecast.current_balance);
     const pts: { label: string; balance: number }[] = [{ label: 'Today', balance }];
     for (const item of sorted) {
       let label = item.date;
@@ -671,9 +676,9 @@ export default function PersonalPlanningPage() {
           {/* Inflow / Outflow / Projected summary */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
             {[
-              { label: 'Current Balance', value: forecast.current_balance, color: '#A78BFA' },
-              { label: 'Expected In', value: forecast.expected_inflows, color: '#10B981' },
-              { label: 'Expected Out', value: forecast.expected_outflows, color: '#EF4444' },
+              { label: 'Current Balance', value: safeNum(forecast.current_balance), color: '#A78BFA' },
+              { label: 'Expected In', value: safeNum(forecast.expected_inflows), color: '#10B981' },
+              { label: 'Expected Out', value: safeNum(forecast.expected_outflows), color: '#EF4444' },
             ].map(({ label, value, color }) => (
               <div key={label} style={statBox}>
                 <p style={statLabel}>{label}</p>
