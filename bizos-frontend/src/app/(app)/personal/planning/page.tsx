@@ -225,7 +225,7 @@ export default function PersonalPlanningPage() {
   const forecastChart = (() => {
     if (!forecast) return [];
     const sorted = [...forecast.items].sort((a, b) => a.date.localeCompare(b.date));
-    let balance = safeNum(forecast.current_balance);
+    let balance = currentBal;
     const pts: { label: string; balance: number }[] = [{ label: 'Today', balance }];
     for (const item of sorted) {
       let label = item.date;
@@ -667,8 +667,8 @@ export default function PersonalPlanningPage() {
             <SectionTitle icon={<Calendar size={14} />}>30-Day Liquidity Forecast</SectionTitle>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
               Projected:{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: forecast.projected_balance >= 0 ? '#A78BFA' : '#EF4444' }}>
-                {formatNaira(forecast.projected_balance)}
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: (currentBal + safeNum(forecast.expected_inflows) - safeNum(forecast.expected_outflows)) >= 0 ? '#A78BFA' : '#EF4444' }}>
+                {formatNaira(currentBal + safeNum(forecast.expected_inflows) - safeNum(forecast.expected_outflows))}
               </span>
             </span>
           </div>
@@ -676,7 +676,7 @@ export default function PersonalPlanningPage() {
           {/* Inflow / Outflow / Projected summary */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
             {[
-              { label: 'Current Balance', value: safeNum(forecast.current_balance), color: '#A78BFA' },
+              { label: 'Current Balance', value: currentBal, color: '#A78BFA' },
               { label: 'Expected In', value: safeNum(forecast.expected_inflows), color: '#10B981' },
               { label: 'Expected Out', value: safeNum(forecast.expected_outflows), color: '#EF4444' },
             ].map(({ label, value, color }) => (
