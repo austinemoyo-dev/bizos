@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, subMonths, getDaysInMonth, getDate } from 'date-fns';
@@ -36,8 +36,13 @@ interface TrendSeries {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+function safeNum(v: unknown): number {
+  const n = Number(v);
+  return isFinite(n) ? n : 0;
+}
+
 function n(v: number) {
-  return `₦${Number(v ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
+  return `₦${safeNum(v).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
 }
 
 function pct(v: number, decimals = 1) {
@@ -131,6 +136,14 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function BusinessRecoveryPage() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   const now          = new Date();
   const daysElapsed  = getDate(now);
   const daysInMonth  = getDaysInMonth(now);
@@ -173,8 +186,8 @@ export default function BusinessRecoveryPage() {
   const recentJobs    = recovery?.recent_job_count ?? 0;
   const pendingJobs   = recovery?.pending_jobs ?? 0;
   const bizDebt       = recovery?.business_debt_outstanding ?? 0;
-  const inventoryVal  = netWorth?.inventory_value ?? biz0?.inventory_value ?? 0;
-  const businessCash  = netWorth?.business_cash ?? cashPos?.current_balance ?? 0;
+  const inventoryVal  = safeNum(netWorth?.inventory_value ?? biz0?.inventory_value ?? 0);
+  const businessCash  = safeNum(netWorth?.business_cash  ?? cashPos?.current_balance ?? 0);
   const lowStock      = biz0?.low_stock_count ?? 0;
   const repairCount   = biz0?.repair_count ?? 0;
   const saleCount     = biz0?.sale_count ?? 0;
@@ -329,7 +342,7 @@ export default function BusinessRecoveryPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-2)', minWidth: 220 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 'var(--space-2)', width: isMobile ? '100%' : undefined, minWidth: isMobile ? undefined : 220 }}>
           {[
             { label: 'Revenue MTD', value: n(revMtd), color: '#10B981' },
             { label: 'Expenses MTD', value: n(expMtd), color: '#EF4444' },
@@ -461,7 +474,7 @@ export default function BusinessRecoveryPage() {
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={180}>
+        <ResponsiveContainer width="100%" height={isMobile ? 140 : 180}>
           <AreaChart data={trendChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
             <defs>
               {[
@@ -599,7 +612,7 @@ export default function BusinessRecoveryPage() {
         </div>
 
         {/* Job volume summary */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           {[
             { label: 'Repairs', value: repairCount, color: '#8B0018', Icon: Wrench as React.ElementType },
             { label: 'Sales', value: saleCount, color: '#D4A535', Icon: DollarSign as React.ElementType },
@@ -658,14 +671,14 @@ export default function BusinessRecoveryPage() {
                 const maxJobs = repairChartData[0].jobs;
                 return (
                   <div key={device} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', width: 90, flexShrink: 0, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textTransform: 'capitalize' }}>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', width: isMobile ? 66 : 90, flexShrink: 0, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textTransform: 'capitalize' }}>
                       {device.replace(/_/g, ' ')}
                     </p>
                     <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${(jobs / maxJobs) * 100}%`, background: EXPENSE_COLORS[i % EXPENSE_COLORS.length], borderRadius: 3 }} />
                     </div>
                     <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', fontWeight: 700, color: EXPENSE_COLORS[i % EXPENSE_COLORS.length], width: 28, textAlign: 'right', flexShrink: 0, margin: 0 }}>{jobs}</p>
-                    <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', width: 80, textAlign: 'right', flexShrink: 0, margin: 0, fontFamily: 'var(--font-mono)' }}>{n(revenue)}</p>
+                    {!isMobile && <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', width: 80, textAlign: 'right', flexShrink: 0, margin: 0, fontFamily: 'var(--font-mono)' }}>{n(revenue)}</p>}
                   </div>
                 );
               })}
@@ -686,9 +699,9 @@ export default function BusinessRecoveryPage() {
           </div>
 
           <ResponsiveContainer width="100%" height={expChartData.length * 34 + 20}>
-            <BarChart data={expChartData} layout="vertical" margin={{ top: 0, right: 60, left: 0, bottom: 0 }}>
+            <BarChart data={expChartData} layout="vertical" margin={{ top: 0, right: isMobile ? 36 : 60, left: 0, bottom: 0 }}>
               <XAxis type="number" hide />
-              <YAxis type="category" dataKey="category" tick={{ fill: 'var(--text-muted)', fontSize: 9 }} axisLine={false} tickLine={false} width={90} />
+              <YAxis type="category" dataKey="category" tick={{ fill: 'var(--text-muted)', fontSize: 9 }} axisLine={false} tickLine={false} width={isMobile ? 70 : 90} />
               <Tooltip
                 formatter={(value: number) => [n(value), 'Amount']}
                 contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 10, fontSize: 11 }}
@@ -728,7 +741,7 @@ export default function BusinessRecoveryPage() {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(1,1fr)' : 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           {[
             { label: '10% of This Month Profit', value: n(titheExpected), color: '#D4A535', sub: `Due on ${n(Math.max(0, profitMtd))} profit` },
             { label: 'Tithe Paid This Period',   value: n(tithePaid),     color: '#10B981', sub: 'Cleared from obligations' },
@@ -887,7 +900,7 @@ export default function BusinessRecoveryPage() {
             <p style={sectionLabel}>30-Day Liquidity Forecast</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(1,1fr)' : 'repeat(3,1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
             {[
               { label: 'Expected Inflows', value: n(forecast.expected_inflows), color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
               { label: 'Expected Outflows', value: n(forecast.expected_outflows), color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },

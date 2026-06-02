@@ -9,6 +9,7 @@ import {
   X, Settings, Package, ShoppingCart, Receipt, TrendingUp,
   HandCoins, ShoppingBag, Printer, Calculator, Users, ScrollText,
   Utensils, PiggyBank, LineChart, Target, ChevronRight, Briefcase, User,
+  Scale, Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 
@@ -60,6 +61,11 @@ const PERSONAL_MORE: MoreItem[] = [
   { label: 'Settings',     href: '/settings',              Icon: Settings,   color: '#9CA3AF' },
 ];
 
+const OVERVIEW_ITEMS: MoreItem[] = [
+  { label: 'Net Worth',  href: '/overview/net-worth', Icon: Scale,     color: '#6B7280' },
+  { label: 'AI Advisor', href: '/overview/advisor',   Icon: Sparkles,  color: '#8B5CF6' },
+];
+
 // ── Active slot resolution ────────────────────────────────────────────────────
 
 function getBusinessActive(p: string): number {
@@ -79,11 +85,12 @@ function getPersonalActive(p: string): number {
 // ── More bottom sheet ─────────────────────────────────────────────────────────
 
 function MoreSheet({
-  open, onClose, items, isDark, accent, scope, userName, userRole,
+  open, onClose, items, overviewItems, isDark, accent, scope, userName, userRole,
 }: {
   open: boolean;
   onClose: () => void;
   items: MoreItem[];
+  overviewItems: MoreItem[];
   isDark: boolean;
   accent: string;
   scope: 'business' | 'personal';
@@ -276,6 +283,52 @@ function MoreSheet({
                         ? 'none'
                         : '0 2px 12px rgba(0,0,0,0.05)',
                       transition: 'transform 0.12s, background 0.12s',
+                    }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 14,
+                        background: `${item.color}18`,
+                        border: `1px solid ${item.color}28`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <item.Icon size={20} color={item.color} strokeWidth={1.8} />
+                      </div>
+                      <span style={{
+                        fontSize: '0.62rem', fontWeight: 600, textAlign: 'center',
+                        color: isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.72)',
+                        lineHeight: 1.3,
+                      }}>
+                        {item.label}
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Overview section */}
+            <div style={{ padding: '16px 20px 10px' }}>
+              <p style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }}>
+                Overview
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, padding: '0 16px' }}>
+              {overviewItems.map((item, idx) => (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.18, delay: idx * 0.04 }}
+                  style={{ flex: 1 }}
+                >
+                  <Link href={item.href} onClick={onClose} style={{ textDecoration: 'none', display: 'block' }}>
+                    <div style={{
+                      borderRadius: 18, padding: '16px 10px 14px',
+                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.75)',
+                      border: isDark ? `1px solid ${item.color}25` : `1px solid ${item.color}20`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: isDark ? `0 0 20px ${item.color}10` : '0 2px 12px rgba(0,0,0,0.05)',
                     }}>
                       <div style={{
                         width: 46, height: 46, borderRadius: 14,
@@ -542,6 +595,7 @@ export function MobileTabBar() {
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
         items={moreItems}
+        overviewItems={OVERVIEW_ITEMS}
         isDark={isDark}
         accent={accent}
         scope={scope}
