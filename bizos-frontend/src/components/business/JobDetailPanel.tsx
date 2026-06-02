@@ -43,10 +43,9 @@ const STATUS_LABELS: Partial<Record<RepairStatus, string>> = {
 };
 
 function suggestedCharge(job: RepairJob): number {
-  const partsCharge = job.parts
+  return job.parts
     .filter((p) => !p.damaged)
-    .reduce((s, p) => s + (p.selling_price ?? p.unit_cost) * p.quantity, 0);
-  return partsCharge + job.labor_charge;
+    .reduce((s, p) => s + Number(p.selling_price ?? p.unit_cost) * p.quantity, 0);
 }
 
 export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
@@ -201,8 +200,8 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
   const profitInfo = job ? formatProfit(job.profit) : null;
   const tithe      = job ? calcTithe(job.profit) : 0;
 
-  const suggested  = job ? suggestedCharge(job) : 0;
-  const chargeDiff = job ? Math.abs(suggested - job.total_charge) : 0;
+  const suggested      = job ? suggestedCharge(job) : 0;
+  const chargeDiff     = job ? Math.abs(suggested - Number(job.total_charge)) : 0;
   const showSuggestion = job && job.parts.length > 0 && chargeDiff > 0.5 && canAddParts;
 
   return (
@@ -287,7 +286,7 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
                   <Sparkles size={13} style={{ color: 'var(--accent-green)', flexShrink: 0 }} />
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-green)' }}>
                     Suggested charge: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{formatNaira(suggested)}</span>
-                    <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>(parts at selling price + labor)</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>(parts at selling price)</span>
                   </p>
                 </div>
                 <button
@@ -392,7 +391,6 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
                 { label: 'Total Charge (Revenue)',  value: formatNaira(job.total_charge), color: 'var(--text-primary)' },
                 { label: 'Amount Paid',             value: formatNaira(job.amount_paid), color: 'var(--accent-green)' },
                 { label: 'Balance (Owing)',         value: formatNaira(job.balance), color: job.balance > 0 ? 'var(--accent-red)' : 'var(--text-secondary)' },
-                { label: 'Labor Charge',            value: formatNaira(job.labor_charge), color: 'var(--text-secondary)' },
                 { label: 'Parts Cost',              value: `−${formatNaira(job.parts_cost)}`, color: 'var(--accent-red)' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
@@ -427,15 +425,6 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
                     <div
                       className="finance-bar-segment"
                       style={{
-                        flex: job.labor_charge,
-                        background: 'linear-gradient(90deg, #60A5FA, #3B82F6)',
-                        minWidth: job.labor_charge > 0 ? 4 : 0,
-                      }}
-                      title={`Labor: ${formatNaira(job.labor_charge)}`}
-                    />
-                    <div
-                      className="finance-bar-segment"
-                      style={{
                         flex: Math.max(0, job.profit),
                         background: 'linear-gradient(90deg, #10B981, #059669)',
                         minWidth: job.profit > 0 ? 4 : 0,
@@ -446,7 +435,6 @@ export function JobDetailPanel({ jobId, onClose }: JobDetailPanelProps) {
                   <div className="finance-bar-legend">
                     {[
                       { label: 'Parts',  color: '#EF4444', val: job.parts_cost },
-                      { label: 'Labor',  color: '#60A5FA', val: job.labor_charge },
                       { label: 'Profit', color: '#10B981', val: Math.max(0, job.profit) },
                     ].map(({ label, color, val }) => (
                       <div key={label} className="finance-bar-legend-item">

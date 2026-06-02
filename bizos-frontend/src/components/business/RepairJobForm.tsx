@@ -26,7 +26,7 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
     device_type:       initialValues?.device_type       ?? 'phone',
     device_model:      initialValues?.device_model      ?? '',
     fault_description: initialValues?.fault_description ?? '',
-    labor_charge:      initialValues?.labor_charge      ?? 0,
+    labor_charge:      0,
     total_charge:      initialValues?.total_charge      ?? 0,
     status:            initialValues?.status            ?? 'received',
     notes:             initialValues?.notes             ?? '',
@@ -81,10 +81,10 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
     setCustomDeviceName('');
   };
 
-  const updatePartsAndTotal = (newParts: any[], currentLabor: number | string) => {
+  const updatePartsAndTotal = (newParts: any[]) => {
     setForm(f => {
       const partsTotal = newParts.reduce((acc, p) => acc + (p.selling_price || 0) * p.quantity, 0);
-      return { ...f, parts: newParts, total_charge: Number(currentLabor) + partsTotal };
+      return { ...f, parts: newParts, total_charge: partsTotal };
     });
   };
 
@@ -118,19 +118,19 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
       damaged:       false,
       _name:         item.name,
     };
-    updatePartsAndTotal([...(form.parts || []), newPart], form.labor_charge);
+    updatePartsAndTotal([...(form.parts || []), newPart]);
   };
 
   const handleUpdatePart = (index: number, updates: Partial<AddPartPayload>) => {
     const parts = [...(form.parts || [])];
     parts[index] = { ...parts[index], ...updates };
-    updatePartsAndTotal(parts, form.labor_charge);
+    updatePartsAndTotal(parts);
   };
 
   const handleRemovePart = (index: number) => {
     const parts = [...(form.parts || [])];
     parts.splice(index, 1);
-    updatePartsAndTotal(parts, form.labor_charge);
+    updatePartsAndTotal(parts);
   };
 
   const handleAddDeviceType = () => {
@@ -606,19 +606,10 @@ export function RepairJobForm({ onSubmit, onCancel, initialValues, onAddPart, ex
         </div>
       )}
 
-      {/* Charges — auto-fit wraps to 2-col on narrow modal, 3-col on wider screens */}
+      {/* Charges */}
       <div className="repair-charges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
         <div className="form-group">
-          <CurrencyInput label="Labor Charge" value={form.labor_charge}
-            onChange={(v) => {
-              setForm(f => {
-                const partsTotal = (f.parts || []).reduce((acc, p) => acc + (p.selling_price || 0) * p.quantity, 0);
-                return { ...f, labor_charge: v, total_charge: Number(v) + partsTotal };
-              });
-            }} />
-        </div>
-        <div className="form-group">
-          <CurrencyInput label="Total Estimate" value={form.total_charge}
+          <CurrencyInput label="Total Charge" value={form.total_charge}
             onChange={(v) => set('total_charge', v)} />
         </div>
         <div className="form-group">

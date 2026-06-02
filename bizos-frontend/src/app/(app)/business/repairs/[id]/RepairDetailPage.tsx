@@ -638,7 +638,6 @@ export default function RepairDetailPage() {
 
             {[
               { label: 'Total Charge', value: formatNaira(job.total_charge), color: 'var(--text-primary)', bold: true },
-              { label: 'Labor Charge', value: formatNaira(job.labor_charge), color: 'var(--text-secondary)' },
               { label: 'Parts Cost', value: `−${formatNaira(job.parts_cost)}`, color: 'var(--accent-red)' },
             ].map(({ label, value, color, bold }) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', minWidth: 0, overflow: 'hidden' }}>
