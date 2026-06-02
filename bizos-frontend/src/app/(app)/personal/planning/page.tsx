@@ -202,7 +202,7 @@ export default function PersonalPlanningPage() {
   const avgIncome = safeNum(debtPlan?.avg_monthly_income);
   const avgExpenses = safeNum(debtPlan?.avg_monthly_expenses);
   const savingsRate = avgIncome > 0 ? ((avgIncome - avgExpenses) / avgIncome) * 100 : 0;
-  const currentBal = safeNum(cashPos?.current_balance ?? personalSummary?.available_balance ?? 0);
+  const currentBal = safeNum(personalSummary?.available_balance ?? cashPos?.current_balance ?? 0);
   const emergencyMonths = avgBurn > 0 ? currentBal / avgBurn : 0;
   const totalDebt = safeNum(debtPlan?.total_personal_debt);
   const debtToIncome = avgIncome > 0 ? safeNum(totalDebt / avgIncome) : 0;
@@ -331,7 +331,7 @@ export default function PersonalPlanningPage() {
         <MetricCard
           label="Cash in Hand"
           value={formatNaira(currentBal)}
-          sub={cashPos ? `In: ${formatNaira(cashPos.total_in)} · Out: ${formatNaira(cashPos.total_out)}` : 'Tap to set opening balance'}
+          sub={personalSummary ? `Income − Expenses − Tithe` : cashPos ? `In: ${formatNaira(cashPos.total_in)} · Out: ${formatNaira(cashPos.total_out)}` : 'No data yet'}
           icon={<Wallet size={17} style={{ color: '#A78BFA' }} />}
           color="#A78BFA" bg="rgba(139,92,246,0.12)"
           onClick={() => setShowSetBalance(true)}
