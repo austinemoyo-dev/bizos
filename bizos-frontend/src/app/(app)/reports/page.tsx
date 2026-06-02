@@ -169,7 +169,7 @@ export default function ReportsPage() {
             <div key={String(label)}>
               <p style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.55)' }}>{label}</p>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: '#fff', fontWeight: 700 }}>
-                ₦{(val as number).toLocaleString()}
+                ₦{safeNum(val).toLocaleString()}
               </p>
             </div>
           ))}
@@ -283,6 +283,11 @@ export default function ReportsPage() {
       </div>
     </div>
   );
+}
+
+function safeNum(v: unknown): number {
+  const x = Number(v);
+  return isFinite(x) ? x : 0;
 }
 
 function ReportCard({ icon, color, title, description, badge, loading, onDownload, buttonLabel }: {

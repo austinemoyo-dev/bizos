@@ -91,8 +91,13 @@ const SECTION_META: Record<string, { icon: React.ElementType; color: string }> =
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+function safeNum(v: unknown): number {
+  const x = Number(v);
+  return isFinite(x) ? x : 0;
+}
+
 function n(v: number) {
-  return `₦${Number(v ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
+  return `₦${safeNum(v).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`;
 }
 
 function pct(v: number) {
@@ -353,22 +358,22 @@ export default function AdvisorPage() {
   const perSaveTrend   = buildTrend(lbls, [per0?.net_savings, per1?.net_savings, per2?.net_savings, per3?.net_savings]);
 
   // ── Derived metrics ────────────────────────────────────────────
-  const avgBurn         = burnRate?.average_monthly_burn ?? 1;
-  const avgIncome       = debtPlan?.avg_monthly_income ?? perIncTrend.avg4;
-  const avgExpenses     = debtPlan?.avg_monthly_expenses ?? perExpTrend.avg4;
+  const avgBurn         = safeNum(burnRate?.average_monthly_burn) || 1;
+  const avgIncome       = safeNum(debtPlan?.avg_monthly_income ?? perIncTrend.avg4);
+  const avgExpenses     = safeNum(debtPlan?.avg_monthly_expenses ?? perExpTrend.avg4);
   const savingsRate     = avgIncome > 0 ? ((avgIncome - avgExpenses) / avgIncome) * 100 : 0;
-  const personalCash    = cashPos?.current_balance ?? netWorth?.personal_cash ?? 0;
+  const personalCash    = safeNum(per0?.available_balance ?? netWorth?.personal_cash ?? 0);
   const emergencyMonths = avgBurn > 0 ? personalCash / avgBurn : 0;
-  const totalDebt       = debtPlan?.total_personal_debt ?? 0;
-  const debtToIncome    = avgIncome > 0 ? totalDebt / avgIncome : 0;
-  const disposable      = debtPlan?.monthly_disposable ?? 0;
+  const totalDebt       = safeNum(debtPlan?.total_personal_debt);
+  const debtToIncome    = avgIncome > 0 ? safeNum(totalDebt / avgIncome) : 0;
+  const disposable      = safeNum(debtPlan?.monthly_disposable);
   const isLoss          = recovery?.profit_status === 'loss';
-  const profitMtd       = recovery?.profit_mtd ?? bizProfitTrend.latest;
-  const inventoryValue  = netWorth?.inventory_value ?? 0;
-  const businessCash    = netWorth?.business_cash ?? 0;
-  const pendingJobs     = recovery?.pending_jobs ?? 0;
-  const avgJobRevenue   = recovery?.avg_job_revenue ?? 0;
-  const recentJobs      = recovery?.recent_job_count ?? 0;
+  const profitMtd       = safeNum(recovery?.profit_mtd ?? bizProfitTrend.latest);
+  const inventoryValue  = safeNum(netWorth?.inventory_value);
+  const businessCash    = safeNum(netWorth?.business_cash);
+  const pendingJobs     = safeNum(recovery?.pending_jobs);
+  const avgJobRevenue   = safeNum(recovery?.avg_job_revenue);
+  const recentJobs      = safeNum(recovery?.recent_job_count);
 
   // How many of the last 3 months was the business profitable?
   const profitableMonths = [biz0, biz1, biz2].filter((b) => (b?.net_profit ?? 0) > 0).length;

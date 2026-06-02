@@ -27,6 +27,11 @@ interface PeriodRange { start: string; end: string; label: string }
 
 function fmt(d: Date) { return format(d, 'yyyy-MM-dd'); }
 
+function safeNum(v: unknown): number {
+  const x = Number(v);
+  return isFinite(x) ? x : 0;
+}
+
 function getPeriods(key: PeriodKey, customStart: string, customEnd: string): { current: PeriodRange; previous: PeriodRange } {
   const now = new Date();
   switch (key) {
@@ -407,9 +412,9 @@ export default function AnalyticsPage() {
           position: 'relative', zIndex: 1,
         }}>
           {([
-            ['Expenses',   curSummary?.total_expenses ?? 0, prevSummary?.total_expenses ?? 0, false],
-            ['Net Profit', curSummary?.net_profit     ?? 0, prevSummary?.net_profit     ?? 0, true ],
-            ['Balance',    curSummary?.available_balance ?? 0, prevSummary?.available_balance ?? 0, true],
+            ['Expenses',   safeNum(curSummary?.total_expenses),   safeNum(prevSummary?.total_expenses),   false],
+            ['Net Profit', safeNum(curSummary?.net_profit),       safeNum(prevSummary?.net_profit),       true ],
+            ['Balance',    safeNum(curSummary?.available_balance), safeNum(prevSummary?.available_balance), true],
           ] as [string, number, number, boolean][]).map(([lbl, cur, prev, positiveIsGood]) => {
             const c   = pct(cur, prev);
             const up  = cur >= prev;

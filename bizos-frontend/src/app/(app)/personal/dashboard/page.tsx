@@ -29,6 +29,11 @@ const HERO_BG = 'linear-gradient(160deg, #1a1b6e 0%, #2e3fa0 55%, #1e2878 100%)'
 
 type Period = 'week' | 'month' | 'last_month' | 'year';
 
+function safeNum(v: unknown): number {
+  const x = Number(v);
+  return isFinite(x) ? x : 0;
+}
+
 function getPeriodDates(period: Period) {
   const now = new Date();
   if (period === 'week')       return { start: format(startOfWeek(now),  'yyyy-MM-dd'), end: format(endOfWeek(now),  'yyyy-MM-dd') };
@@ -158,16 +163,16 @@ export default function PersonalDashboard() {
   });
 
   // ── Computed values ────────────────────────────────────────────
-  const totalIncome     = Number(summary?.total_income   ?? 0);
-  const totalExpenses   = Number(summary?.total_expenses ?? 0);
-  const paidTitheAmount = (paidTitheData?.items ?? []).reduce((s, t) => s + Number(t.tithe_amount), 0);
-  const titheDue        = Number(summary?.tithe_due ?? 0);
-  const foodDebt        = (unpaidCredits ?? []).reduce((s, c) => s + Number(c.amount), 0);
+  const totalIncome     = safeNum(summary?.total_income);
+  const totalExpenses   = safeNum(summary?.total_expenses);
+  const paidTitheAmount = (paidTitheData?.items ?? []).reduce((s, t) => s + safeNum(t.tithe_amount), 0);
+  const titheDue        = safeNum(summary?.tithe_due);
+  const foodDebt        = (unpaidCredits ?? []).reduce((s, c) => s + safeNum(c.amount), 0);
 
   // Period-based net (fallback while summary loads)
   const computedBalance  = totalIncome - totalExpenses - paidTitheAmount;
   // Use all-time available_balance from summary (reflects actual physical cash including loans)
-  const availableBalance = summary?.available_balance != null ? Number(summary.available_balance) : computedBalance;
+  const availableBalance = safeNum(summary?.available_balance ?? computedBalance);
   const isPositive       = availableBalance >= 0;
   const periodLabel      = PERIOD_LABELS[period];
 
@@ -362,19 +367,19 @@ export default function PersonalDashboard() {
             {[
               {
                 label: 'Cash in Hand',
-                value: formatNaira(Number(summary.available_balance)),
+                value: formatNaira(safeNum(summary.available_balance)),
                 color: '#A78BFA',
                 sub: null,
               },
               {
                 label: 'Lent Out',
-                value: lendingSum ? formatNaira(Number(lendingSum.outstanding_receivable)) : '—',
+                value: lendingSum ? formatNaira(safeNum(lendingSum.outstanding_receivable)) : '—',
                 color: '#60A5FA',
                 sub: null,
               },
               {
                 label: 'You Owe',
-                value: lendingSum ? formatNaira(Number(lendingSum.outstanding_payable)) : '—',
+                value: lendingSum ? formatNaira(safeNum(lendingSum.outstanding_payable)) : '—',
                 color: '#F87171',
                 sub: null,
               },
